@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Prueba del panel</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="estilos.css">
+<style>
+  .aviso-prueba{background:#FEF0C7;color:#93370D;font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px}
+  .pin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .pin-carrera{box-sizing:border-box}
+  .pin-carrera.tarde{background:#D92D20;box-shadow:0 0 0 8px rgba(217,45,32,.3);animation:latido 1.4s ease-in-out infinite}
+  @keyframes latido{50%{box-shadow:0 0 0 14px rgba(217,45,32,.12)}}
+  .campo-cli{position:relative;display:flex;flex-direction:column;gap:6px}
+  .campo-cli>label{font-size:13px;font-weight:600;color:var(--gris-1)}
+  .sugerencias button strong{display:block;font-size:14px}
+  .sugerencias button span{color:var(--gris-2);font-size:12px}
+  .cliente-ok{display:flex;align-items:center;gap:8px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+  .guardar-cli{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+  .guardar-cli input{width:18px;height:18px}
+  .buscador{max-width:360px}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="menu" aria-label="Menú principal">
+    <div class="marca"><img src="logo.png" alt=""><span>AutoAmigo</span></div>
+    <button class="menu-item activo" data-vista="mapa">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></svg>Mapa en vivo</button>
+    <button class="menu-item" data-vista="carreras">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
+    <button class="menu-item" data-vista="conductores">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="clientes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></svg>Clientes</button>
+    <button class="menu-item" data-vista="reportes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</button>
+    <button class="menu-item" data-vista="recargas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>Recargas</button>
+    <button class="menu-item" data-vista="perdidas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l7 7 4-4 7 7M21 10v6h-6"/></svg>Pérdidas</button>
+    <button class="menu-item" data-vista="config">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Configuración</button>
+  </nav>
+
+  <main class="contenido">
+    <p class="aviso-prueba">PRUEBA · Datos de ejemplo. Nada de esto se guarda en tu panel real.</p>
+
+    <section id="vista-mapa" class="vista">
+      <header class="cabecera">
+        <div><h1>Mapa en vivo</h1><p class="muted">8 conductores activos · 7 conectados</p></div>
+        <button class="btn btn-primario" data-accion="nueva-carrera">+ Nueva carrera</button>
+      </header>
+      <div class="kpis">
+        <div class="kpi"><div class="eti"><i class="punto libre"></i>Libres</div><div class="num">3</div></div>
+        <div class="kpi"><div class="eti"><i class="punto aceptada"></i>Aceptada · yendo a recoger</div><div class="num">1</div></div>
+        <div class="kpi"><div class="eti"><i class="punto ejecucion"></i>En ejecución</div><div class="num">2</div></div>
+        <div class="kpi"><div class="eti"><i class="punto sinsaldo"></i>Conectados sin recarga</div><div class="num">1</div></div>
+        <div class="kpi"><div class="eti"><i class="punto fuera"></i>Fuera de servicio</div><div class="num">1</div></div>
+        <div class="kpi"><div class="eti"><i class="punto pendiente"></i>Carreras esperando</div><div class="num">2</div></div>
+      </div>
+      <div class="mapa-layout">
+        <div class="mapa-caja"><div id="mapa"></div>
+          <div class="leyenda">
+            <span><i class="punto libre"></i>Libre</span>
+            <span><i class="punto aceptada"></i>Aceptada</span>
+            <span><i class="punto ejecucion"></i>En ejecución</span>
+            <span><i class="punto sinsaldo"></i>Sin recarga</span>
+            <span><i class="punto fuera"></i>Fuera de servicio</span>
+            <span><i class="punto pendiente"></i>Carrera esperando</span>
+            <span><i class="punto ejecucion"></i>+30 min sin aceptar</span>
+          </div>
+        </div>
+        <aside class="activas"><h2>Carreras activas</h2><p class="muted">(en la prueba no se muestran)</p></aside>
+      </div>
+    </section>
+
+    <section id="vista-clientes" class="vista" hidden>
+      <header class="cabecera">
+        <div><h1>Clientes</h1><p class="muted" id="clientes-sub"></p></div>
+        <button class="btn btn-primario" id="nuevo-cliente">+ Nuevo cliente</button>
+      </header>
+      <input class="buscador" id="buscar-clientes" placeholder="Buscar por nombre o teléfono">
+      <div class="tabla-caja"><table class="tabla" id="tabla-clientes"></table></div>
+    </section>
+
+    <section id="vista-otra" class="vista" hidden>
+      <h1 id="otra-titulo"></h1><p class="muted">Esta sección no cambia. En la prueba solo se muestran Mapa en vivo y Clientes.</p>
+    </section>
+  </main>
+</div>
+
+<dialog id="modal-carrera" class="modal modal-ancho">
+  <form id="form-carrera" method="dialog" class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2>Nueva carrera</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <div class="carrera-grid">
+      <div class="carrera-form">
+        <div class="dos">
+          <div class="campo-cli"><label for="c-cliente">Cliente</label>
+            <input id="c-cliente" placeholder="Nombre, o escribe y presiona Enter" autocomplete="off" required>
+            <div class="sugerencias" id="sug-cli-cliente" hidden></div></div>
+          <div class="campo-cli"><label for="c-telefono">Teléfono</label>
+            <input id="c-telefono" type="tel" placeholder="Número y Enter" autocomplete="off">
+            <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
+        </div>
+        <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente guardado: se llenaron sus datos</div>
+        <div class="campo-dir">
+          <label for="c-origen">Recogida</label>
+          <div class="dir-fila"><i class="punto libre"></i>
+            <input id="c-origen" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off" required>
+            <button type="button" class="btn btn-chico">Buscar</button>
+            <button type="button" class="btn btn-chico">Marcar en mapa</button></div>
+        </div>
+        <div class="campo-dir">
+          <label for="c-destino">Destino (opcional)</label>
+          <div class="dir-fila"><i class="punto destino"></i>
+            <input id="c-destino" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off">
+            <button type="button" class="btn btn-chico">Buscar</button>
+            <button type="button" class="btn btn-chico">Marcar en mapa</button></div>
+        </div>
+        <div class="dos">
+          <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
+          <div class="sugerida"><span class="muted">Estimado con taxímetro</span><strong id="c-sugerida">Pon el destino</strong></div>
+        </div>
+        <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
+        <label class="guardar-cli"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
+        <fieldset class="modo">
+          <legend>¿Cómo asignar?</legend>
+          <label class="opcion"><input type="radio" name="modo" value="auto" checked>
+            <span><strong>Automática</strong><small>Suena al más cercano y cada pocos segundos se suma el siguiente</small></span></label>
+          <label class="opcion"><input type="radio" name="modo" value="manual">
+            <span><strong>Manual</strong><small>Tú eliges el conductor</small></span></label>
+        </fieldset>
+      </div>
+      <div class="carrera-mapa"><p class="muted">Usa "Marcar en mapa" y luego toca el punto exacto.</p><div id="mapa-carrera"></div></div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario">Crear carrera</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="modal-cliente" class="modal">
+  <form id="form-cliente" method="dialog" class="modal-cuerpo">
+    <header class="modal-cab"><h2 id="mc-titulo">Nuevo cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <div class="dos">
+      <label>Nombre <input id="mc-nombre" required></label>
+      <label>Teléfono <input id="mc-telefono" type="tel" required></label>
+    </div>
+    <label>Dirección de recogida <input id="mc-origen"></label>
+    <label>Destino frecuente <input id="mc-destino"></label>
+    <label>Notas <input id="mc-notas" placeholder="Ej: casa esquinera, portón negro"></label>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario">Guardar</button></footer>
+  </form>
+</dialog>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+// ---------- Clientes de ejemplo ----------
+var CLIENTES = [
+  { nombre: 'Isaac Fierro', telefono: '0969036818', origen: 'Av. 9 de Octubre y Boyacá', destino: 'Mall del Sol', notas: '', carreras: 12, ultima: 'Hoy 00:58' },
+  { nombre: 'María Torres', telefono: '0987654321', origen: 'Cdla. Kennedy Norte, Mz 105', destino: 'Terminal Terrestre', notas: 'Lleva maleta', carreras: 4, ultima: 'Ayer' },
+  { nombre: 'Carlos Mendoza', telefono: '0991122334', origen: 'Urdesa Central, calle Bálsamos', destino: '', notas: '', carreras: 1, ultima: '25 oct' }
+];
+function $(s) { return document.querySelector(s); }
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function norm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
+function soloNum(t) { return String(t || '').replace(/\D/g, ''); }
+function buscar(q) {
+  var n = norm(q), d = soloNum(q);
+  if (!n) return [];
+  return CLIENTES.filter(function (c) {
+    return (d.length >= 3 && soloNum(c.telefono).indexOf(d) !== -1) || norm(c.nombre).indexOf(n) !== -1;
+  }).slice(0, 6);
+}
+
+// ---------- Menú ----------
+document.querySelectorAll('.menu-item[data-vista]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.menu-item').forEach(function (x) { x.classList.toggle('activo', x === b); });
+    var v = b.dataset.vista;
+    $('#vista-mapa').hidden = v !== 'mapa';
+    $('#vista-clientes').hidden = v !== 'clientes';
+    $('#vista-otra').hidden = v === 'mapa' || v === 'clientes';
+    $('#otra-titulo').textContent = b.textContent.trim();
+    if (v === 'clientes') pintarClientes();
+    if (v === 'mapa' && mapa) mapa.resize();
+  });
+});
+
+// ---------- Vista Clientes ----------
+function pintarClientes() {
+  var q = $('#buscar-clientes').value;
+  var lista = q ? buscar(q) : CLIENTES;
+  $('#clientes-sub').textContent = CLIENTES.length + ' clientes guardados';
+  $('#tabla-clientes').innerHTML = '<thead><tr><th>Cliente</th><th>Recogida</th><th>Destino frecuente</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
+    lista.map(function (c, i) {
+      return '<tr><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small></td><td>' + esc(c.origen) + '</td><td>' + (esc(c.destino) || '<span class="muted">—</span>') +
+        '</td><td>' + c.carreras + '</td><td>' + esc(c.ultima) + '</td><td><div class="acciones">' +
+        '<button class="btn btn-chico btn-primario" data-pedir="' + CLIENTES.indexOf(c) + '">Pedir carrera</button>' +
+        '<button class="btn btn-chico" data-editar="' + CLIENTES.indexOf(c) + '">Editar</button>' +
+        '<button class="btn btn-chico" data-borrar="' + CLIENTES.indexOf(c) + '">Borrar</button></div></td></tr>';
+    }).join('') + '</tbody>';
+}
+$('#buscar-clientes').addEventListener('input', pintarClientes);
+$('#tabla-clientes').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.pedir) { abrirCarrera(); llenar(CLIENTES[+b.dataset.pedir]); }
+  if (b.dataset.editar) abrirCliente(+b.dataset.editar);
+  if (b.dataset.borrar) { CLIENTES.splice(+b.dataset.borrar, 1); pintarClientes(); }
+});
+var editando = -1;
+function abrirCliente(i) {
+  editando = i;
+  var c = i >= 0 ? CLIENTES[i] : {};
+  $('#mc-titulo').textContent = i >= 0 ? 'Editar cliente' : 'Nuevo cliente';
+  $('#mc-nombre').value = c.nombre || ''; $('#mc-telefono').value = c.telefono || '';
+  $('#mc-origen').value = c.origen || ''; $('#mc-destino').value = c.destino || ''; $('#mc-notas').value = c.notas || '';
+  $('#modal-cliente').showModal();
+}
+$('#nuevo-cliente').addEventListener('click', function () { abrirCliente(-1); });
+$('#form-cliente').addEventListener('submit', function () {
+  var c = { nombre: $('#mc-nombre').value.trim(), telefono: $('#mc-telefono').value.trim(), origen: $('#mc-origen').value.trim(), destino: $('#mc-destino').value.trim(), notas: $('#mc-notas').value.trim() };
+  if (editando >= 0) Object.assign(CLIENTES[editando], c); else CLIENTES.unshift(Object.assign(c, { carreras: 0, ultima: '—' }));
+  pintarClientes();
+});
+
+// ---------- Modal nueva carrera con clientes guardados ----------
+function abrirCarrera() {
+  $('#form-carrera').reset(); $('#c-cliente-ok').hidden = true; $('#c-sugerida').textContent = 'Pon el destino';
+  $('#modal-carrera').showModal(); $('#c-cliente').focus();
+}
+document.querySelectorAll('[data-accion="nueva-carrera"]').forEach(function (b) { b.addEventListener('click', abrirCarrera); });
+document.querySelectorAll('[data-cerrar]').forEach(function (b) { b.addEventListener('click', function () { b.closest('dialog').close(); }); });
+function llenar(c) {
+  $('#c-cliente').value = c.nombre; $('#c-telefono').value = c.telefono;
+  $('#c-origen').value = c.origen; $('#c-destino').value = c.destino || ''; $('#c-notas').value = c.notas || '';
+  $('#c-sugerida').textContent = c.destino ? 'Aprox. $4.80 · 7.4 km' : 'Pon el destino';
+  $('#c-cliente-ok').hidden = false;
+  ['cliente', 'telefono'].forEach(function (k) { $('#sug-cli-' + k).hidden = true; });
+}
+['cliente', 'telefono'].forEach(function (k) {
+  var inp = $('#c-' + k), caja = $('#sug-cli-' + k), resultados = [];
+  inp.addEventListener('input', function () {
+    $('#c-cliente-ok').hidden = true;
+    resultados = buscar(inp.value);
+    caja.innerHTML = resultados.map(function (c, i) {
+      return '<button type="button" data-i="' + i + '"><strong>' + esc(c.nombre) + ' · ' + esc(c.telefono) + '</strong><span>' + esc(c.origen) + (c.destino ? ' → ' + esc(c.destino) : '') + '</span></button>';
+    }).join('');
+    caja.hidden = !resultados.length;
+  });
+  inp.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    resultados = buscar(inp.value);
+    if (resultados.length) llenar(resultados[0]);
+  });
+  caja.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) llenar(resultados[+b.dataset.i]); });
+});
+$('#form-carrera').addEventListener('submit', function () {
+  if (!$('#c-guardar-cli').checked) return;
+  var tel = $('#c-telefono').value.trim(), nom = $('#c-cliente').value.trim();
+  var c = CLIENTES.filter(function (x) { return (tel && soloNum(x.telefono) === soloNum(tel)) || norm(x.nombre) === norm(nom); })[0];
+  var datos = { nombre: nom, telefono: tel, origen: $('#c-origen').value.trim(), destino: $('#c-destino').value.trim(), notas: $('#c-notas').value.trim() };
+  if (c) { Object.assign(c, datos); c.carreras++; c.ultima = 'Ahora'; } else CLIENTES.unshift(Object.assign(datos, { carreras: 1, ultima: 'Ahora' }));
+});
+
+// ---------- Mapa nuevo: día/noche según la hora de quien abre el panel ----------
+function esNoche() { var h = new Date().getHours(); return h >= 18 || h < 6; }
+var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF' };
+var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#4B5563', autopista: '#746855', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835' };
+function pintar(m, P) {
+  m.getStyle().layers.forEach(function (l) {
+    var id = l.id;
+    try {
+      if (l.paint && l.paint['fill-pattern']) { m.setLayoutProperty(id, 'visibility', 'none'); return; }
+      if (l.type === 'background') m.setPaintProperty(id, 'background-color', P.fondo);
+      else if (l.type === 'fill') {
+        if (/water|ocean|river|lake/.test(id)) m.setPaintProperty(id, 'fill-color', P.agua);
+        else if (/park|wood|forest|grass|green|landcover|cemetery|pitch/.test(id)) m.setPaintProperty(id, 'fill-color', P.parque);
+        else if (/building/.test(id)) m.setPaintProperty(id, 'fill-color', P.edificio);
+        else m.setPaintProperty(id, 'fill-color', P.fondo);
+      } else if (l.type === 'fill-extrusion') m.setPaintProperty(id, 'fill-extrusion-color', P.edificio);
+      else if (l.type === 'line') {
+        if (/water|river|waterway/.test(id)) m.setPaintProperty(id, 'line-color', P.agua);
+        else if (/casing/.test(id)) m.setPaintProperty(id, 'line-color', P.borde);
+        else if (/motorway|trunk/.test(id)) m.setPaintProperty(id, 'line-color', P.autopista);
+        else if (/primary|secondary/.test(id)) m.setPaintProperty(id, 'line-color', P.avenida);
+        else if (/road|street|minor|service|tertiary|path|bridge|tunnel/.test(id)) m.setPaintProperty(id, 'line-color', P.calle);
+      } else if (l.type === 'symbol') {
+        m.setPaintProperty(id, 'text-color', /water/.test(id) ? (P === DIA ? '#4A7FB0' : '#5B7FA6') : P.texto);
+        m.setPaintProperty(id, 'text-halo-color', P.halo);
+        if (/poi/.test(id)) m.setLayoutProperty(id, 'visibility', 'none');
+      }
+    } catch (e) {}
+  });
+}
+var COLOR = { libre: '#0E9F6E', aceptada: '#1E6FE8', ejecucion: '#D92D20', sinsaldo: '#7A1F2B', fuera: '#8A94A6' };
+function pinSVG(color, texto) {
+  return '<svg class="pin" width="40" height="52" viewBox="0 0 40 52" aria-hidden="true">' +
+    '<path d="M20 50 C20 50 4 31 4 19 A16 16 0 1 1 36 19 C36 31 20 50 20 50 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5"/>' +
+    '<text x="20" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="13" fill="#fff">' + texto + '</text></svg>';
+}
+var mapa = new maplibregl.Map({ container: 'mapa', style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.3,
+  pixelRatio: Math.max(window.devicePixelRatio || 1, 2), attributionControl: { compact: true } });
+mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+var modoActual = null;
+function aplicarModo() {
+  if (!mapa.isStyleLoaded()) return;
+  var m = esNoche() ? 'noche' : 'dia';
+  if (m !== modoActual) { modoActual = m; pintar(mapa, m === 'noche' ? NOCHE : DIA); }
+}
+mapa.on('styledata', aplicarModo);
+setInterval(aplicarModo, 1000);
+[[-2.1850, -79.8870, 'libre', '07'], [-2.1930, -79.8820, 'aceptada', '12'], [-2.1880, -79.8950, 'ejecucion', '03'],
+ [-2.1800, -79.8930, 'libre', '18'], [-2.1965, -79.8905, 'sinsaldo', '26'], [-2.1835, -79.8800, 'fuera', '24'],
+ [-2.1910, -79.8985, 'libre', '29'], [-2.1985, -79.8840, 'ejecucion', '21']].forEach(function (c) {
+  var el = document.createElement('div'); el.innerHTML = pinSVG(COLOR[c[2]], c[3]);
+  new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c[1], c[0]]).addTo(mapa);
+});
+[[-2.1905, -79.8880, 5], [-2.1872, -79.8915, 34]].forEach(function (c) {
+  var el = document.createElement('div'); el.className = 'pin-carrera' + (c[2] >= 30 ? ' tarde' : '');
+  new maplibregl.Marker({ element: el }).setLngLat([c[1], c[0]]).addTo(mapa);
+});
+</script>
+</body>
+</html>
