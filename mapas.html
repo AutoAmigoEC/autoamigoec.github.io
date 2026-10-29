@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AutoAmigo · Opciones de mapa</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@800&display=swap" rel="stylesheet">
 <style>
   body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
@@ -29,15 +30,14 @@
 </header>
 <main id="lista"></main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 var CENTRO = [-2.1894, -79.8891];
 var OPCIONES = [
-  { n: 'A', t: 'Moderno a color (CARTO Voyager + Dark Matter)', d: 'Colores suaves parecidos a Google Maps de día; negro elegante de noche. Nombres de calles claros.',
-    dia: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    noche: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', at: '&copy; OpenStreetMap &copy; CARTO' },
-  { n: 'B', t: 'Minimalista gris (CARTO Positron + Dark Matter)', d: 'Muy limpio, casi sin colores: los carros de colores resaltan muchísimo.',
-    dia: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    noche: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', at: '&copy; OpenStreetMap &copy; CARTO' },
+  { n: 'A', t: 'Moderno a color (OpenFreeMap Liberty + Dark)', vector: true, d: 'Estilo moderno parecido a Google Maps: calles con colores, parques verdes, nombres nítidos. De noche, negro elegante. Gratis y sin registro.',
+    dia: 'https://tiles.openfreemap.org/styles/liberty', noche: 'https://tiles.openfreemap.org/styles/dark' },
+  { n: 'B', t: 'Minimalista (OpenFreeMap Positron + Fiord)', vector: true, d: 'Muy limpio y suave: los carros de colores resaltan muchísimo. De noche, azul oscuro descansado para la vista. Gratis y sin registro.',
+    dia: 'https://tiles.openfreemap.org/styles/positron', noche: 'https://tiles.openfreemap.org/styles/fiord' },
   { n: 'C', t: 'Clásico de calles (Esri Street + Esri Gris oscuro)', d: 'Estilo de mapa de calles tradicional, muy detallado de día; gris oscuro sobrio de noche.',
     dia: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     noche: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', at: '&copy; Esri' },
@@ -57,6 +57,16 @@ OPCIONES.forEach(function (o) {
     '<div><span class="etq">🌙 Noche</span><div class="mapa" id="m' + o.n + 'n"></div></div></div>';
   lista.appendChild(s);
   [['d', o.dia, null], ['n', o.noche, o.nocheFiltro]].forEach(function (x) {
+    if (o.vector) {
+      var mv = new maplibregl.Map({ container: 'm' + o.n + x[0], style: x[1], center: [CENTRO[1], CENTRO[0]], zoom: 13.5, scrollZoom: false });
+      mv.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+      [[-2.1850, -79.8870, '#067647'], [-2.1930, -79.8820, '#1849A9'], [-2.1880, -79.8950, '#D92D20']].forEach(function (p) {
+        var el = document.createElement('div');
+        el.style.cssText = 'width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);background:' + p[2];
+        new maplibregl.Marker({ element: el }).setLngLat([p[1], p[0]]).addTo(mv);
+      });
+      return;
+    }
     var m = L.map('m' + o.n + x[0], { scrollWheelZoom: false }).setView(CENTRO, 14);
     var capa = L.tileLayer(x[1], { maxZoom: 19, attribution: o.at }).addTo(m);
     if (x[2]) capa.getContainer().style.filter = x[2];
