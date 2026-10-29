@@ -500,7 +500,7 @@
         '<div class="fila"><strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong>' +
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
         (c.estado === 'pendiente' ? ' · ' + duracion(espera) : '') + '</span></div>' +
-        '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
+        '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
         extra +
         '<div class="fila meta"><span>' + precioTexto(c) + (c.telefono ? ' · ' + esc(c.telefono) : '') + '</span><span>creada ' + hora(c.creada) + '</span></div>' +
         '<div class="acciones">' + acciones + '</div></div>';
@@ -847,6 +847,7 @@
       $('#c-cliente').value = c.cliente || '';
       $('#c-telefono').value = c.telefono || '';
       $('#c-notas').value = c.notas || '';
+      $('#c-exacta').value = c.exacta || '';
       if (c.precioFijo) $('#c-tarifa').value = Number(c.tarifa).toFixed(2);
       if (c.origen && typeof c.origen.lat === 'number') ponerPunto('origen', c.origen.lat, c.origen.lng, c.origen.dir);
       if (c.destino) {
@@ -1067,7 +1068,8 @@
       tarifaEstimadaC: p.estimadoC,
       kmEstimado: typeof p.km === 'number' ? Math.round(p.km * 10) / 10 : null,
       comisionMinC: p.comisionMinC,
-      notas: $('#c-notas').value.trim()
+      notas: $('#c-notas').value.trim(),
+      exacta: $('#c-exacta').value.trim()
     };
 
     // ---- Editar ----
@@ -1167,6 +1169,7 @@
     if (!lugar || !lugar.dir) return lista;
     var nuevo = { dir: lugar.dir };
     if (typeof lugar.lat === 'number') { nuevo.lat = lugar.lat; nuevo.lng = lugar.lng; }
+    if (lugar.exacta) nuevo.exacta = lugar.exacta;
     return [nuevo].concat(lista.filter(function (x) { return norm(x.dir) !== norm(lugar.dir); })).slice(0, 10);
   }
 
@@ -1177,6 +1180,8 @@
     $('#c-cliente-mal').hidden = true;
     $('#g-origen').hidden = true;
     $('#g-destino').hidden = true;
+    $('#g-origen').setAttribute('data-abierto', '');
+    $('#g-destino').setAttribute('data-abierto', '');
     $('#sug-cli-cliente').hidden = true;
     $('#sug-cli-telefono').hidden = true;
     $('#c-guardar-cli-fila').hidden = !!editId;
@@ -1191,9 +1196,14 @@
   }
   function chipsLugares(caja, campo, lista, titulo) {
     caja.hidden = !lista.length;
-    setHTML(caja, '<span class="muted">' + titulo + ':</span>' + lista.map(function (d, i) {
-      return '<button type="button" data-i="' + i + '" class="' + (norm(d.dir) === norm(campo.value) ? 'sel' : '') + '">' + esc(d.dir) + '</button>';
-    }).join(''));
+    var abierto = caja.getAttribute('data-abierto') === '1';
+    var elegido = lista.filter(function (d) { return norm(d.dir) === norm(campo.value); })[0];
+    setHTML(caja, '<button type="button" class="plegar' + (abierto ? ' abierto' : '') + '" aria-expanded="' + abierto + '">' +
+      '<span class="flecha">▸</span>' + titulo + ' <span class="cuenta">' + lista.length + '</span></button>' +
+      '<div class="lista-chips"' + (abierto ? '' : ' hidden') + '>' + lista.map(function (d, i) {
+        return '<button type="button" data-i="' + i + '" class="chip-lugar' + (d === elegido ? ' sel' : '') + '"' +
+          (d.exacta ? ' title="' + esc(d.exacta) + '"' : '') + '>' + esc(d.dir) + '</button>';
+      }).join('') + '</div>');
   }
   function pintarGuardadas() {
     var c = NC.cliente;
@@ -1204,6 +1214,7 @@
   function usarLugar(cual, l) {
     if (!l) return;
     $('#sug-' + cual).hidden = true;
+    if (cual === 'origen') $('#c-exacta').value = l.exacta || '';
     if (typeof l.lat === 'number') {
       ponerPunto(cual, l.lat, l.lng, l.dir);
       if (!NC.linea && NC.mapa) NC.mapa.jumpTo({ center: [l.lng, l.lat], zoom: 15 });
@@ -1230,10 +1241,17 @@
     pintarGuardadas();
   }
   [['g-origen', 'origen'], ['g-destino', 'destino']].forEach(function (p) {
-    $('#' + p[0]).addEventListener('click', function (ev) {
+    var caja = $('#' + p[0]);
+    caja.addEventListener('click', function (ev) {
+      if (ev.target.closest('.plegar')) {
+        caja.setAttribute('data-abierto', caja.getAttribute('data-abierto') === '1' ? '' : '1');
+        pintarGuardadas();
+        return;
+      }
       var b = ev.target.closest('button[data-i]');
       if (!b || !NC.cliente) return;
       var lista = p[1] === 'origen' ? NC.cliente.direcciones : NC.cliente.destinos;
+      caja.setAttribute('data-abierto', '');
       usarLugar(p[1], lista[Number(b.getAttribute('data-i'))]);
     });
     $('#c-' + p[1]).addEventListener('input', pintarGuardadas);
@@ -1275,7 +1293,7 @@
   function guardarClienteDeCarrera(datos) {
     var c = (NC.cliente && !NC.cliente.restringido) ? NC.cliente : clienteExacto(datos.cliente, datos.telefono);
     var id = c ? c.id : db.ref(RUTA_CLIENTES).push().key;
-    var dirs = agregarLugar(c ? c.direcciones : [], datos.origen);
+    var dirs = agregarLugar(c ? c.direcciones : [], datos.origen ? { dir: datos.origen.dir, lat: datos.origen.lat, lng: datos.origen.lng, exacta: datos.exacta } : null);
     var dests = agregarLugar(c ? c.destinos : [], datos.destino);
     var up = {
       nombre: datos.cliente,
@@ -1327,7 +1345,9 @@
   function lineasLugares(texto, previos) {
     return texto.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 10).map(function (dir) {
       var p = previos.filter(function (x) { return norm(x.dir) === norm(dir); })[0];
-      return p && typeof p.lat === 'number' ? { dir: dir, lat: p.lat, lng: p.lng } : { dir: dir };
+      var r = p && typeof p.lat === 'number' ? { dir: dir, lat: p.lat, lng: p.lng } : { dir: dir };
+      if (p && p.exacta) r.exacta = p.exacta;
+      return r;
     });
   }
   function abrirCliente(id) {

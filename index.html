@@ -274,10 +274,10 @@
       <div class="carrera-form">
         <div class="dos">
           <div class="campo-cli"><label for="c-cliente">Cliente</label>
-            <input id="c-cliente" placeholder="Nombre, o escribe y presiona Enter" autocomplete="off" required>
+            <input id="c-cliente" placeholder="Nombre" autocomplete="off" required>
             <div class="sugerencias" id="sug-cli-cliente" hidden></div></div>
           <div class="campo-cli"><label for="c-telefono">Teléfono</label>
-            <input id="c-telefono" type="tel" placeholder="Número y Enter" autocomplete="off">
+            <input id="c-telefono" type="tel" placeholder="Número" autocomplete="off">
             <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
         </div>
         <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente registrado correctamente</div>
@@ -309,6 +309,7 @@
           <div class="sugerida"><span class="muted">Estimado con taxímetro</span><strong id="c-sugerida">Pon el destino</strong></div>
         </div>
         <p class="muted" id="c-comision">Sin destino: suena a quien tenga al menos la comisión mínima.</p>
+        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco estacionado"></label>
         <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
         <label class="guardar-cli" id="c-guardar-cli-fila"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
         <fieldset class="modo" id="c-modo">
