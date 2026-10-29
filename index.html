@@ -7,7 +7,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -43,6 +43,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
     <button class="menu-item" data-vista="conductores">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="clientes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></svg>Clientes</button>
     <button class="menu-item" data-vista="reportes">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</button>
     <button class="menu-item" data-vista="recargas">
@@ -78,9 +80,10 @@
             <span><i class="punto libre"></i>Libre</span>
             <span><i class="punto aceptada"></i>Aceptada</span>
             <span><i class="punto ejecucion"></i>En ejecución</span>
-            <span><i class="punto sinsaldo"></i>Sin saldo</span>
+            <span><i class="punto sinsaldo"></i>Sin recarga</span>
             <span><i class="punto fuera"></i>Fuera de servicio</span>
             <span><i class="punto pendiente"></i>Carrera esperando</span>
+            <span><i class="punto ejecucion"></i>+30 min sin aceptar</span>
           </div>
         </div>
         <aside class="activas">
@@ -107,6 +110,16 @@
         <button class="chip" data-filtro="todas">Todas</button>
       </div>
       <div class="tabla-caja"><table class="tabla" id="tabla-carreras"></table></div>
+    </section>
+
+    <!-- ---------- CLIENTES ---------- -->
+    <section id="vista-clientes" class="vista" hidden>
+      <header class="cabecera">
+        <div><h1>Clientes</h1><p class="muted" id="clientes-sub"></p></div>
+        <button class="btn btn-primario" id="nuevo-cliente">+ Nuevo cliente</button>
+      </header>
+      <input class="buscador" id="buscar-clientes" placeholder="Buscar por nombre o teléfono" autocomplete="off">
+      <div class="tabla-caja"><table class="tabla" id="tabla-clientes"></table></div>
     </section>
 
     <!-- ---------- CONDUCTORES ---------- -->
@@ -260,9 +273,15 @@
     <div class="carrera-grid">
       <div class="carrera-form">
         <div class="dos">
-          <label>Cliente <input id="c-cliente" required></label>
-          <label>Teléfono <input id="c-telefono" type="tel"></label>
+          <div class="campo-cli"><label for="c-cliente">Cliente</label>
+            <input id="c-cliente" placeholder="Nombre, o escribe y presiona Enter" autocomplete="off" required>
+            <div class="sugerencias" id="sug-cli-cliente" hidden></div></div>
+          <div class="campo-cli"><label for="c-telefono">Teléfono</label>
+            <input id="c-telefono" type="tel" placeholder="Número y Enter" autocomplete="off">
+            <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
         </div>
+        <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente registrado correctamente</div>
+        <div class="cliente-mal" id="c-cliente-mal" hidden></div>
         <div class="campo-dir">
           <label for="c-origen">Recogida</label>
           <div class="dir-fila">
@@ -272,6 +291,7 @@
             <button type="button" class="btn btn-chico" data-marcar="origen">Marcar en mapa</button>
           </div>
           <div class="sugerencias" id="sug-origen" hidden></div>
+          <div class="guardadas" id="g-origen" hidden></div>
         </div>
         <div class="campo-dir">
           <label for="c-destino">Destino (opcional)</label>
@@ -282,6 +302,7 @@
             <button type="button" class="btn btn-chico" data-marcar="destino">Marcar en mapa</button>
           </div>
           <div class="sugerencias" id="sug-destino" hidden></div>
+          <div class="guardadas" id="g-destino" hidden></div>
         </div>
         <div class="dos">
           <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
@@ -289,6 +310,7 @@
         </div>
         <p class="muted" id="c-comision">Sin destino: suena a quien tenga al menos la comisión mínima.</p>
         <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
+        <label class="guardar-cli" id="c-guardar-cli-fila"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
         <fieldset class="modo" id="c-modo">
           <legend>¿Cómo asignar?</legend>
           <label class="opcion"><input type="radio" name="modo" value="auto" checked>
@@ -311,6 +333,38 @@
       <button type="button" class="btn" data-cerrar>Cancelar</button>
       <button type="submit" class="btn btn-primario" id="c-guardar" value="ok">Crear carrera</button>
     </footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: CLIENTE ============ -->
+<dialog id="modal-cliente" class="modal">
+  <form id="form-cliente" class="modal-cuerpo">
+    <header class="modal-cab"><h2 id="mc-titulo">Nuevo cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <div class="dos">
+      <label>Nombre <input id="mc-nombre" required></label>
+      <label>Teléfono <input id="mc-telefono" type="tel" required></label>
+    </div>
+    <label>Direcciones de recogida <small class="muted">(una por línea)</small><textarea id="mc-direcciones" rows="3"></textarea></label>
+    <label>Destinos <small class="muted">(uno por línea)</small><textarea id="mc-destinos" rows="3"></textarea></label>
+    <label>Notas <input id="mc-notas" placeholder="Ej: casa esquinera, portón negro"></label>
+    <p class="muted">Las direcciones escritas aquí se ubican en el mapa con "Buscar" cuando se pide la carrera. Las que vienen de carreras ya tienen su punto exacto.</p>
+    <p class="error" id="mc-error" hidden></p>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario">Guardar</button></footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: RESTRINGIR CLIENTE ============ -->
+<dialog id="modal-restringir" class="modal">
+  <form id="form-restringir" class="modal-cuerpo">
+    <header class="modal-cab"><h2>Restringir cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <p><strong id="mr-nombre"></strong></p>
+    <p class="muted">Mientras esté restringido no se le podrán crear carreras. Al escribir su número o nombre saldrá "Cliente restringido".</p>
+    <label>Justificación <textarea id="mr-justificacion" rows="4" required placeholder="Escribe la razón de la restricción"></textarea></label>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-peligro-lleno">Restringir</button></footer>
   </form>
 </dialog>
 
@@ -375,7 +429,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="mapas.js"></script>
 <script src="config.js"></script>
 <script src="despacho.js"></script>
 <script src="app.js"></script>

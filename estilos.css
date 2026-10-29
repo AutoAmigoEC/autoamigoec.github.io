@@ -186,3 +186,42 @@ label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;
 .tabla-compacta td,.tabla-compacta th{padding:8px 10px}
 .candado{max-width:560px}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;letter-spacing:.06em}
+
+/* ---------- Mapa estilo Google (MapLibre) ---------- */
+#mapa,#mapa-carrera{font-family:Inter,system-ui,sans-serif}
+.marcador-gps{cursor:pointer;line-height:0}
+.pin-gps{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.pin-carrera{box-sizing:border-box;cursor:pointer}
+.pin-carrera.tarde{background:var(--ejecucion);box-shadow:0 0 0 8px rgba(217,45,32,.3);animation:latido 1.4s ease-in-out infinite}
+@keyframes latido{50%{box-shadow:0 0 0 14px rgba(217,45,32,.12)}}
+.pin-origen,.pin-destino{box-sizing:border-box;cursor:grab}
+.maplibregl-popup-content{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;box-shadow:0 8px 24px rgba(16,24,40,.2)}
+.maplibregl-popup-close-button{font-size:18px;padding:0 6px}
+.texto-rojo{color:#B42318;font-weight:600}
+.mapa-marcando #mapa-carrera .maplibregl-canvas{cursor:crosshair}
+
+/* ---------- Clientes ---------- */
+.campo-cli{position:relative;display:flex;flex-direction:column;gap:6px}
+.campo-cli>label{font-size:13px;font-weight:600;color:var(--gris-1)}
+.sugerencias button strong{display:block;font-size:14px}
+.sugerencias button span{color:var(--gris-2);font-size:12px}
+.cliente-ok{display:flex;align-items:center;gap:8px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.cliente-mal{display:flex;flex-direction:column;gap:2px;background:#FEF3F2;color:#B42318;border:1px solid #FDA29B;border-radius:10px;padding:10px 12px;font-size:13px}
+.cliente-mal strong{font-size:15px}
+.guardar-cli{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;font-weight:600}
+.guardar-cli input{width:18px!important;height:18px!important;margin:0;flex:none}
+.guardadas{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
+.guardadas button{border:1px solid #D0D5DD;background:#fff;color:var(--tinta);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
+.guardadas button:hover{border-color:var(--navy)}
+.guardadas button.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+.tag-rest{display:inline-block;background:#FEE4E2;color:#B42318;font-size:11px;font-weight:700;font-style:normal;border-radius:999px;padding:2px 8px;margin-top:4px}
+.tabla td small.just{color:#B42318;max-width:240px}
+tr.restringido td{background:#FFFBFA}
+.buscador{max-width:360px}
+.acciones-cli{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:250px}
+.acciones-cli .btn{width:100%;justify-content:center}
+.acciones-cli .btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-peligro{color:#B42318!important;border-color:#FDA29B!important}
+.btn-peligro-lleno{background:#D92D20!important;color:#fff!important;border-color:#D92D20!important}
+textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical;color:var(--tinta)}
+#c-guardar:disabled{opacity:.45;cursor:not-allowed}

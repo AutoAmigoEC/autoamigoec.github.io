@@ -424,7 +424,7 @@ function pinSVG(color, texto) {
 }
 var mapa = new maplibregl.Map({ container: 'mapa', style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.3,
   pixelRatio: Math.max(window.devicePixelRatio || 1, 2), attributionControl: { compact: true } });
-mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
 var modoActual = null;
 var estiloListo = false;
 mapa.on('style.load', function () { estiloListo = true; aplicarModo(); });

@@ -15,6 +15,8 @@
   var auth = firebase.auth();
   var db = firebase.database();
   var TS = firebase.database.ServerValue.TIMESTAMP;
+  // Los clientes viven dentro de "recargas" porque esa rama ya es solo para administradores
+  var RUTA_CLIENTES = 'recargas/clientes';
 
   var offset = 0;
   db.ref('.info/serverTimeOffset').on('value', function (s) { offset = s.val() || 0; });
@@ -33,6 +35,7 @@
     paquetes: {},
     codigos: {},
     claveHash: null,
+    clientes: {},
     filtroCarreras: 'activas',
     filtroCodigos: 'todos',
     reporte: null
@@ -102,7 +105,7 @@
     if (e && /permission/i.test(e.message || '')) return m.PERMISSION_DENIED;
     return (e && e.message) || 'Ocurrió un error.';
   }
-  var NOMBRE_ESTADO = { libre: 'Libre', aceptada: 'Aceptada', ejecucion: 'En ejecución', sinsaldo: 'Sin saldo', fuera: 'Fuera de servicio' };
+  var NOMBRE_ESTADO = { libre: 'Libre', aceptada: 'Aceptada', ejecucion: 'En ejecución', sinsaldo: 'Sin recarga', fuera: 'Fuera de servicio' };
   var NOMBRE_CARRERA = { pendiente: 'Esperando', aceptada: 'Aceptada', ejecucion: 'En ejecución', finalizada: 'Finalizada', cancelada: 'Cancelada' };
 
   function saldoC(uid) { return Despacho.saldoDe(S.saldos, uid); }
@@ -258,10 +261,10 @@
     oyentes.forEach(function (o) { o.ref.off('value', o.fn); });
     oyentes = [];
     S.conductores = {}; S.estados = {}; S.saldos = {}; S.cubetas = {}; S.carreras = {};
-    S.paquetes = {}; S.codigos = {}; S.claveHash = null;
-    Object.keys(marcadores).forEach(function (k) { if (mapa) mapa.removeLayer(marcadores[k]); });
+    S.paquetes = {}; S.codigos = {}; S.claveHash = null; S.clientes = {};
+    Object.keys(marcadores).forEach(function (k) { marcadores[k].remove(); });
     marcadores = {};
-    Object.keys(marcadoresCarrera).forEach(function (k) { if (mapa) mapa.removeLayer(marcadoresCarrera[k]); });
+    Object.keys(marcadoresCarrera).forEach(function (k) { marcadoresCarrera[k].remove(); });
     marcadoresCarrera = {};
   }
 
@@ -285,6 +288,7 @@
     on(db.ref('carreras').orderByChild('creada').startAt(desde), function (v) {
       S.cubetas.recientes = v; unirCarreras();
     });
+    on(db.ref(RUTA_CLIENTES), function (v) { S.clientes = v; if (vistaActual() === 'clientes') renderClientes(); });
     on(db.ref('recargas/paquetes'), function (v) { S.paquetes = v; renderRecargas(); });
     on(db.ref('recargas/claveHash'), function (v) { S.claveHash = typeof v === 'string' ? v : null; prepararCandado(); });
     on(db.ref('recargas/codigos').orderByChild('creado').limitToLast(300), function (v) { S.codigos = v; renderRecargas(); });
@@ -316,7 +320,7 @@
       b.classList.toggle('activo', b.getAttribute('data-vista') === vista);
     });
     $$('.vista').forEach(function (v) { v.hidden = v.id !== 'vista-' + vista; });
-    if (vista === 'mapa' && mapa) setTimeout(function () { mapa.invalidateSize(); }, 50);
+    if (vista === 'mapa' && mapa) setTimeout(function () { mapa.resize(); }, 50);
     if (vista === 'recargas') prepararCandado();
     renderTodo();
   }
@@ -325,16 +329,15 @@
   //  Mapa en vivo
   // ------------------------------------------------------------------
   var mapa, marcadores = {}, marcadoresCarrera = {}, mapaCentrado = false;
-  function capaTeselas() {
-    return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; colaboradores de OpenStreetMap'
-    });
-  }
+  var MIN30 = 30 * 60 * 1000;
   function iniciarMapa() {
-    if (mapa) { setTimeout(function () { mapa.invalidateSize(); }, 50); return; }
-    mapa = L.map('mapa').setView(AJ.centroMapa, AJ.zoomMapa);
-    capaTeselas().addTo(mapa);
+    if (mapa) { setTimeout(function () { mapa.resize(); }, 50); return; }
+    mapa = MapaAA.crear('mapa', AJ.centroMapa, AJ.zoomMapa);
+  }
+  function etiquetaPin(uid) {
+    var cd = S.conductores[uid] || {};
+    if (cd.unidad) return String(cd.unidad);
+    return (cd.nombre || '?').split(' ').map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase();
   }
 
   function renderMapa() {
@@ -348,34 +351,33 @@
       var est = estadoDe(uid);
       vistos[uid] = true;
       var cd = S.conductores[uid];
-      var etiqueta = unidadCond(uid) || nombreCond(uid).split(' ')[0];
-      var html = '<div class="pin ' + est + '">' + esc(etiqueta) + '</div>';
+      var html = MapaAA.pinSVG(MapaAA.colores[est] || MapaAA.colores.fuera, etiquetaPin(uid));
       var popup = '<strong>' + esc(nombreCond(uid)) + '</strong><br>' +
-        esc(unidadCond(uid)) + ' · ' + esc(cd.placa || '') + '<br>' +
+        esc(cd.unidad ? 'Unidad ' + cd.unidad : '') + ' · ' + esc(cd.placa || '') + '<br>' +
         '<span class="pill ' + est + '">' + NOMBRE_ESTADO[est] + '</span> · Saldo ' + dineroC(saldoC(uid)) + '<br>' +
         '<small>GPS hace ' + duracion(Math.floor((t - e.t) / 10000) * 10000) + '</small>' +
         (cd.telefono ? '<br><a href="tel:' + esc(cd.telefono) + '">Llamar ' + esc(cd.telefono) + '</a>' : '');
       var m = marcadores[uid];
-      if (m) {
-        var ll = m.getLatLng();
-        if (ll.lat !== e.lat || ll.lng !== e.lng) m.setLatLng([e.lat, e.lng]);
-        if (m.__html !== html) {
-          m.setIcon(L.divIcon({ className: '', html: html, iconSize: null, iconAnchor: [17, 13] }));
-          m.__html = html;
-          m.setZIndexOffset(est === 'fuera' ? 0 : 500);
-        }
-        if (m.__popup !== popup) { m.setPopupContent(popup); m.__popup = popup; }
-      } else {
-        m = marcadores[uid] = L.marker([e.lat, e.lng], {
-          icon: L.divIcon({ className: '', html: html, iconSize: null, iconAnchor: [17, 13] }),
-          zIndexOffset: est === 'fuera' ? 0 : 500
-        }).bindPopup(popup).addTo(mapa);
-        m.__html = html; m.__popup = popup;
+      if (!m) {
+        var el = document.createElement('div');
+        el.className = 'marcador-gps';
+        m = marcadores[uid] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([e.lng, e.lat])
+          .setPopup(new maplibregl.Popup({ offset: [0, -46], closeButton: true, maxWidth: '260px' }))
+          .addTo(mapa);
       }
+      var ll = m.getLngLat();
+      if (ll.lat !== e.lat || ll.lng !== e.lng) m.setLngLat([e.lng, e.lat]);
+      if (m.__html !== html) {
+        m.getElement().innerHTML = html;
+        m.getElement().style.zIndex = est === 'fuera' ? 1 : 2;
+        m.__html = html;
+      }
+      if (m.__popup !== popup) { m.getPopup().setHTML(popup); m.__popup = popup; }
       if (est !== 'fuera') puntos.push([e.lat, e.lng]);
     });
     Object.keys(marcadores).forEach(function (uid) {
-      if (!vistos[uid]) { mapa.removeLayer(marcadores[uid]); delete marcadores[uid]; }
+      if (!vistos[uid]) { marcadores[uid].remove(); delete marcadores[uid]; }
     });
 
     var vistasC = {};
@@ -383,28 +385,38 @@
       var c = S.carreras[id];
       if (c.estado !== 'pendiente' || !c.origen || typeof c.origen.lat !== 'number') return;
       vistasC[id] = true;
-      if (!marcadoresCarrera[id]) {
-        marcadoresCarrera[id] = L.marker([c.origen.lat, c.origen.lng], {
-          icon: L.divIcon({ className: '', html: '<div class="pin-carrera"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
-          zIndexOffset: 1000
-        }).bindPopup('<strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong><br>' + esc(c.origen.dir || '')).addTo(mapa);
+      var mc = marcadoresCarrera[id];
+      if (!mc) {
+        var el = document.createElement('div');
+        el.className = 'pin-carrera';
+        el.style.zIndex = 3;
+        mc = marcadoresCarrera[id] = new maplibregl.Marker({ element: el })
+          .setLngLat([c.origen.lng, c.origen.lat])
+          .setPopup(new maplibregl.Popup({ offset: 16, maxWidth: '260px' }))
+          .addTo(mapa);
       }
+      var ll = mc.getLngLat();
+      if (ll.lat !== c.origen.lat || ll.lng !== c.origen.lng) mc.setLngLat([c.origen.lng, c.origen.lat]);
+      var tarde = typeof c.creada === 'number' && t - c.creada >= MIN30;
+      mc.getElement().classList.toggle('tarde', tarde);
+      var pop = '<strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong><br>' + esc(c.origen.dir || '') +
+        (typeof c.creada === 'number' ? '<br><small' + (tarde ? ' class="texto-rojo"' : '') + '>Esperando ' + duracion(t - c.creada) + '</small>' : '');
+      if (mc.__popup !== pop) { mc.getPopup().setHTML(pop); mc.__popup = pop; }
       puntos.push([c.origen.lat, c.origen.lng]);
     });
     Object.keys(marcadoresCarrera).forEach(function (id) {
-      if (!vistasC[id]) { mapa.removeLayer(marcadoresCarrera[id]); delete marcadoresCarrera[id]; }
+      if (!vistasC[id]) { marcadoresCarrera[id].remove(); delete marcadoresCarrera[id]; }
     });
 
     if (!mapaCentrado && puntos.length) {
       mapaCentrado = true;
-      if (puntos.length === 1) mapa.setView(puntos[0], 14);
-      else mapa.fitBounds(puntos, { padding: [40, 40], maxZoom: 15 });
+      MapaAA.encuadrar(mapa, puntos, 15);
     }
   }
 
   function enfocar(lat, lng) {
     irA('mapa');
-    if (mapa && typeof lat === 'number') mapa.setView([lat, lng], 16);
+    if (mapa && typeof lat === 'number') setTimeout(function () { mapa.jumpTo({ center: [lng, lat], zoom: 16 }); }, 80);
   }
 
   // ------------------------------------------------------------------
@@ -428,7 +440,7 @@
       kpi('libre', 'Libres', n.libre) +
       kpi('aceptada', 'Aceptada · yendo a recoger', n.aceptada) +
       kpi('ejecucion', 'En ejecución', n.ejecucion) +
-      kpi('sinsaldo', 'Conectados sin saldo', n.sinsaldo) +
+      kpi('sinsaldo', 'Conectados sin recarga', n.sinsaldo) +
       kpi('fuera', 'Fuera de servicio', n.fuera) +
       kpi('pendiente', 'Carreras esperando', n.pendientes));
   }
@@ -630,6 +642,7 @@
       if (v === 'carreras') renderTablaCarreras();
       if (v === 'conductores') renderTablaConductores();
       if (v === 'recargas') renderRecargas();
+      if (v === 'clientes') renderClientes();
     });
   }
 
@@ -640,6 +653,7 @@
     var b = ev.target.closest('button, a');
     if (!b) return;
     if (b.getAttribute('data-accion') === 'nueva-carrera') { abrirNuevaCarrera(null); return; }
+    if (accionCliente(b)) return;
     var id;
     if ((id = b.getAttribute('data-asignar'))) { abrirAsignar(id); return; }
     if ((id = b.getAttribute('data-editar-carrera'))) { abrirNuevaCarrera(id); return; }
@@ -649,7 +663,11 @@
     if ((id = b.getAttribute('data-denegar'))) { denegar(id, b.getAttribute('data-uid')); return; }
     if ((id = b.getAttribute('data-ver'))) {
       var e = S.estados[id];
-      if (e) { enfocar(e.lat, e.lng); if (marcadores[id]) marcadores[id].openPopup(); }
+      if (e) {
+        enfocar(e.lat, e.lng);
+        var mk = marcadores[id];
+        if (mk) setTimeout(function () { if (!mk.getPopup().isOpen()) mk.togglePopup(); }, 150);
+      }
       return;
     }
     if ((id = b.getAttribute('data-editar'))) { abrirConductor(id); return; }
@@ -788,7 +806,7 @@
   // ------------------------------------------------------------------
   //  Nueva carrera / editar carrera
   // ------------------------------------------------------------------
-  var NC = { editId: null, origen: null, destino: null, km: null, marcando: null, mapa: null, mOrigen: null, mDestino: null, linea: null, consulta: 0 };
+  var NC = { cliente: null, editId: null, origen: null, destino: null, km: null, marcando: null, mapa: null, mOrigen: null, mDestino: null, linea: null, consulta: 0 };
 
   function abrirNuevaCarrera(editId) {
     var c = editId ? S.carreras[editId] : null;
@@ -801,26 +819,30 @@
     $('#c-error').hidden = true;
     $('#c-manual').hidden = true;
     $('#sug-origen').hidden = true; $('#sug-destino').hidden = true;
+    resetClienteModal(editId);
     $('#modal-carrera').showModal();
     if (!NC.mapa) {
-      NC.mapa = L.map('mapa-carrera').setView(mapa ? mapa.getCenter() : AJ.centroMapa, 13);
-      capaTeselas().addTo(NC.mapa);
+      var cc = mapa ? mapa.getCenter() : null;
+      NC.mapa = MapaAA.crear('mapa-carrera', cc ? [cc.lat, cc.lng] : AJ.centroMapa, 13);
       NC.mapa.on('click', function (ev) {
         if (!NC.marcando) { toast('Primero toca "Marcar en mapa" en Recogida o Destino.'); return; }
         var cual = NC.marcando;
-        ponerPunto(cual, ev.latlng.lat, ev.latlng.lng, null);
+        var lat = ev.lngLat.lat, lng = ev.lngLat.lng;
+        ponerPunto(cual, lat, lng, null);
         marcar(null);
-        dirInversa(ev.latlng.lat, ev.latlng.lng).then(function (dir) {
-          if (dir && NC[cual] && NC[cual].lat === ev.latlng.lat) {
+        dirInversa(lat, lng).then(function (dir) {
+          if (dir && NC[cual] && NC[cual].lat === lat) {
             NC[cual].dir = dir;
             $('#c-' + cual).value = dir;
+            pintarGuardadas();
           }
         });
       });
     }
-    if (NC.mOrigen) { NC.mapa.removeLayer(NC.mOrigen); NC.mOrigen = null; }
-    if (NC.mDestino) { NC.mapa.removeLayer(NC.mDestino); NC.mDestino = null; }
-    if (NC.linea) { NC.mapa.removeLayer(NC.linea); NC.linea = null; }
+    if (NC.mOrigen) { NC.mOrigen.remove(); NC.mOrigen = null; }
+    if (NC.mDestino) { NC.mDestino.remove(); NC.mDestino = null; }
+    NC.linea = null;
+    MapaAA.ruta(NC.mapa, null, null);
     if (c) {
       $('#c-cliente').value = c.cliente || '';
       $('#c-telefono').value = c.telefono || '';
@@ -834,10 +856,8 @@
     }
     actualizarEstimado();
     setTimeout(function () {
-      NC.mapa.invalidateSize();
-      if (NC.linea) NC.mapa.fitBounds(NC.linea.getBounds(), { padding: [40, 40] });
-      else if (NC.origen) NC.mapa.setView([NC.origen.lat, NC.origen.lng], 15);
-      else if (mapa) NC.mapa.setView(mapa.getCenter(), 13);
+      NC.mapa.resize();
+      encuadrarModal();
     }, 80);
     llenarSelectConductores();
     setTimeout(function () { $(editId ? '#c-destino' : '#c-cliente').focus(); }, 100);
@@ -894,7 +914,7 @@
           var dir = r.display_name.split(',').slice(0, 3).join(',').trim();
           ponerPunto(cual, Number(r.lat), Number(r.lon), dir);
           caja.hidden = true;
-          NC.mapa.setView([Number(r.lat), Number(r.lon)], 16);
+          if (!NC.linea) NC.mapa.jumpTo({ center: [Number(r.lon), Number(r.lat)], zoom: 16 });
         });
       });
     }).catch(function () {
@@ -917,14 +937,12 @@
     NC[cual] = { lat: lat, lng: lng, dir: texto, confirmado: true };
     $('#c-' + cual).value = texto;
     var key = cual === 'origen' ? 'mOrigen' : 'mDestino';
-    var html = cual === 'origen' ? '<div class="pin-origen"></div>' : '<div class="pin-destino"></div>';
-    if (NC[key]) NC.mapa.removeLayer(NC[key]);
-    NC[key] = L.marker([lat, lng], {
-      draggable: true,
-      icon: L.divIcon({ className: '', html: html, iconSize: [20, 20], iconAnchor: [10, 10] })
-    }).addTo(NC.mapa);
+    if (NC[key]) NC[key].remove();
+    var el = document.createElement('div');
+    el.className = cual === 'origen' ? 'pin-origen' : 'pin-destino';
+    NC[key] = new maplibregl.Marker({ element: el, draggable: true }).setLngLat([lng, lat]).addTo(NC.mapa);
     NC[key].on('dragend', function () {
-      var p = NC[key].getLatLng();
+      var p = NC[key].getLngLat();
       NC[cual].lat = p.lat; NC[cual].lng = p.lng;
       actualizarRuta();
       dirInversa(p.lat, p.lng).then(function (d) { if (d) { NC[cual].dir = d; $('#c-' + cual).value = d; } });
@@ -944,12 +962,12 @@
   }
 
   function actualizarRuta() {
-    if (NC.linea) { NC.mapa.removeLayer(NC.linea); NC.linea = null; }
+    NC.linea = null;
     NC.km = null;
     if (NC.origen && NC.destino && NC.destino.confirmado !== false) {
-      NC.linea = L.polyline([[NC.origen.lat, NC.origen.lng], [NC.destino.lat, NC.destino.lng]],
-        { color: '#090145', weight: 4, dashArray: '8 8' }).addTo(NC.mapa);
-      NC.mapa.fitBounds(NC.linea.getBounds(), { padding: [40, 40] });
+      NC.linea = true;
+      MapaAA.ruta(NC.mapa, NC.origen, NC.destino);
+      encuadrarModal();
       var consulta = ++NC.consulta;
       $('#c-sugerida').textContent = 'Calculando…';
       calcularKm(NC.origen, NC.destino).then(function (km) {
@@ -958,8 +976,16 @@
         actualizarEstimado();
       });
     } else {
+      MapaAA.ruta(NC.mapa, null, null);
       actualizarEstimado();
     }
+  }
+
+  function encuadrarModal() {
+    if (!NC.mapa) return;
+    if (NC.linea) MapaAA.encuadrar(NC.mapa, [[NC.origen.lat, NC.origen.lng], [NC.destino.lat, NC.destino.lng]], 16);
+    else if (NC.origen) NC.mapa.jumpTo({ center: [NC.origen.lng, NC.origen.lat], zoom: 15 });
+    else if (mapa) NC.mapa.jumpTo({ center: mapa.getCenter(), zoom: 13 });
   }
 
   // Calcula la comisión mínima que debe cubrir el conductor para esta carrera
@@ -1024,6 +1050,12 @@
       err.textContent = 'Espera un momento: aún se está calculando la distancia.';
       err.hidden = false; return;
     }
+    var restr = (NC.cliente && NC.cliente.restringido) ? NC.cliente : clienteExacto($('#c-cliente').value, $('#c-telefono').value);
+    if (!NC.editId && restr && restr.restringido) {
+      mostrarRestringido(restr);
+      err.textContent = 'Cliente restringido: no se le pueden crear carreras. Puedes quitar la restricción en Clientes.';
+      err.hidden = false; return;
+    }
     var p = datosPrecio();
     var datos = {
       cliente: $('#c-cliente').value.trim(),
@@ -1085,6 +1117,9 @@
       up['carreras/' + ref.key] = c;
       return db.ref().update(up).then(function () { return numero; });
     }).then(function (numero) {
+      if ($('#c-guardar-cli').checked) {
+        guardarClienteDeCarrera(datos).catch(function (e) { toast('La carrera se creó, pero no se pudo guardar el cliente: ' + errorTexto(e), true); });
+      }
       $('#modal-carrera').close();
       toast(manual ? 'Carrera #' + numero + ' asignada a ' + nombreCond(uid) + '.' : 'Carrera #' + numero + ' creada. Buscando conductor…');
     }).catch(function (e) {
@@ -1092,6 +1127,287 @@
       err.hidden = false;
     }).then(function () { $('#c-guardar').disabled = false; });
   });
+
+  // ------------------------------------------------------------------
+  //  Clientes guardados
+  // ------------------------------------------------------------------
+  function norm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
+  function soloNum(t) { return String(t || '').replace(/\D/g, ''); }
+  function listaLugares(v) {
+    var arr = Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.keys(v).sort(function (a, b) { return a - b; }).map(function (k) { return v[k]; }) : []);
+    return arr.filter(function (x) { return x && x.dir; });
+  }
+  function clientesLista() {
+    return Object.keys(S.clientes).map(function (id) {
+      var c = S.clientes[id] || {};
+      return { id: id, nombre: c.nombre || '', telefono: c.telefono || '', notas: c.notas || '',
+        direcciones: listaLugares(c.direcciones), destinos: listaLugares(c.destinos),
+        carreras: c.carreras || 0, ultima: c.ultima || 0, restringido: c.restringido === true, justificacion: c.justificacion || '' };
+    });
+  }
+  function clientePorId(id) { return clientesLista().filter(function (c) { return c.id === id; })[0] || null; }
+  function buscarClientes(q) {
+    var n = norm(q), d = soloNum(q);
+    if (!n) return [];
+    return clientesLista().filter(function (c) {
+      return (d.length >= 3 && soloNum(c.telefono).indexOf(d) !== -1) || norm(c.nombre).indexOf(n) !== -1;
+    }).sort(function (a, b) { return (b.ultima || 0) - (a.ultima || 0); }).slice(0, 8);
+  }
+  // Cliente que coincide exacto por teléfono (o por nombre si no hay teléfono)
+  function clienteExacto(nombre, tel) {
+    var d = soloNum(tel), n = norm(nombre);
+    var lista = clientesLista();
+    if (d.length >= 6) {
+      var porTel = lista.filter(function (c) { return soloNum(c.telefono) === d; })[0];
+      if (porTel) return porTel;
+    }
+    return n ? (lista.filter(function (c) { return norm(c.nombre) === n; })[0] || null) : null;
+  }
+  function agregarLugar(lista, lugar) {
+    if (!lugar || !lugar.dir) return lista;
+    var nuevo = { dir: lugar.dir };
+    if (typeof lugar.lat === 'number') { nuevo.lat = lugar.lat; nuevo.lng = lugar.lng; }
+    return [nuevo].concat(lista.filter(function (x) { return norm(x.dir) !== norm(lugar.dir); })).slice(0, 10);
+  }
+
+  // ---- En "Nueva carrera" ----
+  function resetClienteModal(editId) {
+    NC.cliente = null;
+    $('#c-cliente-ok').hidden = true;
+    $('#c-cliente-mal').hidden = true;
+    $('#g-origen').hidden = true;
+    $('#g-destino').hidden = true;
+    $('#sug-cli-cliente').hidden = true;
+    $('#sug-cli-telefono').hidden = true;
+    $('#c-guardar-cli-fila').hidden = !!editId;
+    $('#c-guardar-cli').checked = true;
+    $('#c-guardar').disabled = false;
+  }
+  function mostrarRestringido(c) {
+    $('#c-cliente-ok').hidden = true;
+    $('#c-cliente-mal').innerHTML = '<strong>⛔ Cliente restringido</strong><span>Justificación: ' + esc(c.justificacion || 'sin justificación') + '</span>';
+    $('#c-cliente-mal').hidden = false;
+    $('#c-guardar').disabled = true;
+  }
+  function chipsLugares(caja, campo, lista, titulo) {
+    caja.hidden = !lista.length;
+    setHTML(caja, '<span class="muted">' + titulo + ':</span>' + lista.map(function (d, i) {
+      return '<button type="button" data-i="' + i + '" class="' + (norm(d.dir) === norm(campo.value) ? 'sel' : '') + '">' + esc(d.dir) + '</button>';
+    }).join(''));
+  }
+  function pintarGuardadas() {
+    var c = NC.cliente;
+    if (!c || c.restringido) { $('#g-origen').hidden = true; $('#g-destino').hidden = true; return; }
+    chipsLugares($('#g-origen'), $('#c-origen'), c.direcciones, 'Direcciones guardadas');
+    chipsLugares($('#g-destino'), $('#c-destino'), c.destinos, 'Destinos guardados');
+  }
+  function usarLugar(cual, l) {
+    if (!l) return;
+    $('#sug-' + cual).hidden = true;
+    if (typeof l.lat === 'number') {
+      ponerPunto(cual, l.lat, l.lng, l.dir);
+      if (!NC.linea && NC.mapa) NC.mapa.jumpTo({ center: [l.lng, l.lat], zoom: 15 });
+    } else {
+      $('#c-' + cual).value = l.dir;
+      if (NC[cual]) NC[cual].confirmado = false;
+      if (cual === 'destino') { NC.destino = null; actualizarRuta(); }
+    }
+    pintarGuardadas();
+  }
+  function llenarCliente(c) {
+    $('#sug-cli-cliente').hidden = true;
+    $('#sug-cli-telefono').hidden = true;
+    NC.cliente = c;
+    $('#c-cliente').value = c.nombre;
+    $('#c-telefono').value = c.telefono;
+    if (c.restringido) { mostrarRestringido(c); pintarGuardadas(); return; }
+    $('#c-cliente-mal').hidden = true;
+    $('#c-guardar').disabled = false;
+    $('#c-cliente-ok').hidden = false;
+    if (c.notas && !$('#c-notas').value) $('#c-notas').value = c.notas;
+    if (c.direcciones[0]) usarLugar('origen', c.direcciones[0]);
+    if (c.destinos[0]) usarLugar('destino', c.destinos[0]);
+    pintarGuardadas();
+  }
+  [['g-origen', 'origen'], ['g-destino', 'destino']].forEach(function (p) {
+    $('#' + p[0]).addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-i]');
+      if (!b || !NC.cliente) return;
+      var lista = p[1] === 'origen' ? NC.cliente.direcciones : NC.cliente.destinos;
+      usarLugar(p[1], lista[Number(b.getAttribute('data-i'))]);
+    });
+    $('#c-' + p[1]).addEventListener('input', pintarGuardadas);
+  });
+  ['cliente', 'telefono'].forEach(function (k) {
+    var inp = $('#c-' + k), caja = $('#sug-cli-' + k), resultados = [];
+    inp.addEventListener('input', function () {
+      if (NC.editId) return;
+      NC.cliente = null;
+      $('#c-cliente-ok').hidden = true;
+      $('#c-cliente-mal').hidden = true;
+      $('#c-guardar').disabled = false;
+      pintarGuardadas();
+      resultados = buscarClientes(inp.value);
+      caja.innerHTML = resultados.map(function (c, i) {
+        return '<button type="button" data-i="' + i + '"><strong>' + esc(c.nombre) + ' · ' + esc(c.telefono) +
+          (c.restringido ? ' <em class="tag-rest">Restringido</em>' : '') + '</strong><span>' +
+          esc(c.direcciones[0] ? c.direcciones[0].dir : '') + (c.destinos[0] ? ' → ' + esc(c.destinos[0].dir) : '') + '</span></button>';
+      }).join('');
+      caja.hidden = !resultados.length;
+    });
+    inp.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      if (NC.editId) return;
+      resultados = buscarClientes(inp.value);
+      if (resultados.length) llenarCliente(resultados[0]);
+      else { caja.hidden = true; toast('No hay un cliente guardado con ese ' + (k === 'cliente' ? 'nombre' : 'número') + '. Llena sus datos y se guardará al crear la carrera.'); }
+    });
+    inp.addEventListener('blur', function () { setTimeout(function () { caja.hidden = true; }, 200); });
+    caja.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
+    caja.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-i]');
+      if (b) llenarCliente(resultados[Number(b.getAttribute('data-i'))]);
+    });
+  });
+
+  // Guarda o actualiza el cliente al crear la carrera
+  function guardarClienteDeCarrera(datos) {
+    var c = (NC.cliente && !NC.cliente.restringido) ? NC.cliente : clienteExacto(datos.cliente, datos.telefono);
+    var id = c ? c.id : db.ref(RUTA_CLIENTES).push().key;
+    var dirs = agregarLugar(c ? c.direcciones : [], datos.origen);
+    var dests = agregarLugar(c ? c.destinos : [], datos.destino);
+    var up = {
+      nombre: datos.cliente,
+      telefono: datos.telefono || '',
+      tel: soloNum(datos.telefono),
+      direcciones: dirs,
+      destinos: dests,
+      ultima: TS,
+      carreras: firebase.database.ServerValue.increment(1)
+    };
+    if (datos.notas) up.notas = datos.notas;
+    if (!c) up.creado = TS;
+    return db.ref(RUTA_CLIENTES + '/' + id).update(up);
+  }
+
+  // ---- Sección Clientes ----
+  function renderClientes() {
+    var q = $('#buscar-clientes').value;
+    var todos = clientesLista();
+    var lista = q.trim() ? buscarClientes(q).concat([]) : todos.sort(function (a, b) { return (b.ultima || 0) - (a.ultima || 0); });
+    if (q.trim()) {
+      var n = norm(q), d = soloNum(q);
+      lista = todos.filter(function (c) { return (d.length >= 3 && soloNum(c.telefono).indexOf(d) !== -1) || norm(c.nombre).indexOf(n) !== -1; });
+    }
+    var nr = todos.filter(function (c) { return c.restringido; }).length;
+    $('#clientes-sub').textContent = todos.length + ' clientes guardados' + (nr ? ' · ' + nr + ' restringido' + (nr > 1 ? 's' : '') : '');
+    function corta(arr) {
+      if (!arr.length) return '<span class="muted">—</span>';
+      return esc(arr[0].dir) + (arr.length > 1 ? '<small>+' + (arr.length - 1) + ' más</small>' : '');
+    }
+    var filas = lista.slice(0, 300).map(function (c) {
+      return '<tr class="' + (c.restringido ? 'restringido' : '') + '"><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small>' +
+        (c.restringido ? '<span class="tag-rest">Restringido</span><small class="just">' + esc(c.justificacion) + '</small>' : '') +
+        '</td><td>' + corta(c.direcciones) + '</td><td>' + corta(c.destinos) + '</td><td>' + c.carreras + '</td><td>' +
+        (c.ultima ? fechaHora(c.ultima) : '—') + '</td><td><div class="acciones acciones-cli">' +
+        (c.restringido ? '<button class="btn btn-chico btn-primario" disabled title="Cliente restringido">Pedir carrera</button>'
+                       : '<button class="btn btn-chico btn-primario" data-cli-pedir="' + c.id + '">Pedir carrera</button>') +
+        '<button class="btn btn-chico" data-cli-editar="' + c.id + '">Editar</button>' +
+        (c.restringido ? '<button class="btn btn-chico" data-cli-quitar="' + c.id + '">Quitar restricción</button>'
+                       : '<button class="btn btn-chico btn-peligro" data-cli-restringir="' + c.id + '">Restringir</button>') +
+        '<button class="btn btn-chico btn-peligro" data-cli-eliminar="' + c.id + '">Eliminar</button></div></td></tr>';
+    }).join('');
+    setHTML('#tabla-clientes', '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
+      (filas || '<tr><td colspan="6"><div class="vacio">' + (q.trim() ? 'Ningún cliente coincide.' : 'Aún no hay clientes. Se guardan solos al crear carreras, o usa "+ Nuevo cliente".') + '</div></td></tr>') + '</tbody>');
+  }
+  $('#buscar-clientes').addEventListener('input', renderClientes);
+
+  var clienteEditando = null, clienteRestringiendo = null;
+  function lineasLugares(texto, previos) {
+    return texto.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 10).map(function (dir) {
+      var p = previos.filter(function (x) { return norm(x.dir) === norm(dir); })[0];
+      return p && typeof p.lat === 'number' ? { dir: dir, lat: p.lat, lng: p.lng } : { dir: dir };
+    });
+  }
+  function abrirCliente(id) {
+    var c = id ? clientePorId(id) : null;
+    clienteEditando = c;
+    $('#form-cliente').reset();
+    $('#mc-error').hidden = true;
+    $('#mc-titulo').textContent = c ? 'Editar cliente' : 'Nuevo cliente';
+    if (c) {
+      $('#mc-nombre').value = c.nombre; $('#mc-telefono').value = c.telefono; $('#mc-notas').value = c.notas;
+      $('#mc-direcciones').value = c.direcciones.map(function (x) { return x.dir; }).join('\n');
+      $('#mc-destinos').value = c.destinos.map(function (x) { return x.dir; }).join('\n');
+    }
+    $('#modal-cliente').showModal();
+  }
+  $('#nuevo-cliente').addEventListener('click', function () { abrirCliente(null); });
+  $('#form-cliente').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var c = clienteEditando;
+    var nombre = $('#mc-nombre').value.trim(), tel = $('#mc-telefono').value.trim();
+    var otro = clienteExacto('', tel);
+    if (otro && (!c || otro.id !== c.id)) {
+      $('#mc-error').textContent = 'Ya existe un cliente con ese teléfono: ' + otro.nombre + '.';
+      $('#mc-error').hidden = false; return;
+    }
+    var datos = {
+      nombre: nombre, telefono: tel, tel: soloNum(tel), notas: $('#mc-notas').value.trim(),
+      direcciones: lineasLugares($('#mc-direcciones').value, c ? c.direcciones : []),
+      destinos: lineasLugares($('#mc-destinos').value, c ? c.destinos : [])
+    };
+    var ref = c ? db.ref(RUTA_CLIENTES + '/' + c.id) : db.ref(RUTA_CLIENTES).push();
+    if (!c) { datos.creado = TS; datos.carreras = 0; }
+    (c ? ref.update(datos) : ref.set(datos)).then(function () {
+      $('#modal-cliente').close();
+      toast(c ? 'Cliente actualizado.' : 'Cliente registrado correctamente.');
+    }).catch(function (e) { $('#mc-error').textContent = errorTexto(e); $('#mc-error').hidden = false; });
+  });
+  $('#form-restringir').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var j = $('#mr-justificacion').value.trim();
+    if (!j || !clienteRestringiendo) return;
+    db.ref(RUTA_CLIENTES + '/' + clienteRestringiendo.id).update({
+      restringido: true, justificacion: j, restringidoEn: TS,
+      restringidoPor: auth.currentUser ? (auth.currentUser.email || auth.currentUser.uid) : ''
+    }).then(function () {
+      $('#modal-restringir').close();
+      toast(clienteRestringiendo.nombre + ' quedó restringido.');
+    }).catch(function (e) { toast(errorTexto(e), true); });
+  });
+  function accionCliente(b) {
+    var id;
+    if ((id = b.getAttribute('data-cli-pedir'))) {
+      var c = clientePorId(id);
+      abrirNuevaCarrera(null);
+      if (c) llenarCliente(c);
+      return true;
+    }
+    if ((id = b.getAttribute('data-cli-editar'))) { abrirCliente(id); return true; }
+    if ((id = b.getAttribute('data-cli-restringir'))) {
+      clienteRestringiendo = clientePorId(id);
+      if (!clienteRestringiendo) return true;
+      $('#mr-nombre').textContent = clienteRestringiendo.nombre + ' · ' + clienteRestringiendo.telefono;
+      $('#form-restringir').reset();
+      $('#modal-restringir').showModal();
+      return true;
+    }
+    if ((id = b.getAttribute('data-cli-quitar'))) {
+      db.ref(RUTA_CLIENTES + '/' + id).update({ restringido: null, justificacion: null, restringidoEn: null, restringidoPor: null })
+        .then(function () { toast('Se quitó la restricción.'); }).catch(function (e) { toast(errorTexto(e), true); });
+      return true;
+    }
+    if ((id = b.getAttribute('data-cli-eliminar'))) {
+      var ce = clientePorId(id);
+      if (ce && confirm('¿Eliminar al cliente ' + ce.nombre + '? Sus carreras pasadas no se borran.')) {
+        db.ref(RUTA_CLIENTES + '/' + id).remove().then(function () { toast('Cliente eliminado.'); }).catch(function (e) { toast(errorTexto(e), true); });
+      }
+      return true;
+    }
+    return false;
+  }
 
   // ------------------------------------------------------------------
   //  Conductores
