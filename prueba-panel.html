@@ -34,6 +34,9 @@
   .btn-peligro{color:#B42318!important;border-color:#FDA29B!important}
   .btn-peligro-lleno{background:#D92D20!important;color:#fff!important;border-color:#D92D20!important}
   textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical}
+  .acciones-cli{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:250px}
+  .acciones-cli .btn{width:100%;justify-content:center}
+  .acciones-cli .btn:disabled{opacity:.4;cursor:not-allowed}
   #c-crear:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
@@ -251,8 +254,9 @@ function pintarClientes() {
       return '<tr class="' + (c.restringido ? 'restringido' : '') + '"><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small>' +
         (c.restringido ? '<span class="tag-rest" title="' + esc(c.justificacion) + '">Restringido</span><small class="just">' + esc(c.justificacion) + '</small>' : '') +
         '</td><td>' + listaCorta(c.direcciones) + '</td><td>' + listaCorta(c.destinos) +
-        '</td><td>' + c.carreras + '</td><td>' + esc(c.ultima) + '</td><td><div class="acciones">' +
-        (c.restringido ? '' : '<button class="btn btn-chico btn-primario" data-pedir="' + i + '">Pedir carrera</button>') +
+        '</td><td>' + c.carreras + '</td><td>' + esc(c.ultima) + '</td><td><div class="acciones acciones-cli">' +
+        (c.restringido ? '<button class="btn btn-chico btn-primario" disabled title="Cliente restringido">Pedir carrera</button>'
+                       : '<button class="btn btn-chico btn-primario" data-pedir="' + i + '">Pedir carrera</button>') +
         '<button class="btn btn-chico" data-editar="' + i + '">Editar</button>' +
         (c.restringido ? '<button class="btn btn-chico" data-quitar="' + i + '">Quitar restricción</button>'
                        : '<button class="btn btn-chico btn-peligro" data-restringir="' + i + '">Restringir</button>') +
