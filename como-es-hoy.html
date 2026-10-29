@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Mapa actual</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="estilos.css">
+<style>
+  body{padding:18px 24px}
+  #m{height:430px;border-radius:14px;border:1px solid #E4E7EC;max-width:1250px}
+  h1{font-size:22px;margin:0 0 12px}
+</style>
+</head>
+<body>
+<h1>Así se ve hoy el mapa del panel</h1>
+<div id="m"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var m = L.map('m', { scrollWheelZoom: false }).setView([-2.1895, -79.8890], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+[[-2.1850, -79.8870, 'libre', 'U07'], [-2.1930, -79.8820, 'aceptada', 'U12'], [-2.1880, -79.8950, 'ejecucion', 'U03'],
+ [-2.1800, -79.8930, 'libre', 'U18'], [-2.1965, -79.8905, 'sinsaldo', 'U26'], [-2.1835, -79.8800, 'fuera', 'U24'],
+ [-2.1910, -79.8985, 'libre', 'U29'], [-2.1985, -79.8840, 'ejecucion', 'U21']].forEach(function (c) {
+  L.marker([c[0], c[1]], { icon: L.divIcon({ className: '', html: '<div class="pin ' + c[2] + '">' + c[3] + '</div>', iconSize: null, iconAnchor: [17, 13] }) }).addTo(m);
+});
+L.marker([-2.1905, -79.8880], { icon: L.divIcon({ className: '', html: '<div class="pin-carrera"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }) }).addTo(m);
+</script>
+</body>
+</html>
