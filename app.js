@@ -261,7 +261,7 @@
     oyentes.forEach(function (o) { o.ref.off('value', o.fn); });
     oyentes = [];
     S.conductores = {}; S.estados = {}; S.saldos = {}; S.cubetas = {}; S.carreras = {};
-    S.paquetes = {}; S.codigos = {}; S.claveHash = null; S.clientes = {};
+    S.paquetes = {}; S.codigos = {}; S.claveHash = null; S.clientes = {}; S.clientesListos = false;
     Object.keys(marcadores).forEach(function (k) { marcadores[k].remove(); });
     marcadores = {};
     Object.keys(marcadoresCarrera).forEach(function (k) { marcadoresCarrera[k].remove(); });
@@ -288,7 +288,7 @@
     on(db.ref('carreras').orderByChild('creada').startAt(desde), function (v) {
       S.cubetas.recientes = v; unirCarreras();
     });
-    on(db.ref(RUTA_CLIENTES), function (v) { S.clientes = v; if (vistaActual() === 'clientes') renderClientes(); });
+    on(db.ref(RUTA_CLIENTES), function (v) { S.clientes = v; S.clientesListos = true; contarCompletadas(); if (vistaActual() === 'clientes') renderClientes(); });
     on(db.ref('recargas/paquetes'), function (v) { S.paquetes = v; renderRecargas(); });
     on(db.ref('recargas/claveHash'), function (v) { S.claveHash = typeof v === 'string' ? v : null; prepararCandado(); });
     on(db.ref('recargas/codigos').orderByChild('creado').limitToLast(300), function (v) { S.codigos = v; renderRecargas(); });
@@ -306,7 +306,26 @@
       if (r && !activa) todas[id] = r;
     });
     S.carreras = todas;
+    contarCompletadas();
     renderTodo();
+  }
+
+  // Suma 1 a "completadas" del cliente cuando su carrera queda FINALIZADA (una sola vez por carrera)
+  var contando = {};
+  function contarCompletadas() {
+    Object.keys(S.carreras).forEach(function (id) {
+      var c = S.carreras[id];
+      if (!S.clientesListos) return;
+      if (c.estado !== 'finalizada' || !c.clienteId || c.contadaCliente || contando[id]) return;
+      if (!S.clientes[c.clienteId]) return; // cliente eliminado: no se cuenta
+      contando[id] = true;
+      db.ref('carreras/' + id + '/contadaCliente').transaction(function (v) { return v ? undefined : true; })
+        .then(function (r) {
+          if (!r.committed) return;
+          return db.ref(RUTA_CLIENTES + '/' + c.clienteId + '/completadas').transaction(function (n) { return (n || 0) + 1; });
+        })
+        .catch(function () { delete contando[id]; });
+    });
   }
 
   // ------------------------------------------------------------------
@@ -446,10 +465,9 @@
   }
 
   function ordenActivas(a, b) {
-    var orden = { pendiente: 0, aceptada: 1, ejecucion: 2 };
+    // Siempre primero la más reciente
     var ca = S.carreras[a], cb = S.carreras[b];
-    if (orden[ca.estado] !== orden[cb.estado]) return orden[ca.estado] - orden[cb.estado];
-    return (ca.creada || 0) - (cb.creada || 0);
+    return (cb.creada || 0) - (ca.creada || 0);
   }
   function filtrarEstadosActivos() {
     var r = {};
@@ -950,6 +968,7 @@
     });
     actualizarRuta();
     llenarSelectConductores();
+    pintarGuardadas();
   }
 
   // Distancia por calle (OSRM, gratis); si falla, línea recta × 1.3
@@ -1094,6 +1113,10 @@
       !confirm(nombreCond(uid) + ' tiene ' + dineroC(saldoC(uid)) + ' y la comisión es ' + dineroC(p.comisionMinC) + '. Si no alcanza, la diferencia queda como pérdida. ¿Asignar igual?')) return;
 
     $('#c-guardar').disabled = true;
+    var cliExiste = (NC.cliente && !NC.cliente.restringido) ? NC.cliente : clienteExacto(datos.cliente, datos.telefono);
+    var guardarCli = $('#c-guardar-cli').checked;
+    var cliId = cliExiste ? cliExiste.id : (guardarCli ? db.ref(RUTA_CLIENTES).push().key : null);
+    if (cliId) datos.clienteId = cliId;
     db.ref('contador/carreras').transaction(function (n) { return (n || 1000) + 1; }).then(function (r) {
       var numero = r.snapshot.val();
       var ref = db.ref('carreras').push();
@@ -1119,11 +1142,16 @@
       up['carreras/' + ref.key] = c;
       return db.ref().update(up).then(function () { return numero; });
     }).then(function (numero) {
-      if ($('#c-guardar-cli').checked) {
-        guardarClienteDeCarrera(datos).catch(function (e) { toast('La carrera se creó, pero no se pudo guardar el cliente: ' + errorTexto(e), true); });
-      }
+      var msg = manual ? 'Carrera #' + numero + ' asignada a ' + nombreCond(uid) + '.' : 'Carrera #' + numero + ' creada. Buscando conductor…';
       $('#modal-carrera').close();
-      toast(manual ? 'Carrera #' + numero + ' asignada a ' + nombreCond(uid) + '.' : 'Carrera #' + numero + ' creada. Buscando conductor…');
+      if (guardarCli && cliId) {
+        var aviso = avisoCliente(cliExiste, datos);
+        guardarClienteDeCarrera(datos, cliExiste, cliId)
+          .then(function () { toast(aviso ? aviso + ' · ' + msg : msg); })
+          .catch(function (e) { toast('La carrera se creó, pero no se pudo guardar el cliente: ' + errorTexto(e), true); });
+      } else {
+        toast(msg);
+      }
     }).catch(function (e) {
       err.textContent = errorTexto(e);
       err.hidden = false;
@@ -1144,7 +1172,7 @@
       var c = S.clientes[id] || {};
       return { id: id, nombre: c.nombre || '', telefono: c.telefono || '', notas: c.notas || '',
         direcciones: listaLugares(c.direcciones), destinos: listaLugares(c.destinos),
-        carreras: c.carreras || 0, ultima: c.ultima || 0, restringido: c.restringido === true, justificacion: c.justificacion || '' };
+        completadas: c.completadas || 0, ultima: c.ultima || 0, restringido: c.restringido === true, justificacion: c.justificacion || '' };
     });
   }
   function clientePorId(id) { return clientesLista().filter(function (c) { return c.id === id; })[0] || null; }
@@ -1205,7 +1233,21 @@
           (d.exacta ? ' title="' + esc(d.exacta) + '"' : '') + '>' + esc(d.dir) + '</button>';
       }).join('') + '</div>');
   }
+  function textoCompletadas(n) { return n === 1 ? '1 carrera completada' : n + ' carreras completadas'; }
+  function pintarAviso() {
+    var c = NC.cliente, ok = $('#c-cliente-ok');
+    if (!c || c.restringido || NC.editId) { ok.hidden = true; return; }
+    var nd = esNuevoLugar(c.direcciones, { dir: $('#c-origen').value.trim() });
+    var nde = esNuevoLugar(c.destinos, { dir: $('#c-destino').value.trim() });
+    var extra = nd && nde ? 'Nueva dirección y nuevo destino: se registrarán al crear la carrera'
+      : nd ? 'Nueva dirección: se registrará al crear la carrera'
+      : nde ? 'Nuevo destino: se registrará al crear la carrera' : '';
+    setHTML(ok, '<span>✓ Cliente registrado</span><strong class="cuenta-cli">' + textoCompletadas(c.completadas) + '</strong>' +
+      (extra ? '<span class="nueva-dir">📍 ' + extra + '</span>' : ''));
+    ok.hidden = false;
+  }
   function pintarGuardadas() {
+    pintarAviso();
     var c = NC.cliente;
     if (!c || c.restringido) { $('#g-origen').hidden = true; $('#g-destino').hidden = true; return; }
     chipsLugares($('#g-origen'), $('#c-origen'), c.direcciones, 'Direcciones guardadas');
@@ -1234,7 +1276,6 @@
     if (c.restringido) { mostrarRestringido(c); pintarGuardadas(); return; }
     $('#c-cliente-mal').hidden = true;
     $('#c-guardar').disabled = false;
-    $('#c-cliente-ok').hidden = false;
     if (c.notas && !$('#c-notas').value) $('#c-notas').value = c.notas;
     if (c.direcciones[0]) usarLugar('origen', c.direcciones[0]);
     if (c.destinos[0]) usarLugar('destino', c.destinos[0]);
@@ -1290,9 +1331,15 @@
   });
 
   // Guarda o actualiza el cliente al crear la carrera
-  function guardarClienteDeCarrera(datos) {
-    var c = (NC.cliente && !NC.cliente.restringido) ? NC.cliente : clienteExacto(datos.cliente, datos.telefono);
-    var id = c ? c.id : db.ref(RUTA_CLIENTES).push().key;
+  function esNuevoLugar(lista, lugar) {
+    return !!(lugar && lugar.dir) && !lista.some(function (x) { return norm(x.dir) === norm(lugar.dir); });
+  }
+  function avisoCliente(c, datos) {
+    if (!c) return '✓ Cliente registrado correctamente';
+    var nd = esNuevoLugar(c.direcciones, datos.origen), nde = esNuevoLugar(c.destinos, datos.destino);
+    return nd && nde ? '📍 Nueva dirección y nuevo destino registrados' : nd ? '📍 Nueva dirección registrada' : nde ? '📍 Nuevo destino registrado' : '';
+  }
+  function guardarClienteDeCarrera(datos, c, id) {
     var dirs = agregarLugar(c ? c.direcciones : [], datos.origen ? { dir: datos.origen.dir, lat: datos.origen.lat, lng: datos.origen.lng, exacta: datos.exacta } : null);
     var dests = agregarLugar(c ? c.destinos : [], datos.destino);
     var up = {
@@ -1301,11 +1348,10 @@
       tel: soloNum(datos.telefono),
       direcciones: dirs,
       destinos: dests,
-      ultima: TS,
-      carreras: firebase.database.ServerValue.increment(1)
+      ultima: TS
     };
     if (datos.notas) up.notas = datos.notas;
-    if (!c) up.creado = TS;
+    if (!c) { up.creado = TS; up.completadas = 0; }
     return db.ref(RUTA_CLIENTES + '/' + id).update(up);
   }
 
@@ -1327,7 +1373,7 @@
     var filas = lista.slice(0, 300).map(function (c) {
       return '<tr class="' + (c.restringido ? 'restringido' : '') + '"><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small>' +
         (c.restringido ? '<span class="tag-rest">Restringido</span><small class="just">' + esc(c.justificacion) + '</small>' : '') +
-        '</td><td>' + corta(c.direcciones) + '</td><td>' + corta(c.destinos) + '</td><td>' + c.carreras + '</td><td>' +
+        '</td><td>' + corta(c.direcciones) + '</td><td>' + corta(c.destinos) + '</td><td>' + c.completadas + '</td><td>' +
         (c.ultima ? fechaHora(c.ultima) : '—') + '</td><td><div class="acciones acciones-cli">' +
         (c.restringido ? '<button class="btn btn-chico btn-primario" disabled title="Cliente restringido">Pedir carrera</button>'
                        : '<button class="btn btn-chico btn-primario" data-cli-pedir="' + c.id + '">Pedir carrera</button>') +
@@ -1336,7 +1382,7 @@
                        : '<button class="btn btn-chico btn-peligro" data-cli-restringir="' + c.id + '">Restringir</button>') +
         '<button class="btn btn-chico btn-peligro" data-cli-eliminar="' + c.id + '">Eliminar</button></div></td></tr>';
     }).join('');
-    setHTML('#tabla-clientes', '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
+    setHTML('#tabla-clientes', '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Completadas</th><th>Última</th><th></th></tr></thead><tbody>' +
       (filas || '<tr><td colspan="6"><div class="vacio">' + (q.trim() ? 'Ningún cliente coincide.' : 'Aún no hay clientes. Se guardan solos al crear carreras, o usa "+ Nuevo cliente".') + '</div></td></tr>') + '</tbody>');
   }
   $('#buscar-clientes').addEventListener('input', renderClientes);
@@ -1379,7 +1425,7 @@
       destinos: lineasLugares($('#mc-destinos').value, c ? c.destinos : [])
     };
     var ref = c ? db.ref(RUTA_CLIENTES + '/' + c.id) : db.ref(RUTA_CLIENTES).push();
-    if (!c) { datos.creado = TS; datos.carreras = 0; }
+    if (!c) { datos.creado = TS; datos.completadas = 0; }
     (c ? ref.update(datos) : ref.set(datos)).then(function () {
       $('#modal-cliente').close();
       toast(c ? 'Cliente actualizado.' : 'Cliente registrado correctamente.');

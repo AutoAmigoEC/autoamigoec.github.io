@@ -205,7 +205,7 @@ label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;
 .campo-cli>label{font-size:13px;font-weight:600;color:var(--gris-1)}
 .sugerencias button strong{display:block;font-size:14px}
 .sugerencias button span{color:var(--gris-2);font-size:12px}
-.cliente-ok{display:flex;align-items:center;gap:8px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.cliente-ok{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
 .cliente-mal{display:flex;flex-direction:column;gap:2px;background:#FEF3F2;color:#B42318;border:1px solid #FDA29B;border-radius:10px;padding:10px 12px;font-size:13px}
 .cliente-mal strong{font-size:15px}
 .guardar-cli{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;font-weight:600}
@@ -230,3 +230,5 @@ tr.restringido td{background:#FFFBFA}
 .btn-peligro-lleno{background:#D92D20!important;color:#fff!important;border-color:#D92D20!important}
 textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical;color:var(--tinta)}
 #c-guardar:disabled{opacity:.45;cursor:not-allowed}
+.cliente-ok .cuenta-cli{color:#067647;font-weight:800}
+.cliente-ok .nueva-dir{flex-basis:100%;color:#1849A9;font-weight:600}
