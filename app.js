@@ -690,8 +690,7 @@
     }
     if ((id = b.getAttribute('data-editar'))) { abrirConductor(id); return; }
     if ((id = b.getAttribute('data-bloquear'))) { bloquear(id, b.getAttribute('data-valor') === '1'); return; }
-    if ((id = b.getAttribute('data-generar'))) { generarCodigo(id); return; }
-    if ((id = b.getAttribute('data-borrar-paquete'))) { borrarPaquete(id); return; }
+    if ((id = b.getAttribute('data-enviar-codigo'))) { mostrarCodigo(id); return; }
     if ((id = b.getAttribute('data-anular'))) { anularCodigo(id); return; }
     if (b.hasAttribute('data-cerrar')) {
       var d = b.closest('dialog');
@@ -1623,15 +1622,6 @@
 
   function renderRecargas() {
     if (!recargasAbiertas || vistaActual() !== 'recargas') return;
-    // Paquetes
-    var paqs = Object.keys(S.paquetes).sort(function (a, b) { return (S.paquetes[a].montoC || 0) - (S.paquetes[b].montoC || 0); });
-    setHTML('#lista-paquetes', paqs.length ? paqs.map(function (id) {
-      var p = S.paquetes[id];
-      return '<div class="paquete"><span class="monto">' + dineroC(p.montoC) + '</span><span class="nombre">' + esc(p.nombre || '') + '</span>' +
-        '<button class="btn btn-chico btn-primario" data-generar="' + id + '">Generar código</button>' +
-        '<button class="btn btn-chico btn-peligro" data-borrar-paquete="' + id + '" aria-label="Borrar paquete">Borrar</button></div>';
-    }).join('') : '<div class="vacio">Aún no hay paquetes. Agrega uno abajo (ej. $10, $20, $50).</div>');
-
     // Saldos
     var uids = conductoresActivos().sort(function (a, b) { return saldoC(a) - saldoC(b); });
     var totalSaldos = 0;
@@ -1659,11 +1649,12 @@
       return f === 'todos' || (f === 'usado' ? c.usado : !c.usado);
     }).map(function (k) {
       var c = S.codigos[k];
-      return '<tr><td class="mono">' + esc(formatoCodigo(k)) + '</td><td><strong>' + dineroC(c.montoC) + '</strong><small>' + esc(c.paquete || '') + '</small></td>' +
+      return '<tr><td class="mono">' + esc(formatoCodigo(k)) + '</td><td><strong>' + dineroC(c.montoC) + '</strong><small>Recarga de ' + dineroC(c.montoC) + '</small></td>' +
         '<td>' + fechaHora(c.creado) + '</td>' +
         '<td>' + (c.usado ? '<span class="pill finalizada">Usado</span>' : '<span class="pill libre">Disponible</span>') + '</td>' +
         '<td>' + (c.usado ? esc(nombreCond(c.usadoPor)) + '<small>' + fechaHora(c.usadoEn) + '</small>' : '—') + '</td>' +
-        '<td>' + (c.usado ? '' : '<button class="btn btn-chico btn-peligro" data-anular="' + k + '">Anular</button>') + '</td></tr>';
+        '<td>' + (c.usado ? '' : '<div class="acciones"><button class="btn btn-chico btn-primario" data-enviar-codigo="' + k + '">Enviar</button>' +
+          '<button class="btn btn-chico btn-peligro" data-anular="' + k + '">Anular</button></div>') + '</td></tr>';
     }).join('');
     setHTML('#tabla-codigos', '<thead><tr><th>Código</th><th>Monto</th><th>Creado</th><th>Estado</th><th>Usado por</th><th></th></tr></thead><tbody>' +
       (filas || '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">No hay códigos en este filtro.</td></tr>') + '</tbody>');
@@ -1677,23 +1668,6 @@
     });
   });
 
-  $('#form-paquete').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var montoC = aCent($('#paq-monto').value);
-    if (montoC < 50) { toast('El monto mínimo es $0.50.', true); return; }
-    var nombre = $('#paq-nombre').value.trim() || ('Recarga ' + dineroC(montoC));
-    db.ref('recargas/paquetes').push({ nombre: nombre, montoC: montoC }).then(function () {
-      $('#form-paquete').reset();
-      toast('Paquete agregado.');
-    }).catch(function (e) { toast(errorTexto(e), true); });
-  });
-
-  function borrarPaquete(id) {
-    var p = S.paquetes[id];
-    if (!p || !confirm('¿Borrar el paquete ' + dineroC(p.montoC) + '? Los códigos ya generados siguen valiendo.')) return;
-    db.ref('recargas/paquetes/' + id).remove().catch(function (e) { toast(errorTexto(e), true); });
-  }
-
   var LETRAS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   function nuevoCodigo() {
     var out = '', buf = new Uint32Array(8);
@@ -1704,29 +1678,62 @@
   }
   function formatoCodigo(k) { return k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k; }
 
-  var codigoActual = null;
-  function generarCodigo(paqId) {
-    var p = S.paquetes[paqId];
-    if (!p) return;
+  // Genera varios códigos de un mismo monto de una sola vez
+  function crearCodigo(datos, intentos) {
     var k = nuevoCodigo();
-    var datos = { montoC: p.montoC, paquete: p.nombre || '', creado: TS, creadoPor: auth.currentUser ? auth.currentUser.uid : '', usado: false };
-    // transaction: evita pisar un código existente (casi imposible, pero seguro)
-    db.ref('recargas/codigos/' + k).transaction(function (actual) {
-      if (actual !== null) return;
+    return db.ref('recargas/codigos/' + k).transaction(function (actual) {
+      if (actual !== null) return; // ya existe: se intenta con otro
       return datos;
     }).then(function (r) {
-      if (!r.committed) { generarCodigo(paqId); return; }
-      codigoActual = { codigo: k, montoC: p.montoC };
-      $('#codigo-texto').textContent = formatoCodigo(k);
-      $('#codigo-monto').textContent = 'Recarga de ' + dineroC(p.montoC) + '. Válido una sola vez.';
-      $('#codigo-conductor').innerHTML = '<option value="">— Elegir conductor (opcional) —</option>' +
-        conductoresActivos().map(function (u) {
-          var cd = S.conductores[u];
-          return '<option value="' + u + '">' + esc('U' + (cd.unidad || '') + ' · ' + cd.nombre) + '</option>';
-        }).join('');
-      actualizarEnlaceWhatsapp();
-      $('#modal-codigo').showModal();
-    }).catch(function (e) { toast(errorTexto(e), true); });
+      if (r.committed) return k;
+      if ((intentos || 0) > 5) throw new Error('No se pudo crear un código. Intenta de nuevo.');
+      return crearCodigo(datos, (intentos || 0) + 1);
+    });
+  }
+  var ultimoLote = [];
+  $('#form-lote').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var n = Math.floor(Number($('#lote-cantidad').value));
+    var montoC = aCent($('#lote-monto').value);
+    if (!(n >= 1 && n <= 100)) { toast('La cantidad debe ser de 1 a 100 códigos.', true); return; }
+    if (montoC < 50) { toast('El monto mínimo es $0.50.', true); return; }
+    $('#lote-boton').disabled = true;
+    var lote = db.ref('recargas/codigos').push().key;
+    var datos = { montoC: montoC, creado: TS, creadoPor: auth.currentUser ? auth.currentUser.uid : '', usado: false, lote: lote };
+    var promesas = [];
+    for (var i = 0; i < n; i++) promesas.push(crearCodigo(datos));
+    Promise.all(promesas).then(function (codigos) {
+      ultimoLote = codigos;
+      $('#lote-titulo').textContent = n === 1 ? '1 código de ' + dineroC(montoC) : n + ' códigos de ' + dineroC(montoC);
+      setHTML('#lote-lista', codigos.map(function (k) { return '<span class="mono">' + esc(formatoCodigo(k)) + '</span>'; }).join(''));
+      $('#form-lote').reset();
+      $('#modal-lote').showModal();
+    }).catch(function (e) { toast(errorTexto(e), true); })
+      .then(function () { $('#lote-boton').disabled = false; });
+  });
+  $('#lote-copiar').addEventListener('click', function () {
+    if (!ultimoLote.length) return;
+    var monto = $('#lote-titulo').textContent;
+    var t = 'AutoAmigo · ' + monto + '\n' + ultimoLote.map(formatoCodigo).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Códigos copiados.'); })
+      .catch(function () { prompt('Copia los códigos:', ultimoLote.map(formatoCodigo).join(' ')); });
+  });
+
+  // Abre la ventana para copiar o enviar por WhatsApp un código ya creado
+  var codigoActual = null;
+  function mostrarCodigo(k) {
+    var c = S.codigos[k];
+    if (!c || c.usado) return;
+    codigoActual = { codigo: k, montoC: c.montoC };
+    $('#codigo-texto').textContent = formatoCodigo(k);
+    $('#codigo-monto').textContent = 'Recarga de ' + dineroC(c.montoC) + '. Válido una sola vez.';
+    $('#codigo-conductor').innerHTML = '<option value="">— Elegir conductor (opcional) —</option>' +
+      conductoresActivos().map(function (u) {
+        var cd = S.conductores[u];
+        return '<option value="' + u + '">' + esc((cd.unidad || '') + ' · ' + cd.nombre) + '</option>';
+      }).join('');
+    actualizarEnlaceWhatsapp();
+    $('#modal-codigo').showModal();
   }
 
   function actualizarEnlaceWhatsapp() {

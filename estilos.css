@@ -232,3 +232,5 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 #c-guardar:disabled{opacity:.45;cursor:not-allowed}
 .cliente-ok .cuenta-cli{color:#067647;font-weight:800}
 .cliente-ok .nueva-dir{flex-basis:100%;color:#1849A9;font-weight:600}
+.lote-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:320px;overflow:auto;background:#F9FAFB;border:1px solid var(--linea);border-radius:12px;padding:12px}
+.lote-lista .mono{font-size:15px;text-align:center;background:#fff;border:1px solid var(--linea);border-radius:8px;padding:6px 4px}

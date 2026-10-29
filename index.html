@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=202610290438">
+<link rel="stylesheet" href="estilos.css?v=202610290450">
 </head>
 <body>
 
@@ -157,7 +157,7 @@
       <header class="cabecera">
         <div>
           <h1>Recargas</h1>
-          <p class="muted">Crea paquetes, genera códigos y envíalos al conductor por WhatsApp.</p>
+          <p class="muted">Genera códigos de recarga y envíalos al conductor por WhatsApp.</p>
         </div>
         <button class="btn" id="boton-bloquear-recargas" hidden>Bloquear sección</button>
       </header>
@@ -175,12 +175,12 @@
         <div class="kpis" id="recargas-kpis"></div>
         <div class="dos-columnas">
           <div class="tarjeta">
-            <h2>Paquetes</h2>
-            <div id="lista-paquetes" class="lista-paquetes"></div>
-            <form id="form-paquete" class="fila-form">
-              <label>Nombre <input id="paq-nombre" placeholder="Ej: Recarga 20"></label>
-              <label>Monto ($) <input id="paq-monto" type="number" min="0.5" step="0.5" required></label>
-              <button class="btn btn-primario" type="submit">Agregar paquete</button>
+            <h2>Generar códigos</h2>
+            <p class="muted">Pon cuántos códigos quieres y de qué monto. Se crean todos de una sola vez.</p>
+            <form id="form-lote" class="fila-form">
+              <label>Cantidad <input id="lote-cantidad" type="number" min="1" max="100" step="1" placeholder="Ej: 20" required></label>
+              <label>Monto ($) <input id="lote-monto" type="number" min="0.5" step="0.5" placeholder="Ej: 10" required></label>
+              <button class="btn btn-primario" type="submit" id="lote-boton">Generar códigos</button>
             </form>
           </div>
           <div class="tarjeta">
@@ -425,15 +425,30 @@
   </div>
 </dialog>
 
+<dialog id="modal-lote" class="modal">
+  <div class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2 id="lote-titulo">Códigos generados</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <p class="muted">Cada código vale una sola vez. Para enviar uno a un conductor, usa "Enviar" en la lista de códigos.</p>
+    <div class="lote-lista" id="lote-lista"></div>
+    <footer class="modal-pie">
+      <button type="button" class="btn" data-cerrar>Cerrar</button>
+      <button type="button" class="btn btn-primario" id="lote-copiar">Copiar todos</button>
+    </footer>
+  </div>
+</dialog>
+
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapas.js?v=202610290438"></script>
-<script src="config.js?v=202610290438"></script>
-<script src="despacho.js?v=202610290438"></script>
-<script src="app.js?v=202610290438"></script>
+<script src="mapas.js?v=202610290450"></script>
+<script src="config.js?v=202610290450"></script>
+<script src="despacho.js?v=202610290450"></script>
+<script src="app.js?v=202610290450"></script>
 </body>
 </html>
