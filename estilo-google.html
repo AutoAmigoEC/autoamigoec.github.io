@@ -109,7 +109,11 @@ function pintar(mapa, P) {
 function crear(id, P) {
   var m = new maplibregl.Map({ container: id, style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.2, scrollZoom: false, attributionControl: { compact: true } });
   m.addControl(new maplibregl.NavigationControl({ showCompass: false }));
-  m.on('load', function () { pintar(m, P); });
+  var pintado = false;
+  function intentar() { if (!pintado && m.isStyleLoaded()) { pintado = true; pintar(m, P); } }
+  m.on('styledata', intentar);
+  m.on('load', intentar);
+  var t = setInterval(function () { intentar(); if (pintado) clearInterval(t); }, 300);
   CARROS.forEach(function (c) {
     var el = document.createElement('div');
     el.innerHTML = pinSVG(ESTADOS[c[2]].c, c[3]);
