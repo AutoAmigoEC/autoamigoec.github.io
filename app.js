@@ -340,7 +340,7 @@
     });
     $$('.vista').forEach(function (v) { v.hidden = v.id !== 'vista-' + vista; });
     if (vista === 'mapa' && mapa) setTimeout(function () { mapa.resize(); }, 50);
-    if (vista === 'recargas') prepararCandado();
+    if (vista === 'recargas' || vista === 'config') prepararCandado();
     renderTodo();
   }
 
@@ -1579,19 +1579,27 @@
     return Promise.resolve('d' + h.toString(16));
   }
 
+  // Recargas y Configuración usan la misma clave; al entrar en una se abren las dos
+  var CANDADOS = [
+    { sufijo: '', contenido: '#recargas-contenido', bloquear: '#boton-bloquear-recargas' },
+    { sufijo: '-cfg', contenido: '#config-contenido', bloquear: '#boton-bloquear-config' }
+  ];
   function prepararCandado() {
     var primera = !S.claveHash;
-    $('#clave-titulo').textContent = primera ? 'Crea la clave de recargas' : 'Sección protegida';
-    $('#clave-sub').textContent = primera
-      ? 'Elige una clave para que solo tú puedas crear códigos de recarga. Guárdala bien.'
-      : 'Ingresa la clave de recargas.';
-    $('#clave2-fila').hidden = !primera;
-    $('#clave-input2').required = primera;
-    $('#clave-boton').textContent = primera ? 'Guardar clave' : 'Entrar';
     var abierta = recargasAbiertas && !primera;
-    $('#form-clave').hidden = abierta;
-    $('#recargas-contenido').hidden = !abierta;
-    $('#boton-bloquear-recargas').hidden = !abierta;
+    CANDADOS.forEach(function (k) {
+      var x = k.sufijo;
+      $('#clave-titulo' + x).textContent = primera ? 'Crea la clave del panel' : 'Sección protegida';
+      $('#clave-sub' + x).textContent = primera
+        ? 'Elige una clave para que solo tú puedas entrar a Recargas y Configuración. Guárdala bien.'
+        : 'Ingresa la clave para entrar.';
+      $('#clave2-fila' + x).hidden = !primera;
+      $('#clave-input2' + x).required = primera;
+      $('#clave-boton' + x).textContent = primera ? 'Guardar clave' : 'Entrar';
+      $('#form-clave' + x).hidden = abierta;
+      $(k.contenido).hidden = !abierta;
+      $(k.bloquear).hidden = !abierta;
+    });
     if (abierta) renderRecargas();
   }
 
@@ -1600,24 +1608,26 @@
     try { sessionStorage.removeItem('aa_recargas'); } catch (e) { /* nada */ }
     prepararCandado();
   }
-  $('#boton-bloquear-recargas').addEventListener('click', bloquearRecargas);
-
-  $('#form-clave').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var err = $('#clave-error');
-    err.hidden = true;
-    var c1 = $('#clave-input').value;
-    var primera = !S.claveHash;
-    if (primera && c1 !== $('#clave-input2').value) { err.textContent = 'Las claves no coinciden.'; err.hidden = false; return; }
-    hashClave(c1).then(function (h) {
-      if (primera) return db.ref('recargas/claveHash').set(h);
-      if (h !== S.claveHash) throw { message: 'Clave incorrecta.' };
-    }).then(function () {
-      recargasAbiertas = true;
-      try { sessionStorage.setItem('aa_recargas', '1'); } catch (e) { /* nada */ }
-      $('#form-clave').reset();
-      prepararCandado();
-    }).catch(function (e) { err.textContent = errorTexto(e); err.hidden = false; });
+  CANDADOS.forEach(function (k) {
+    var x = k.sufijo;
+    $(k.bloquear).addEventListener('click', bloquearRecargas);
+    $('#form-clave' + x).addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var err = $('#clave-error' + x);
+      err.hidden = true;
+      var c1 = $('#clave-input' + x).value;
+      var primera = !S.claveHash;
+      if (primera && c1 !== $('#clave-input2' + x).value) { err.textContent = 'Las claves no coinciden.'; err.hidden = false; return; }
+      hashClave(c1).then(function (h) {
+        if (primera) return db.ref('recargas/claveHash').set(h);
+        if (h !== S.claveHash) throw { message: 'Clave incorrecta.' };
+      }).then(function () {
+        recargasAbiertas = true;
+        try { sessionStorage.setItem('aa_recargas', '1'); } catch (e) { /* nada */ }
+        $('#form-clave' + x).reset();
+        prepararCandado();
+      }).catch(function (e) { err.textContent = errorTexto(e); err.hidden = false; });
+    });
   });
 
   function renderRecargas() {

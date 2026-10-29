@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=202610290459">
+<link rel="stylesheet" href="estilos.css?v=202610290515">
 </head>
 <body>
 
@@ -226,7 +226,20 @@
 
     <!-- ---------- CONFIGURACIÓN ---------- -->
     <section id="vista-config" class="vista" hidden>
-      <header class="cabecera"><div><h1>Configuración</h1></div></header>
+      <header class="cabecera"><div><h1>Configuración</h1></div>
+        <button class="btn" id="boton-bloquear-config" hidden>Bloquear sección</button>
+      </header>
+
+      <form id="form-clave-cfg" class="tarjeta form-grid candado">
+        <h2 id="clave-titulo-cfg">Sección protegida</h2>
+        <p class="muted" id="clave-sub-cfg" style="grid-column:1/-1">Ingresa la clave.</p>
+        <label>Clave <input type="password" id="clave-input-cfg" minlength="4" required autocomplete="off"></label>
+        <label id="clave2-fila-cfg" hidden>Repite la clave <input type="password" id="clave-input2-cfg" minlength="4" autocomplete="off"></label>
+        <div class="fila-botones"><button class="btn btn-primario" type="submit" id="clave-boton-cfg">Entrar</button></div>
+        <p class="error" id="clave-error-cfg" hidden style="grid-column:1/-1"></p>
+      </form>
+
+      <div id="config-contenido" class="bloque-config" hidden>
       <form id="form-config" class="tarjeta form-grid">
         <h2>Reparto automático</h2>
         <label>Segundos antes de sumar al siguiente conductor
@@ -265,6 +278,7 @@
         <label>Contraseña <input type="password" id="adm-pass" minlength="6" required></label>
         <div class="fila-botones"><button class="btn" type="submit">Crear administrador</button></div>
       </form>
+      </div>
     </section>
   </main>
 </div>
@@ -452,9 +466,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapas.js?v=202610290459"></script>
-<script src="config.js?v=202610290459"></script>
-<script src="despacho.js?v=202610290459"></script>
-<script src="app.js?v=202610290459"></script>
+<script src="mapas.js?v=202610290515"></script>
+<script src="config.js?v=202610290515"></script>
+<script src="despacho.js?v=202610290515"></script>
+<script src="app.js?v=202610290515"></script>
 </body>
 </html>

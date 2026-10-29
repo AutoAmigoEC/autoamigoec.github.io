@@ -246,3 +246,4 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .lote .lote-info{color:var(--gris-2);font-size:13px;flex:1;min-width:150px}
 .lote[open]>summary{border-bottom:1px solid var(--linea)}
 .lote .tabla-caja{border:0;border-radius:0}
+.bloque-config{display:flex;flex-direction:column;gap:18px}
