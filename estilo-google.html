@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Mapa estilo Google</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
+  header{background:#090145;color:#fff;padding:18px 24px}
+  h1{font-family:Manrope,sans-serif;margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#C9CDE6;font-size:14px}
+  main{padding:18px 24px;max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .par>div{display:flex;flex-direction:column;gap:6px}
+  .etq{font-weight:700;font-size:14px}
+  .mapa{height:430px;border-radius:14px;border:1px solid #E4E7EC;overflow:hidden}
+  .leyenda{display:flex;flex-wrap:wrap;gap:16px;background:#fff;border:1px solid #E4E7EC;border-radius:12px;padding:10px 14px;font-size:13px}
+  .leyenda span{display:flex;align-items:center;gap:6px}
+  .leyenda svg{width:20px;height:26px}
+  .pin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  @media (max-width:760px){.par{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Vista previa · Mapa estilo Google con pines por estado</h1>
+  <p>Cada carro es un pin con su número de unidad. El color cambia solo según la fase en la que está.</p>
+</header>
+<main>
+  <div class="leyenda" id="leyenda"></div>
+  <div class="par">
+    <div><span class="etq">☀️ De día</span><div class="mapa" id="dia"></div></div>
+    <div><span class="etq">🌙 De noche</span><div class="mapa" id="noche"></div></div>
+  </div>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+var ESTADOS = {
+  libre: { c: '#0E9F6E', n: 'Libre' },
+  aceptada: { c: '#1E6FE8', n: 'Aceptada · yendo a recoger' },
+  ejecucion: { c: '#D92D20', n: 'En ejecución' },
+  sinsaldo: { c: '#7A1F2B', n: 'Sin saldo' },
+  fuera: { c: '#8A94A6', n: 'Fuera de servicio' },
+  carrera: { c: '#7F56D9', n: 'Carrera esperando' }
+};
+function pinSVG(color, texto) {
+  var t = texto.length > 3 ? 11 : 13;
+  return '<svg class="pin" width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M20 50 C20 50 4 31 4 19 A16 16 0 1 1 36 19 C36 31 20 50 20 50 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5"/>' +
+    '<text x="20" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="' + t + '" fill="#fff">' + texto + '</text></svg>';
+}
+function pinPersona(color) {
+  return '<svg class="pin" width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M20 50 C20 50 4 31 4 19 A16 16 0 1 1 36 19 C36 31 20 50 20 50 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5"/>' +
+    '<circle cx="20" cy="14" r="4.5" fill="#fff"/><path d="M12 27c0-5 3.5-7.5 8-7.5s8 2.5 8 7.5z" fill="#fff"/></svg>';
+}
+document.getElementById('leyenda').innerHTML = Object.keys(ESTADOS).map(function (k) {
+  var e = ESTADOS[k];
+  return '<span>' + (k === 'carrera' ? pinPersona(e.c) : pinSVG(e.c, '')) + e.n + '</span>';
+}).join('');
+
+var CARROS = [
+  [-2.1850, -79.8870, 'libre', '07'], [-2.1930, -79.8820, 'aceptada', '12'], [-2.1880, -79.8950, 'ejecucion', '03'],
+  [-2.1800, -79.8930, 'libre', '18'], [-2.1965, -79.8905, 'sinsaldo', '26'], [-2.1835, -79.8800, 'fuera', '24'],
+  [-2.1910, -79.8985, 'libre', '29'], [-2.1985, -79.8840, 'ejecucion', '21']
+];
+var CARRERA = [-2.1905, -79.8880];
+
+// Colores tipo Google Maps
+var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF' };
+var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#4B5563', autopista: '#746855', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835' };
+
+function pintar(mapa, P) {
+  mapa.getStyle().layers.forEach(function (l) {
+    var id = l.id;
+    try {
+      if (l.type === 'background') mapa.setPaintProperty(id, 'background-color', P.fondo);
+      else if (l.type === 'fill') {
+        if (/water|ocean|river|lake/.test(id)) mapa.setPaintProperty(id, 'fill-color', P.agua);
+        else if (/park|wood|forest|grass|green|landcover|cemetery|pitch/.test(id)) mapa.setPaintProperty(id, 'fill-color', P.parque);
+        else if (/building/.test(id)) mapa.setPaintProperty(id, 'fill-color', P.edificio);
+        else mapa.setPaintProperty(id, 'fill-color', P.fondo);
+      } else if (l.type === 'fill-extrusion') mapa.setPaintProperty(id, 'fill-extrusion-color', P.edificio);
+      else if (l.type === 'line') {
+        if (/water|river|waterway/.test(id)) mapa.setPaintProperty(id, 'line-color', P.agua);
+        else if (/casing/.test(id)) mapa.setPaintProperty(id, 'line-color', P.borde);
+        else if (/motorway|trunk/.test(id)) mapa.setPaintProperty(id, 'line-color', P.autopista);
+        else if (/primary|secondary/.test(id)) mapa.setPaintProperty(id, 'line-color', P.avenida);
+        else if (/road|street|minor|service|tertiary|path|bridge|tunnel/.test(id)) mapa.setPaintProperty(id, 'line-color', P.calle);
+      } else if (l.type === 'symbol') {
+        mapa.setPaintProperty(id, 'text-color', /water/.test(id) ? (P === DIA ? '#4A7FB0' : '#5B7FA6') : P.texto);
+        mapa.setPaintProperty(id, 'text-halo-color', P.halo);
+        if (/poi/.test(id)) mapa.setLayoutProperty(id, 'visibility', 'none');
+      }
+    } catch (e) { /* capa sin esa propiedad */ }
+  });
+}
+
+function crear(id, P) {
+  var m = new maplibregl.Map({ container: id, style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.2, scrollZoom: false, attributionControl: { compact: true } });
+  m.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+  m.on('load', function () { pintar(m, P); });
+  CARROS.forEach(function (c) {
+    var el = document.createElement('div');
+    el.innerHTML = pinSVG(ESTADOS[c[2]].c, c[3]);
+    new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c[1], c[0]]).addTo(m);
+  });
+  var ec = document.createElement('div');
+  ec.innerHTML = pinPersona(ESTADOS.carrera.c);
+  new maplibregl.Marker({ element: ec, anchor: 'bottom' }).setLngLat([CARRERA[1], CARRERA[0]]).addTo(m);
+}
+crear('dia', DIA);
+crear('noche', NOCHE);
+</script>
+</body>
+</html>
