@@ -22,6 +22,19 @@
   .guardar-cli{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;font-weight:600}
   .guardar-cli input{width:18px!important;height:18px!important;margin:0;flex:none}
   .buscador{max-width:360px}
+  .cliente-mal{display:flex;flex-direction:column;gap:2px;background:#FEF3F2;color:#B42318;border:1px solid #FDA29B;border-radius:10px;padding:10px 12px;font-size:13px}
+  .cliente-mal strong{font-size:15px}
+  .guardadas{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
+  .guardadas button{border:1px solid #D0D5DD;background:#fff;color:var(--tinta);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
+  .guardadas button:hover{border-color:var(--navy)}
+  .guardadas button.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .tag-rest{display:inline-block;background:#FEE4E2;color:#B42318;font-size:11px;font-weight:700;font-style:normal;border-radius:999px;padding:2px 8px;margin-top:4px}
+  .tabla td small.just{color:#B42318;max-width:220px}
+  tr.restringido td{background:#FFFBFA}
+  .btn-peligro{color:#B42318!important;border-color:#FDA29B!important}
+  .btn-peligro-lleno{background:#D92D20!important;color:#fff!important;border-color:#D92D20!important}
+  textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical}
+  #c-crear:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -109,13 +122,15 @@
             <input id="c-telefono" type="tel" placeholder="Número y Enter" autocomplete="off">
             <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
         </div>
-        <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente guardado: se llenaron sus datos</div>
+        <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente registrado correctamente</div>
+        <div class="cliente-mal" id="c-cliente-mal" hidden></div>
         <div class="campo-dir">
           <label for="c-origen">Recogida</label>
           <div class="dir-fila"><i class="punto libre"></i>
             <input id="c-origen" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off" required>
             <button type="button" class="btn btn-chico">Buscar</button>
             <button type="button" class="btn btn-chico">Marcar en mapa</button></div>
+          <div class="guardadas" id="g-origen" hidden></div>
         </div>
         <div class="campo-dir">
           <label for="c-destino">Destino (opcional)</label>
@@ -123,6 +138,7 @@
             <input id="c-destino" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off">
             <button type="button" class="btn btn-chico">Buscar</button>
             <button type="button" class="btn btn-chico">Marcar en mapa</button></div>
+          <div class="guardadas" id="g-destino" hidden></div>
         </div>
         <div class="dos">
           <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
@@ -142,7 +158,7 @@
     </div>
     <footer class="modal-pie">
       <button type="button" class="btn" data-cerrar>Cancelar</button>
-      <button type="submit" class="btn btn-primario">Crear carrera</button>
+      <button type="submit" class="btn btn-primario" id="c-crear">Crear carrera</button>
     </footer>
   </form>
 </dialog>
@@ -155,21 +171,39 @@
       <label>Nombre <input id="mc-nombre" required></label>
       <label>Teléfono <input id="mc-telefono" type="tel" required></label>
     </div>
-    <label>Dirección de recogida <input id="mc-origen"></label>
-    <label>Destino frecuente <input id="mc-destino"></label>
+    <label>Direcciones de recogida <small class="muted">(una por línea)</small><textarea id="mc-direcciones" rows="3"></textarea></label>
+    <label>Destinos <small class="muted">(uno por línea)</small><textarea id="mc-destinos" rows="3"></textarea></label>
     <label>Notas <input id="mc-notas" placeholder="Ej: casa esquinera, portón negro"></label>
     <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
       <button type="submit" class="btn btn-primario">Guardar</button></footer>
   </form>
 </dialog>
 
+<dialog id="modal-restringir" class="modal">
+  <form id="form-restringir" method="dialog" class="modal-cuerpo">
+    <header class="modal-cab"><h2>Restringir cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <p><strong id="mr-nombre"></strong></p>
+    <p class="muted">Mientras esté restringido no se le podrán crear carreras. Al escribir su número o nombre saldrá "Cliente restringido".</p>
+    <label>Justificación <textarea id="mr-justificacion" rows="4" required placeholder="Escribe la razón de la restricción"></textarea></label>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-peligro-lleno">Restringir</button></footer>
+  </form>
+</dialog>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 // ---------- Clientes de ejemplo ----------
+// Cada cliente guarda VARIAS direcciones de recogida y VARIOS destinos (la más usada/reciente primero)
 var CLIENTES = [
-  { nombre: 'Isaac Fierro', telefono: '0969036818', origen: 'Av. 9 de Octubre y Boyacá', destino: 'Mall del Sol', notas: '', carreras: 12, ultima: 'Hoy 00:58' },
-  { nombre: 'María Torres', telefono: '0987654321', origen: 'Cdla. Kennedy Norte, Mz 105', destino: 'Terminal Terrestre', notas: 'Lleva maleta', carreras: 4, ultima: 'Ayer' },
-  { nombre: 'Carlos Mendoza', telefono: '0991122334', origen: 'Urdesa Central, calle Bálsamos', destino: '', notas: '', carreras: 1, ultima: '25 oct' }
+  { nombre: 'Isaac Fierro', telefono: '0969036818', notas: '',
+    direcciones: ['Av. 9 de Octubre y Boyacá', 'Cdla. Alborada 5ta etapa, Mz 12', 'Samborondón, Plaza Lagos'],
+    destinos: ['Mall del Sol', 'Aeropuerto José Joaquín de Olmedo', 'Hospital Kennedy Policentro'], carreras: 12, ultima: 'Hoy 00:58' },
+  { nombre: 'María Torres', telefono: '0987654321', notas: 'Lleva maleta',
+    direcciones: ['Cdla. Kennedy Norte, Mz 105'], destinos: ['Terminal Terrestre', 'San Marino Shopping'], carreras: 4, ultima: 'Ayer' },
+  { nombre: 'Carlos Mendoza', telefono: '0991122334', notas: '',
+    direcciones: ['Urdesa Central, calle Bálsamos'], destinos: [], carreras: 1, ultima: '25 oct',
+    restringido: true, justificacion: 'Dejó plantado a 3 conductores y no contestó el teléfono.' }
 ];
 function $(s) { return document.querySelector(s); }
 function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -181,6 +215,10 @@ function buscar(q) {
   return CLIENTES.filter(function (c) {
     return (d.length >= 3 && soloNum(c.telefono).indexOf(d) !== -1) || norm(c.nombre).indexOf(n) !== -1;
   }).slice(0, 6);
+}
+function agregarPrimero(lista, valor) {
+  if (!valor) return lista;
+  return [valor].concat(lista.filter(function (x) { return norm(x) !== norm(valor); })).slice(0, 10);
 }
 
 // ---------- Menú ----------
@@ -198,63 +236,129 @@ document.querySelectorAll('.menu-item[data-vista]').forEach(function (b) {
 });
 
 // ---------- Vista Clientes ----------
+function listaCorta(arr) {
+  if (!arr.length) return '<span class="muted">—</span>';
+  return esc(arr[0]) + (arr.length > 1 ? '<small>+' + (arr.length - 1) + ' más</small>' : '');
+}
 function pintarClientes() {
   var q = $('#buscar-clientes').value;
   var lista = q ? buscar(q) : CLIENTES;
-  $('#clientes-sub').textContent = CLIENTES.length + ' clientes guardados';
-  $('#tabla-clientes').innerHTML = '<thead><tr><th>Cliente</th><th>Recogida</th><th>Destino frecuente</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
-    lista.map(function (c, i) {
-      return '<tr><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small></td><td>' + esc(c.origen) + '</td><td>' + (esc(c.destino) || '<span class="muted">—</span>') +
+  var nr = CLIENTES.filter(function (c) { return c.restringido; }).length;
+  $('#clientes-sub').textContent = CLIENTES.length + ' clientes guardados' + (nr ? ' · ' + nr + ' restringido' + (nr > 1 ? 's' : '') : '');
+  $('#tabla-clientes').innerHTML = '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
+    lista.map(function (c) {
+      var i = CLIENTES.indexOf(c);
+      return '<tr class="' + (c.restringido ? 'restringido' : '') + '"><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small>' +
+        (c.restringido ? '<span class="tag-rest" title="' + esc(c.justificacion) + '">Restringido</span><small class="just">' + esc(c.justificacion) + '</small>' : '') +
+        '</td><td>' + listaCorta(c.direcciones) + '</td><td>' + listaCorta(c.destinos) +
         '</td><td>' + c.carreras + '</td><td>' + esc(c.ultima) + '</td><td><div class="acciones">' +
-        '<button class="btn btn-chico btn-primario" data-pedir="' + CLIENTES.indexOf(c) + '">Pedir carrera</button>' +
-        '<button class="btn btn-chico" data-editar="' + CLIENTES.indexOf(c) + '">Editar</button>' +
-        '<button class="btn btn-chico" data-borrar="' + CLIENTES.indexOf(c) + '">Borrar</button></div></td></tr>';
+        (c.restringido ? '' : '<button class="btn btn-chico btn-primario" data-pedir="' + i + '">Pedir carrera</button>') +
+        '<button class="btn btn-chico" data-editar="' + i + '">Editar</button>' +
+        (c.restringido ? '<button class="btn btn-chico" data-quitar="' + i + '">Quitar restricción</button>'
+                       : '<button class="btn btn-chico btn-peligro" data-restringir="' + i + '">Restringir</button>') +
+        '<button class="btn btn-chico btn-peligro" data-eliminar="' + i + '">Eliminar</button></div></td></tr>';
     }).join('') + '</tbody>';
 }
 $('#buscar-clientes').addEventListener('input', pintarClientes);
+var restringiendo = -1;
 $('#tabla-clientes').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
   if (b.dataset.pedir) { abrirCarrera(); llenar(CLIENTES[+b.dataset.pedir]); }
   if (b.dataset.editar) abrirCliente(+b.dataset.editar);
-  if (b.dataset.borrar) { CLIENTES.splice(+b.dataset.borrar, 1); pintarClientes(); }
+  if (b.dataset.eliminar) {
+    var c = CLIENTES[+b.dataset.eliminar];
+    if (confirm('¿Eliminar a ' + c.nombre + '?')) { CLIENTES.splice(+b.dataset.eliminar, 1); pintarClientes(); }
+  }
+  if (b.dataset.restringir) {
+    restringiendo = +b.dataset.restringir;
+    $('#mr-nombre').textContent = CLIENTES[restringiendo].nombre + ' · ' + CLIENTES[restringiendo].telefono;
+    $('#mr-justificacion').value = '';
+    $('#modal-restringir').showModal();
+  }
+  if (b.dataset.quitar) { var q = CLIENTES[+b.dataset.quitar]; q.restringido = false; q.justificacion = ''; pintarClientes(); }
+});
+$('#form-restringir').addEventListener('submit', function (e) {
+  var j = $('#mr-justificacion').value.trim();
+  if (!j) { e.preventDefault(); return; }
+  CLIENTES[restringiendo].restringido = true;
+  CLIENTES[restringiendo].justificacion = j;
+  pintarClientes();
 });
 var editando = -1;
+function lineas(t) { return t.split('\n').map(function (x) { return x.trim(); }).filter(Boolean); }
 function abrirCliente(i) {
   editando = i;
-  var c = i >= 0 ? CLIENTES[i] : {};
+  var c = i >= 0 ? CLIENTES[i] : { direcciones: [], destinos: [] };
   $('#mc-titulo').textContent = i >= 0 ? 'Editar cliente' : 'Nuevo cliente';
   $('#mc-nombre').value = c.nombre || ''; $('#mc-telefono').value = c.telefono || '';
-  $('#mc-origen').value = c.origen || ''; $('#mc-destino').value = c.destino || ''; $('#mc-notas').value = c.notas || '';
+  $('#mc-direcciones').value = c.direcciones.join('\n'); $('#mc-destinos').value = c.destinos.join('\n'); $('#mc-notas').value = c.notas || '';
   $('#modal-cliente').showModal();
 }
 $('#nuevo-cliente').addEventListener('click', function () { abrirCliente(-1); });
 $('#form-cliente').addEventListener('submit', function () {
-  var c = { nombre: $('#mc-nombre').value.trim(), telefono: $('#mc-telefono').value.trim(), origen: $('#mc-origen').value.trim(), destino: $('#mc-destino').value.trim(), notas: $('#mc-notas').value.trim() };
+  var c = { nombre: $('#mc-nombre').value.trim(), telefono: $('#mc-telefono').value.trim(),
+    direcciones: lineas($('#mc-direcciones').value), destinos: lineas($('#mc-destinos').value), notas: $('#mc-notas').value.trim() };
   if (editando >= 0) Object.assign(CLIENTES[editando], c); else CLIENTES.unshift(Object.assign(c, { carreras: 0, ultima: '—' }));
   pintarClientes();
 });
 
 // ---------- Modal nueva carrera con clientes guardados ----------
+var clienteActual = null;
 function abrirCarrera() {
-  $('#form-carrera').reset(); $('#c-cliente-ok').hidden = true; $('#c-sugerida').textContent = 'Pon el destino';
+  $('#form-carrera').reset(); clienteActual = null;
+  $('#c-cliente-ok').hidden = true; $('#c-cliente-mal').hidden = true; $('#c-crear').disabled = false;
+  $('#g-origen').hidden = true; $('#g-destino').hidden = true;
+  $('#c-sugerida').textContent = 'Pon el destino';
   $('#modal-carrera').showModal(); $('#c-cliente').focus();
 }
 document.querySelectorAll('[data-accion="nueva-carrera"]').forEach(function (b) { b.addEventListener('click', abrirCarrera); });
 document.querySelectorAll('[data-cerrar]').forEach(function (b) { b.addEventListener('click', function () { b.closest('dialog').close(); }); });
+function estimar() { $('#c-sugerida').textContent = $('#c-destino').value.trim() ? 'Aprox. $4.80 · 7.4 km' : 'Pon el destino'; }
+function chips(caja, campo, lista, titulo) {
+  caja.hidden = !lista.length;
+  caja.innerHTML = '<span class="muted">' + titulo + ':</span>' + lista.map(function (d) {
+    return '<button type="button" class="' + (norm(d) === norm(campo.value) ? 'sel' : '') + '">' + esc(d) + '</button>';
+  }).join('');
+}
+function pintarChips() {
+  if (!clienteActual) return;
+  chips($('#g-origen'), $('#c-origen'), clienteActual.direcciones, 'Direcciones guardadas');
+  chips($('#g-destino'), $('#c-destino'), clienteActual.destinos, 'Destinos guardados');
+}
+[['g-origen', 'c-origen'], ['g-destino', 'c-destino']].forEach(function (p) {
+  $('#' + p[0]).addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('#' + p[1]).value = b.textContent; estimar(); pintarChips();
+  });
+  $('#' + p[1]).addEventListener('input', function () { estimar(); pintarChips(); });
+});
 function llenar(c) {
-  $('#c-cliente').value = c.nombre; $('#c-telefono').value = c.telefono;
-  $('#c-origen').value = c.origen; $('#c-destino').value = c.destino || ''; $('#c-notas').value = c.notas || '';
-  $('#c-sugerida').textContent = c.destino ? 'Aprox. $4.80 · 7.4 km' : 'Pon el destino';
-  $('#c-cliente-ok').hidden = false;
   ['cliente', 'telefono'].forEach(function (k) { $('#sug-cli-' + k).hidden = true; });
+  clienteActual = c;
+  $('#c-cliente').value = c.nombre; $('#c-telefono').value = c.telefono;
+  if (c.restringido) {
+    $('#c-cliente-ok').hidden = true;
+    $('#c-cliente-mal').innerHTML = '<strong>⛔ Cliente restringido</strong><span>Justificación: ' + esc(c.justificacion) + '</span>';
+    $('#c-cliente-mal').hidden = false;
+    $('#c-crear').disabled = true;
+    $('#g-origen').hidden = true; $('#g-destino').hidden = true;
+    return;
+  }
+  $('#c-cliente-mal').hidden = true; $('#c-crear').disabled = false;
+  $('#c-origen').value = c.direcciones[0] || ''; $('#c-destino').value = c.destinos[0] || ''; $('#c-notas').value = c.notas || '';
+  $('#c-cliente-ok').hidden = false;
+  estimar(); pintarChips();
 }
 ['cliente', 'telefono'].forEach(function (k) {
   var inp = $('#c-' + k), caja = $('#sug-cli-' + k), resultados = [];
   inp.addEventListener('input', function () {
-    $('#c-cliente-ok').hidden = true;
+    $('#c-cliente-ok').hidden = true; $('#c-cliente-mal').hidden = true; $('#c-crear').disabled = false;
+    clienteActual = null; $('#g-origen').hidden = true; $('#g-destino').hidden = true;
     resultados = buscar(inp.value);
     caja.innerHTML = resultados.map(function (c, i) {
-      return '<button type="button" data-i="' + i + '"><strong>' + esc(c.nombre) + ' · ' + esc(c.telefono) + '</strong><span>' + esc(c.origen) + (c.destino ? ' → ' + esc(c.destino) : '') + '</span></button>';
+      return '<button type="button" data-i="' + i + '"><strong>' + esc(c.nombre) + ' · ' + esc(c.telefono) +
+        (c.restringido ? ' <em class="tag-rest">Restringido</em>' : '') + '</strong><span>' + esc(c.direcciones[0] || '') +
+        (c.destinos[0] ? ' → ' + esc(c.destinos[0]) : '') + '</span></button>';
     }).join('');
     caja.hidden = !resultados.length;
   });
@@ -266,12 +370,16 @@ function llenar(c) {
   });
   caja.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) llenar(resultados[+b.dataset.i]); });
 });
-$('#form-carrera').addEventListener('submit', function () {
+$('#form-carrera').addEventListener('submit', function (e) {
+  if (clienteActual && clienteActual.restringido) { e.preventDefault(); return; }
   if (!$('#c-guardar-cli').checked) return;
   var tel = $('#c-telefono').value.trim(), nom = $('#c-cliente').value.trim();
-  var c = CLIENTES.filter(function (x) { return (tel && soloNum(x.telefono) === soloNum(tel)) || norm(x.nombre) === norm(nom); })[0];
-  var datos = { nombre: nom, telefono: tel, origen: $('#c-origen').value.trim(), destino: $('#c-destino').value.trim(), notas: $('#c-notas').value.trim() };
-  if (c) { Object.assign(c, datos); c.carreras++; c.ultima = 'Ahora'; } else CLIENTES.unshift(Object.assign(datos, { carreras: 1, ultima: 'Ahora' }));
+  var c = clienteActual || CLIENTES.filter(function (x) { return (tel && soloNum(x.telefono) === soloNum(tel)) || norm(x.nombre) === norm(nom); })[0];
+  if (!c) { c = { nombre: nom, telefono: tel, direcciones: [], destinos: [], notas: '', carreras: 0 }; CLIENTES.unshift(c); }
+  c.nombre = nom; c.telefono = tel; c.notas = $('#c-notas').value.trim();
+  c.direcciones = agregarPrimero(c.direcciones, $('#c-origen').value.trim());
+  c.destinos = agregarPrimero(c.destinos, $('#c-destino').value.trim());
+  c.carreras++; c.ultima = 'Ahora';
 });
 
 // ---------- Mapa nuevo: día/noche según la hora de quien abre el panel ----------
