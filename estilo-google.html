@@ -20,13 +20,17 @@
   .leyenda span{display:flex;align-items:center;gap:6px}
   .leyenda svg{width:20px;height:26px}
   .pin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .pin-carrera{width:22px;height:22px;border-radius:50%;background:#7F56D9;border:4px solid #fff;box-shadow:0 0 0 8px rgba(127,86,217,.25);box-sizing:border-box}
+  .pin-carrera.tarde{background:#D92D20;box-shadow:0 0 0 8px rgba(217,45,32,.3);animation:latido 1.4s ease-in-out infinite}
+  @keyframes latido{50%{box-shadow:0 0 0 14px rgba(217,45,32,.12)}}
+  .leyenda .pin-carrera{width:16px;height:16px;border-width:3px;box-shadow:none;animation:none}
   @media (max-width:760px){.par{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
   <h1>Vista previa · Mapa estilo Google con pines por estado</h1>
-  <p>Cada carro es un pin con su número de unidad. El color cambia solo según la fase en la que está.</p>
+  <p>Cada carro es un pin con su número de unidad. El color cambia solo según la fase en la que está. La carrera esperando se pone roja si pasan 30 minutos y nadie la acepta.</p>
 </header>
 <main>
   <div class="leyenda" id="leyenda"></div>
@@ -43,7 +47,8 @@ var ESTADOS = {
   ejecucion: { c: '#D92D20', n: 'En ejecución' },
   sinsaldo: { c: '#7A1F2B', n: 'Sin saldo' },
   fuera: { c: '#8A94A6', n: 'Fuera de servicio' },
-  carrera: { c: '#7F56D9', n: 'Carrera esperando' }
+  carrera: { c: '#7F56D9', n: 'Carrera esperando' },
+  tarde: { c: '#D92D20', n: 'Carrera sin aceptar +30 min' }
 };
 function pinSVG(color, texto) {
   var t = texto.length > 3 ? 11 : 13;
@@ -58,7 +63,8 @@ function pinPersona(color) {
 }
 document.getElementById('leyenda').innerHTML = Object.keys(ESTADOS).map(function (k) {
   var e = ESTADOS[k];
-  return '<span>' + (k === 'carrera' ? pinPersona(e.c) : pinSVG(e.c, '')) + e.n + '</span>';
+  var icono = k === 'carrera' ? '<div class="pin-carrera"></div>' : k === 'tarde' ? '<div class="pin-carrera tarde"></div>' : pinSVG(e.c, '');
+  return '<span>' + icono + e.n + '</span>';
 }).join('');
 
 var CARROS = [
@@ -66,11 +72,13 @@ var CARROS = [
   [-2.1800, -79.8930, 'libre', '18'], [-2.1965, -79.8905, 'sinsaldo', '26'], [-2.1835, -79.8800, 'fuera', '24'],
   [-2.1910, -79.8985, 'libre', '29'], [-2.1985, -79.8840, 'ejecucion', '21']
 ];
-var CARRERA = [-2.1905, -79.8880];
+// [lat, lng, minutos esperando]
+var CARRERAS = [[-2.1905, -79.8880, 5], [-2.1872, -79.8915, 34]];
 
 // Colores tipo Google Maps
 var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF' };
-var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#4B5563', autopista: '#746855', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835' };
+// Noche en el azul marino de AutoAmigo (#090145)
+var NOCHE = { fondo: '#0D0856', agua: '#05022E', parque: '#141070', edificio: '#16116A', calle: '#2B2690', avenida: '#3D37A8', autopista: '#5A52C4', borde: '#090145', texto: '#D3D6F0', halo: '#090145' };
 
 function pintar(mapa, P) {
   mapa.getStyle().layers.forEach(function (l) {
@@ -107,9 +115,11 @@ function crear(id, P) {
     el.innerHTML = pinSVG(ESTADOS[c[2]].c, c[3]);
     new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c[1], c[0]]).addTo(m);
   });
-  var ec = document.createElement('div');
-  ec.innerHTML = pinPersona(ESTADOS.carrera.c);
-  new maplibregl.Marker({ element: ec, anchor: 'bottom' }).setLngLat([CARRERA[1], CARRERA[0]]).addTo(m);
+  CARRERAS.forEach(function (c) {
+    var ec = document.createElement('div');
+    ec.className = 'pin-carrera' + (c[2] >= 30 ? ' tarde' : '');
+    new maplibregl.Marker({ element: ec }).setLngLat([c[1], c[0]]).addTo(m);
+  });
 }
 crear('dia', DIA);
 crear('noche', NOCHE);
