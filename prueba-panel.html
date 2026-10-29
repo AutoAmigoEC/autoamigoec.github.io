@@ -22,7 +22,7 @@
   .guardar-cli{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;font-weight:600}
   .guardar-cli input{width:18px!important;height:18px!important;margin:0;flex:none}
   .buscador{max-width:360px}
-  .cliente-ok .cuenta-cli{background:#fff;color:#067647;border:1px solid #ABEFC6;border-radius:999px;padding:1px 9px;font-size:12px}
+  .cliente-ok .cuenta-cli{color:#067647;font-weight:800}
   .cliente-ok .nueva-dir{flex-basis:100%;color:#1849A9;font-weight:600}
   .aviso-flotante{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#090145;color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999}
   .cliente-mal{display:flex;flex-direction:column;gap:2px;background:#FEF3F2;color:#B42318;border:1px solid #FDA29B;border-radius:10px;padding:10px 12px;font-size:13px}
@@ -155,7 +155,7 @@
           <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
           <div class="sugerida"><span class="muted">Estimado con taxímetro</span><strong id="c-sugerida">Pon el destino</strong></div>
         </div>
-        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco."></label>
+        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco"></label>
         <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
         <label class="guardar-cli"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
         <fieldset class="modo">
