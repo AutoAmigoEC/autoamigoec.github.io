@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="estilos.css">
 <style>
   .aviso-prueba{background:#FEF0C7;color:#93370D;font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px}
-  .pin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .pin-gps{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
   .pin-carrera{box-sizing:border-box}
   .pin-carrera.tarde{background:#D92D20;box-shadow:0 0 0 8px rgba(217,45,32,.3);animation:latido 1.4s ease-in-out infinite}
   @keyframes latido{50%{box-shadow:0 0 0 14px rgba(217,45,32,.12)}}
@@ -306,7 +306,7 @@ function pintar(m, P) {
 }
 var COLOR = { libre: '#0E9F6E', aceptada: '#1E6FE8', ejecucion: '#D92D20', sinsaldo: '#7A1F2B', fuera: '#8A94A6' };
 function pinSVG(color, texto) {
-  return '<svg class="pin" width="40" height="52" viewBox="0 0 40 52" aria-hidden="true">' +
+  return '<svg class="pin-gps" width="40" height="52" viewBox="0 0 40 52" aria-hidden="true">' +
     '<path d="M20 50 C20 50 4 31 4 19 A16 16 0 1 1 36 19 C36 31 20 50 20 50 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5"/>' +
     '<text x="20" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="800" font-size="13" fill="#fff">' + texto + '</text></svg>';
 }
@@ -314,8 +314,11 @@ var mapa = new maplibregl.Map({ container: 'mapa', style: 'https://tiles.openfre
   pixelRatio: Math.max(window.devicePixelRatio || 1, 2), attributionControl: { compact: true } });
 mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }));
 var modoActual = null;
+var estiloListo = false;
+mapa.on('style.load', function () { estiloListo = true; aplicarModo(); });
+mapa.on('load', function () { estiloListo = true; aplicarModo(); });
 function aplicarModo() {
-  if (!mapa.isStyleLoaded()) return;
+  if (!estiloListo) return;
   var m = esNoche() ? 'noche' : 'dia';
   if (m !== modoActual) { modoActual = m; pintar(mapa, m === 'noche' ? NOCHE : DIA); }
 }
