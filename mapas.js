@@ -33,6 +33,9 @@
           m.setPaintProperty(id, 'text-color', /water/.test(id) ? P.textoAgua : P.texto);
           m.setPaintProperty(id, 'text-halo-color', P.halo);
           if (/poi/.test(id)) m.setLayoutProperty(id, 'visibility', 'none');
+          // Placas de vías (E40, E48…): se ocultan para no confundir con los carros
+          var campo = JSON.stringify((l.layout || {})['text-field'] || '');
+          if (/shield/.test(id) || /"ref"|\{ref\}/.test(campo)) m.setLayoutProperty(id, 'visibility', 'none');
         }
       } catch (e) { /* capa sin esa propiedad */ }
     });
