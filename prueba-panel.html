@@ -18,10 +18,13 @@
   .campo-cli>label{font-size:13px;font-weight:600;color:var(--gris-1)}
   .sugerencias button strong{display:block;font-size:14px}
   .sugerencias button span{color:var(--gris-2);font-size:12px}
-  .cliente-ok{display:flex;align-items:center;gap:8px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+  .cliente-ok{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:#ECFDF3;color:#067647;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
   .guardar-cli{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;font-weight:600}
   .guardar-cli input{width:18px!important;height:18px!important;margin:0;flex:none}
   .buscador{max-width:360px}
+  .cliente-ok .cuenta-cli{background:#fff;color:#067647;border:1px solid #ABEFC6;border-radius:999px;padding:1px 9px;font-size:12px}
+  .cliente-ok .nueva-dir{flex-basis:100%;color:#1849A9;font-weight:600}
+  .aviso-flotante{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#090145;color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999}
   .cliente-mal{display:flex;flex-direction:column;gap:2px;background:#FEF3F2;color:#B42318;border:1px solid #FDA29B;border-radius:10px;padding:10px 12px;font-size:13px}
   .cliente-mal strong{font-size:15px}
   .guardadas{display:flex;flex-direction:column;align-items:flex-start;gap:8px;font-size:12px}
@@ -130,7 +133,7 @@
             <input id="c-telefono" type="tel" placeholder="Número" autocomplete="off">
             <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
         </div>
-        <div class="cliente-ok" id="c-cliente-ok" hidden>✓ Cliente registrado correctamente</div>
+        <div class="cliente-ok" id="c-cliente-ok" hidden></div>
         <div class="cliente-mal" id="c-cliente-mal" hidden></div>
         <div class="campo-dir">
           <label for="c-origen">Recogida</label>
@@ -152,7 +155,7 @@
           <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
           <div class="sugerida"><span class="muted">Estimado con taxímetro</span><strong id="c-sugerida">Pon el destino</strong></div>
         </div>
-        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco estacionado"></label>
+        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco."></label>
         <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
         <label class="guardar-cli"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
         <fieldset class="modo">
@@ -207,7 +210,7 @@
 var CLIENTES = [
   { nombre: 'Isaac Fierro', telefono: '0969036818', notas: '',
     direcciones: ['Av. 9 de Octubre y Boyacá', 'Cdla. Alborada 5ta etapa, Mz 12', 'Samborondón, Plaza Lagos', 'Urdesa Central, Víctor Emilio Estrada', 'Cdla. Kennedy Norte, Mz 210', 'Sauces 6, Mz 45', 'Ceibos Norte, calle 3ra', 'Garzota 2, Mz 18', 'Malecón 2000, Torre Morisca', 'Vía a la Costa km 12'],
-    destinos: ['Mall del Sol', 'Aeropuerto José Joaquín de Olmedo', 'Hospital Kennedy Policentro', 'Terminal Terrestre', 'San Marino Shopping', 'Riocentro Ceibos', 'Universidad Católica', 'Parque Histórico', 'City Mall', 'Hospital Luis Vernaza'], carreras: 12, ultima: 'Hoy 00:58' },
+    destinos: ['Mall del Sol', 'Aeropuerto José Joaquín de Olmedo', 'Hospital Kennedy Policentro', 'Terminal Terrestre', 'San Marino Shopping', 'Riocentro Ceibos', 'Universidad Católica', 'Parque Histórico', 'City Mall', 'Hospital Luis Vernaza'], carreras: 10, ultima: 'Hoy 00:58' },
   { nombre: 'María Torres', telefono: '0987654321', notas: 'Lleva maleta',
     direcciones: ['Cdla. Kennedy Norte, Mz 105'], destinos: ['Terminal Terrestre', 'San Marino Shopping'], carreras: 4, ultima: 'Ayer' },
   { nombre: 'Carlos Mendoza', telefono: '0991122334', notas: '',
@@ -254,7 +257,7 @@ function pintarClientes() {
   var lista = q ? buscar(q) : CLIENTES;
   var nr = CLIENTES.filter(function (c) { return c.restringido; }).length;
   $('#clientes-sub').textContent = CLIENTES.length + ' clientes guardados' + (nr ? ' · ' + nr + ' restringido' + (nr > 1 ? 's' : '') : '');
-  $('#tabla-clientes').innerHTML = '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Carreras</th><th>Última</th><th></th></tr></thead><tbody>' +
+  $('#tabla-clientes').innerHTML = '<thead><tr><th>Cliente</th><th>Recogidas</th><th>Destinos</th><th>Completadas</th><th>Última</th><th></th></tr></thead><tbody>' +
     lista.map(function (c) {
       var i = CLIENTES.indexOf(c);
       return '<tr class="' + (c.restringido ? 'restringido' : '') + '"><td><strong>' + esc(c.nombre) + '</strong><small>' + esc(c.telefono) + '</small>' +
@@ -335,7 +338,22 @@ function chips(caja, campo, lista, titulo) {
       return '<button type="button" data-i="' + i + '" class="chip-lugar' + (d === elegido ? ' sel' : '') + '">' + esc(d) + '</button>';
     }).join('') + '</div>';
 }
+function textoCarreras(n) { return n === 1 ? '1 carrera completada' : n + ' carreras completadas'; }
+function pintarAviso() {
+  var c = clienteActual, ok = $('#c-cliente-ok');
+  if (!c || c.restringido) { ok.hidden = true; return; }
+  var o = $('#c-origen').value.trim(), d = $('#c-destino').value.trim();
+  var nuevaDir = o && !c.direcciones.some(function (x) { return norm(x) === norm(o); });
+  var nuevoDest = d && !c.destinos.some(function (x) { return norm(x) === norm(d); });
+  var extra = nuevaDir && nuevoDest ? 'Nueva dirección y nuevo destino: se registrarán al crear la carrera'
+    : nuevaDir ? 'Nueva dirección: se registrará al crear la carrera'
+    : nuevoDest ? 'Nuevo destino: se registrará al crear la carrera' : '';
+  ok.innerHTML = '<span>✓ Cliente registrado</span><span class="cuenta-cli">' + textoCarreras(c.carreras) + '</span>' +
+    (extra ? '<span class="nueva-dir">📍 ' + extra + '</span>' : '');
+  ok.hidden = false;
+}
 function pintarChips() {
+  pintarAviso();
   if (!clienteActual) return;
   chips($('#g-origen'), $('#c-origen'), clienteActual.direcciones, 'Direcciones guardadas');
   chips($('#g-destino'), $('#c-destino'), clienteActual.destinos, 'Destinos guardados');
@@ -365,7 +383,6 @@ function llenar(c) {
   }
   $('#c-cliente-mal').hidden = true; $('#c-crear').disabled = false;
   $('#c-origen').value = c.direcciones[0] || ''; $('#c-destino').value = c.destinos[0] || ''; $('#c-notas').value = c.notas || '';
-  $('#c-cliente-ok').hidden = false;
   estimar(); pintarChips();
 }
 ['cliente', 'telefono'].forEach(function (k) {
@@ -394,12 +411,23 @@ $('#form-carrera').addEventListener('submit', function (e) {
   if (!$('#c-guardar-cli').checked) return;
   var tel = $('#c-telefono').value.trim(), nom = $('#c-cliente').value.trim();
   var c = clienteActual || CLIENTES.filter(function (x) { return (tel && soloNum(x.telefono) === soloNum(tel)) || norm(x.nombre) === norm(nom); })[0];
+  var nuevo = !c, o = $('#c-origen').value.trim(), d = $('#c-destino').value.trim();
   if (!c) { c = { nombre: nom, telefono: tel, direcciones: [], destinos: [], notas: '', carreras: 0 }; CLIENTES.unshift(c); }
+  var nuevaDir = !nuevo && o && !c.direcciones.some(function (x) { return norm(x) === norm(o); });
+  var nuevoDest = !nuevo && d && !c.destinos.some(function (x) { return norm(x) === norm(d); });
   c.nombre = nom; c.telefono = tel; c.notas = $('#c-notas').value.trim();
-  c.direcciones = agregarPrimero(c.direcciones, $('#c-origen').value.trim());
-  c.destinos = agregarPrimero(c.destinos, $('#c-destino').value.trim());
-  c.carreras++; c.ultima = 'Ahora';
+  c.direcciones = agregarPrimero(c.direcciones, o);
+  c.destinos = agregarPrimero(c.destinos, d);
+  c.ultima = 'Ahora';
+  // (el contador de carreras completadas sube solo cuando la carrera se FINALIZA, no al crearla)
+  aviso(nuevo ? '✓ Cliente registrado correctamente' : nuevaDir && nuevoDest ? '📍 Nueva dirección y nuevo destino registrados'
+    : nuevaDir ? '📍 Nueva dirección registrada' : nuevoDest ? '📍 Nuevo destino registrado' : 'Carrera creada. Buscando conductor…');
 });
+
+function aviso(t) {
+  var el = $('#aviso-prueba'); el.textContent = t; el.hidden = false;
+  clearTimeout(aviso.t); aviso.t = setTimeout(function () { el.hidden = true; }, 4000);
+}
 
 // ---------- Mapa nuevo: día/noche según la hora de quien abre el panel ----------
 function esNoche() { var h = new Date().getHours(); return h >= 18 || h < 6; }
@@ -462,5 +490,6 @@ setInterval(aplicarModo, 1000);
   new maplibregl.Marker({ element: el }).setLngLat([c[1], c[0]]).addTo(mapa);
 });
 </script>
+<div id="aviso-prueba" class="aviso-flotante" hidden></div>
 </body>
 </html>
