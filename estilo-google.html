@@ -35,8 +35,8 @@
 <main>
   <div class="leyenda" id="leyenda"></div>
   <div class="par">
-    <div><span class="etq">☀️ De día</span><div class="mapa" id="dia"></div></div>
-    <div><span class="etq">🌙 De noche</span><div class="mapa" id="noche"></div></div>
+    <div><div class="mapa" id="dia"></div></div>
+    <div><div class="mapa" id="noche"></div></div>
   </div>
 </main>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -77,8 +77,7 @@ var CARRERAS = [[-2.1905, -79.8880, 5], [-2.1872, -79.8915, 34]];
 
 // Colores tipo Google Maps
 var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF' };
-// Noche en el azul marino de AutoAmigo (#090145)
-var NOCHE = { fondo: '#0D0856', agua: '#05022E', parque: '#141070', edificio: '#16116A', calle: '#2B2690', avenida: '#3D37A8', autopista: '#5A52C4', borde: '#090145', texto: '#D3D6F0', halo: '#090145' };
+var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#4B5563', autopista: '#746855', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835' };
 
 function pintar(mapa, P) {
   mapa.getStyle().layers.forEach(function (l) {
@@ -107,7 +106,7 @@ function pintar(mapa, P) {
 }
 
 function crear(id, P) {
-  var m = new maplibregl.Map({ container: id, style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.2, scrollZoom: false, attributionControl: { compact: true } });
+  var m = new maplibregl.Map({ container: id, style: 'https://tiles.openfreemap.org/styles/liberty', center: [-79.8890, -2.1895], zoom: 14.2, scrollZoom: false, pixelRatio: Math.max(window.devicePixelRatio || 1, 2), antialias: true, attributionControl: { compact: true } });
   m.addControl(new maplibregl.NavigationControl({ showCompass: false }));
   var pintado = false;
   function intentar() { if (!pintado && m.isStyleLoaded()) { pintado = true; pintar(m, P); } }
