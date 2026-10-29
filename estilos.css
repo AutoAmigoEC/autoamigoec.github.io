@@ -234,3 +234,15 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .cliente-ok .nueva-dir{flex-basis:100%;color:#1849A9;font-weight:600}
 .lote-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:320px;overflow:auto;background:#F9FAFB;border:1px solid var(--linea);border-radius:12px;padding:12px}
 .lote-lista .mono{font-size:15px;text-align:center;background:#fff;border:1px solid var(--linea);border-radius:8px;padding:6px 4px}
+
+/* ---------- Carpetas de códigos ---------- */
+.lotes{display:flex;flex-direction:column;gap:10px}
+.lote{background:#fff;border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+.lote>summary{list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:14px 16px;cursor:pointer}
+.lote>summary::-webkit-details-marker{display:none}
+.lote>summary .flecha{display:inline-block;font-size:12px;color:var(--navy);transition:transform .15s}
+.lote[open]>summary .flecha{transform:rotate(90deg)}
+.lote .lote-monto{font-family:Manrope,sans-serif;font-size:18px;font-weight:800;color:var(--tinta)}
+.lote .lote-info{color:var(--gris-2);font-size:13px;flex:1;min-width:150px}
+.lote[open]>summary{border-bottom:1px solid var(--linea)}
+.lote .tabla-caja{border:0;border-radius:0}

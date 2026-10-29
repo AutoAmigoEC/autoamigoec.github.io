@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=202610290450">
+<link rel="stylesheet" href="estilos.css?v=202610290459">
 </head>
 <body>
 
@@ -179,7 +179,13 @@
             <p class="muted">Pon cuántos códigos quieres y de qué monto. Se crean todos de una sola vez.</p>
             <form id="form-lote" class="fila-form">
               <label>Cantidad <input id="lote-cantidad" type="number" min="1" max="100" step="1" placeholder="Ej: 20" required></label>
-              <label>Monto ($) <input id="lote-monto" type="number" min="0.5" step="0.5" placeholder="Ej: 10" required></label>
+              <label>Monto <select id="lote-monto" required>
+                <option value="">Elige</option>
+                <option value="10">$10</option>
+                <option value="20">$20</option>
+                <option value="50">$50</option>
+                <option value="100">$100</option>
+              </select></label>
               <button class="btn btn-primario" type="submit" id="lote-boton">Generar códigos</button>
             </form>
           </div>
@@ -195,7 +201,7 @@
             <button class="chip" data-filtro="usado">Usados</button>
           </div>
         </div>
-        <div class="tabla-caja"><table class="tabla" id="tabla-codigos"></table></div>
+        <div id="lotes-codigos" class="lotes"></div>
       </div>
     </section>
 
@@ -446,9 +452,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapas.js?v=202610290450"></script>
-<script src="config.js?v=202610290450"></script>
-<script src="despacho.js?v=202610290450"></script>
-<script src="app.js?v=202610290450"></script>
+<script src="mapas.js?v=202610290459"></script>
+<script src="config.js?v=202610290459"></script>
+<script src="despacho.js?v=202610290459"></script>
+<script src="app.js?v=202610290459"></script>
 </body>
 </html>

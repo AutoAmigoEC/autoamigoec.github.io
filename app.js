@@ -291,7 +291,7 @@
     on(db.ref(RUTA_CLIENTES), function (v) { S.clientes = v; S.clientesListos = true; contarCompletadas(); if (vistaActual() === 'clientes') renderClientes(); });
     on(db.ref('recargas/paquetes'), function (v) { S.paquetes = v; renderRecargas(); });
     on(db.ref('recargas/claveHash'), function (v) { S.claveHash = typeof v === 'string' ? v : null; prepararCandado(); });
-    on(db.ref('recargas/codigos').orderByChild('creado').limitToLast(300), function (v) { S.codigos = v; renderRecargas(); });
+    on(db.ref('recargas/codigos').orderByChild('creado').limitToLast(2000), function (v) { S.codigos = v; renderRecargas(); });
   }
 
   function unirCarreras() {
@@ -1643,22 +1643,67 @@
       kpi('libre', 'Recargado hoy', dineroC(vendidoHoy)) +
       kpi('pendiente', 'Códigos sin usar', disponibles) +
       kpi('aceptada', 'Saldo total de conductores', dineroC(totalSaldos)));
-    var f = S.filtroCodigos;
-    var filas = cods.filter(function (k) {
-      var c = S.codigos[k];
-      return f === 'todos' || (f === 'usado' ? c.usado : !c.usado);
-    }).map(function (k) {
-      var c = S.codigos[k];
-      return '<tr><td class="mono">' + esc(formatoCodigo(k)) + '</td><td><strong>' + dineroC(c.montoC) + '</strong><small>Recarga de ' + dineroC(c.montoC) + '</small></td>' +
-        '<td>' + fechaHora(c.creado) + '</td>' +
-        '<td>' + (c.usado ? '<span class="pill finalizada">Usado</span>' : '<span class="pill libre">Disponible</span>') + '</td>' +
-        '<td>' + (c.usado ? esc(nombreCond(c.usadoPor)) + '<small>' + fechaHora(c.usadoEn) + '</small>' : '—') + '</td>' +
-        '<td>' + (c.usado ? '' : '<div class="acciones"><button class="btn btn-chico btn-primario" data-enviar-codigo="' + k + '">Enviar</button>' +
-          '<button class="btn btn-chico btn-peligro" data-anular="' + k + '">Anular</button></div>') + '</td></tr>';
-    }).join('');
-    setHTML('#tabla-codigos', '<thead><tr><th>Código</th><th>Monto</th><th>Creado</th><th>Estado</th><th>Usado por</th><th></th></tr></thead><tbody>' +
-      (filas || '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">No hay códigos en este filtro.</td></tr>') + '</tbody>');
+    renderLotes(cods, S.filtroCodigos);
   }
+
+  // Códigos agrupados en carpetas plegables: una por cada vez que se generan
+  var lotesAbiertos = {};
+  function renderLotes(cods, f) {
+    var grupos = {}, orden = [];
+    cods.forEach(function (k) {
+      var c = S.codigos[k], g = c.lote || 'anteriores';
+      if (!grupos[g]) { grupos[g] = { id: g, codigos: [], montoC: c.montoC, creado: c.creado || 0, mixto: false }; orden.push(g); }
+      var gr = grupos[g];
+      gr.codigos.push(k);
+      if (gr.montoC !== c.montoC) gr.mixto = true;
+      if ((c.creado || 0) > gr.creado) gr.creado = c.creado || 0;
+    });
+    orden.sort(function (a, b) { return grupos[b].creado - grupos[a].creado; });
+    var html = orden.map(function (g) {
+      var gr = grupos[g];
+      var usados = gr.codigos.filter(function (k) { return S.codigos[k].usado; }).length;
+      var disp = gr.codigos.length - usados;
+      var visibles = gr.codigos.filter(function (k) { var c = S.codigos[k]; return f === 'todos' || (f === 'usado' ? c.usado : !c.usado); });
+      if (!visibles.length) return '';
+      var filas = visibles.map(function (k) {
+        var c = S.codigos[k];
+        return '<tr><td class="mono">' + esc(formatoCodigo(k)) + '</td><td><strong>' + dineroC(c.montoC) + '</strong><small>Recarga de ' + dineroC(c.montoC) + '</small></td>' +
+          '<td>' + (c.usado ? '<span class="pill finalizada">Usado</span>' : '<span class="pill libre">Disponible</span>') + '</td>' +
+          '<td>' + (c.usado ? esc(nombreCond(c.usadoPor)) + '<small>' + fechaHora(c.usadoEn) + '</small>' : '—') + '</td>' +
+          '<td>' + (c.usado ? '' : '<div class="acciones"><button class="btn btn-chico btn-primario" data-enviar-codigo="' + k + '">Enviar</button>' +
+            '<button class="btn btn-chico btn-peligro" data-anular="' + k + '">Anular</button></div>') + '</td></tr>';
+      }).join('');
+      var titulo = g === 'anteriores' ? 'Códigos anteriores' : (gr.mixto ? 'Varios montos' : dineroC(gr.montoC));
+      return '<details class="lote" data-lote="' + esc(g) + '"' + (lotesAbiertos[g] ? ' open' : '') + '>' +
+        '<summary><span class="flecha">▸</span><span class="lote-monto">' + titulo + '</span>' +
+        '<span class="lote-info">' + fechaHora(gr.creado) + '</span>' +
+        '<span class="pill libre">' + disp + ' disponible' + (disp === 1 ? '' : 's') + '</span>' +
+        (usados ? '<span class="pill finalizada">' + usados + ' usado' + (usados === 1 ? '' : 's') + '</span>' : '') +
+        (disp ? '<button type="button" class="btn btn-chico" data-copiar-lote="' + esc(g) + '">Copiar disponibles</button>' : '') +
+        '</summary><div class="tabla-caja"><table class="tabla"><thead><tr><th>Código</th><th>Monto</th><th>Estado</th><th>Usado por</th><th></th></tr></thead><tbody>' +
+        filas + '</tbody></table></div></details>';
+    }).join('');
+    setHTML('#lotes-codigos', html || '<div class="vacio">No hay códigos en este filtro.</div>');
+  }
+  $('#lotes-codigos').addEventListener('toggle', function (ev) {
+    var d = ev.target;
+    if (d.classList && d.classList.contains('lote')) {
+      if (d.open) lotesAbiertos[d.getAttribute('data-lote')] = true;
+      else delete lotesAbiertos[d.getAttribute('data-lote')];
+    }
+  }, true);
+  $('#lotes-codigos').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-copiar-lote]');
+    if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    var g = b.getAttribute('data-copiar-lote');
+    var lista = Object.keys(S.codigos).filter(function (k) { var c = S.codigos[k]; return (c.lote || 'anteriores') === g && !c.usado; });
+    if (!lista.length) return;
+    var c0 = S.codigos[lista[0]];
+    var t = 'AutoAmigo · ' + lista.length + ' códigos de ' + dineroC(c0.montoC) + '\n' + lista.map(formatoCodigo).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast(lista.length + ' códigos copiados.'); })
+      .catch(function () { prompt('Copia los códigos:', lista.map(formatoCodigo).join(' ')); });
+  });
 
   $$('#filtros-codigos .chip').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -1696,7 +1741,7 @@
     var n = Math.floor(Number($('#lote-cantidad').value));
     var montoC = aCent($('#lote-monto').value);
     if (!(n >= 1 && n <= 100)) { toast('La cantidad debe ser de 1 a 100 códigos.', true); return; }
-    if (montoC < 50) { toast('El monto mínimo es $0.50.', true); return; }
+    if ([1000, 2000, 5000, 10000].indexOf(montoC) === -1) { toast('Elige un monto: $10, $20, $50 o $100.', true); return; }
     $('#lote-boton').disabled = true;
     var lote = db.ref('recargas/codigos').push().key;
     var datos = { montoC: montoC, creado: TS, creadoPor: auth.currentUser ? auth.currentUser.uid : '', usado: false, lote: lote };
@@ -1707,6 +1752,8 @@
       $('#lote-titulo').textContent = n === 1 ? '1 código de ' + dineroC(montoC) : n + ' códigos de ' + dineroC(montoC);
       setHTML('#lote-lista', codigos.map(function (k) { return '<span class="mono">' + esc(formatoCodigo(k)) + '</span>'; }).join(''));
       $('#form-lote').reset();
+      lotesAbiertos = {}; lotesAbiertos[lote] = true;
+      renderRecargas();
       $('#modal-lote').showModal();
     }).catch(function (e) { toast(errorTexto(e), true); })
       .then(function () { $('#lote-boton').disabled = false; });
