@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Opciones de mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
+  header{background:#090145;color:#fff;padding:20px 24px}
+  h1{font-family:Manrope,sans-serif;margin:0;font-size:24px}
+  header p{margin:6px 0 0;color:#C9CDE6}
+  main{padding:20px 24px;display:flex;flex-direction:column;gap:22px;max-width:1300px;margin:0 auto}
+  .opcion{background:#fff;border:1px solid #E4E7EC;border-radius:16px;padding:16px}
+  .opcion h2{margin:0 0 4px;font-family:Manrope,sans-serif;font-size:20px}
+  .opcion p{margin:0 0 12px;color:#475467;font-size:14px}
+  .par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .par>div{display:flex;flex-direction:column;gap:6px}
+  .etq{font-size:13px;font-weight:700}
+  .mapa{height:320px;border-radius:12px;border:1px solid #E4E7EC}
+  @media (max-width:760px){.par{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Opciones de mapa para el panel</h1>
+  <p>Cada opción muestra su versión de día y de noche. Puedes mover y hacer zoom en cada mapa.</p>
+</header>
+<main id="lista"></main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var CENTRO = [-2.1894, -79.8891];
+var OPCIONES = [
+  { n: 'A', t: 'Moderno a color (CARTO Voyager + Dark Matter)', d: 'Colores suaves parecidos a Google Maps de día; negro elegante de noche. Nombres de calles claros.',
+    dia: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    noche: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', at: '&copy; OpenStreetMap &copy; CARTO' },
+  { n: 'B', t: 'Minimalista gris (CARTO Positron + Dark Matter)', d: 'Muy limpio, casi sin colores: los carros de colores resaltan muchísimo.',
+    dia: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    noche: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', at: '&copy; OpenStreetMap &copy; CARTO' },
+  { n: 'C', t: 'Clásico de calles (Esri Street + Esri Gris oscuro)', d: 'Estilo de mapa de calles tradicional, muy detallado de día; gris oscuro sobrio de noche.',
+    dia: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    noche: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', at: '&copy; Esri' },
+  { n: 'D', t: 'Satélite + calles (Esri Imagery)', d: 'Foto satelital real de día; de noche el mismo satélite oscurecido. Útil para ubicar casas y edificios.',
+    dia: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    noche: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', nocheFiltro: 'brightness(.55) saturate(.6)', at: '&copy; Esri' },
+  { n: 'E', t: 'OpenStreetMap actual con modo noche', d: 'El mapa que tienes hoy, y de noche el mismo mapa en colores invertidos oscuros.',
+    dia: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    noche: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', nocheFiltro: 'invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)', at: '&copy; OpenStreetMap' }
+];
+var lista = document.getElementById('lista');
+OPCIONES.forEach(function (o) {
+  var s = document.createElement('section');
+  s.className = 'opcion';
+  s.innerHTML = '<h2>Opción ' + o.n + ' · ' + o.t + '</h2><p>' + o.d + '</p><div class="par">' +
+    '<div><span class="etq">☀️ Día</span><div class="mapa" id="m' + o.n + 'd"></div></div>' +
+    '<div><span class="etq">🌙 Noche</span><div class="mapa" id="m' + o.n + 'n"></div></div></div>';
+  lista.appendChild(s);
+  [['d', o.dia, null], ['n', o.noche, o.nocheFiltro]].forEach(function (x) {
+    var m = L.map('m' + o.n + x[0], { scrollWheelZoom: false }).setView(CENTRO, 14);
+    var capa = L.tileLayer(x[1], { maxZoom: 19, attribution: o.at }).addTo(m);
+    if (x[2]) capa.getContainer().style.filter = x[2];
+    [[-2.1850, -79.8870, '#067647'], [-2.1930, -79.8820, '#1849A9'], [-2.1880, -79.8950, '#D92D20']].forEach(function (p) {
+      L.circleMarker([p[0], p[1]], { radius: 9, color: '#fff', weight: 3, fillColor: p[2], fillOpacity: 1 }).addTo(m);
+    });
+  });
+});
+</script>
+</body>
+</html>
