@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Prueba del mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
+  header{background:#090145;color:#fff;padding:18px 20px}
+  h1{font-family:Manrope,sans-serif;margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#C9CDE6;font-size:14px}
+  .lugares{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px 0;max-width:1400px;margin:0 auto}
+  .lugares button{border:1px solid #D0D5DD;background:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  main{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1400px;margin:0 auto}
+  .op{background:#fff;border:1px solid #E4E7EC;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .op h2{margin:0;font-family:Manrope,sans-serif;font-size:18px}
+  .mapa{height:560px;border-radius:12px;overflow:hidden;border:1px solid #E4E7EC}
+  .pin-gps{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  @media (max-width:860px){main{grid-template-columns:1fr}.mapa{height:440px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Prueba del mapa · día y noche</h1>
+  <p>El mapa actual con autopistas en gris claro, avenidas en gris oscuro y los nombres de urbanizaciones y etapas al acercar. Los dos mapas se mueven juntos.</p>
+</header>
+<div class="lugares">
+  <button data-ir="-2.1015,-79.8565,16">Isla Mocolí</button>
+  <button data-ir="-2.1320,-79.8960,15.3">Alborada / Sauces</button>
+  <button data-ir="-2.0380,-79.8950,15.5">Villa Club</button>
+  <button data-ir="-2.1700,-79.9080,15">Urdesa / Kennedy</button>
+  <button data-ir="-2.1880,-80.0010,15.5">Vía a la Costa</button>
+  <button data-ir="-2.1910,-79.8860,14.5">Centro</button>
+</div>
+<main>
+  <section class="op"><h2>☀️ De día</h2><div class="mapa" id="dia"></div></section>
+  <section class="op"><h2>🌙 De noche</h2><div class="mapa" id="noche"></div></section>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="mapas.js?v=1"></script>
+<script>
+var A = MapaAA.crear('dia', [-2.1015, -79.8565], 16, 'dia');
+var B = MapaAA.crear('noche', [-2.1015, -79.8565], 16, 'noche');
+var mov = false;
+function sync(a, b) { a.on('move', function () { if (mov) return; mov = true; b.jumpTo({ center: a.getCenter(), zoom: a.getZoom() }); mov = false; }); }
+sync(A, B); sync(B, A);
+[[A], [B]].forEach(function (x) {
+  var m = x[0];
+  [[-2.1008, -79.8580, 'libre', '07'], [-2.1025, -79.8552, 'aceptada', '12'], [-2.0998, -79.8548, 'ejecucion', '03']].forEach(function (c) {
+    var el = document.createElement('div'); el.innerHTML = MapaAA.pinSVG(MapaAA.colores[c[2]], c[3]);
+    new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c[1], c[0]]).addTo(m);
+  });
+});
+document.querySelectorAll('[data-ir]').forEach(function (b) {
+  b.addEventListener('click', function () { var p = b.getAttribute('data-ir').split(',').map(Number); A.jumpTo({ center: [p[1], p[0]], zoom: p[2] }); });
+});
+</script>
+</body>
+</html>
