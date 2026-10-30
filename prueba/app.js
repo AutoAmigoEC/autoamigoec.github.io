@@ -749,7 +749,7 @@
     if (!lista.length || c.estado !== 'pendiente') return '';
     lista.sort(function (a, b) { return (b.en || 0) - (a.en || 0); });
     var u = lista[0];
-    var quien = u.unidad ? esc(u.unidad) : esc(u.nombre || '');
+    var quien = u.unidad ? 'U' + esc(u.unidad) : esc(u.nombre || '');
     return '<span class="etiqueta-cancel">Cancelada por el conductor ' + quien +
       (u.en ? ' ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
   }
