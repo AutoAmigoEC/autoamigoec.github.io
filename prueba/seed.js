@@ -29,6 +29,8 @@
       r3: { numero: 1001, cliente: 'Ana Ruiz', telefono: '0979998877', origen: { dir: 'Hospital Kennedy', lat: -2.2, lng: -79.9 }, estado: 'ejecucion', creada: now - 25 * MIN, conductor: 'c3', conductorNombre: 'Pedro Alvarado', unidad: '03', precioFijo: false, comisionMinC: 50, taximetro: { inicio: now - 9 * MIN, metros: 3200, esperaSeg: 95, totalC: 200 } },
       r4: { numero: 1005, cliente: 'Isaac Fierro', telefono: '0969036818', origen: { dir: 'Cdla. Puerto Seymour, Mz 817 V 17', lat: -2.1042, lng: -79.8561 }, destino: { dir: 'Aeropuerto', lat: -2.157, lng: -79.884 }, estado: 'pendiente', creada: now - 30 * MIN, programada: true, recogerEn: en21, activarEn: en21 - 20 * MIN, ofertaDesde: en21 - 20 * MIN, comisionMinC: 80, precioFijo: false, tarifaEstimadaC: 800 },
       r5: { numero: 1006, cliente: 'Pedro Gómez', telefono: '0985551212', origen: { dir: 'Urdesa Central', lat: -2.17, lng: -79.91 }, destino: { dir: 'Mall del Sol', lat: -2.155, lng: -79.89 }, estado: 'pendiente', creada: now - 5 * MIN, programada: true, recogerEn: manana, activarEn: manana - 20 * MIN, ofertaDesde: manana - 20 * MIN, comisionMinC: 50, precioFijo: true, tarifa: 5 }
+,
+      r6: { numero: 1003, cliente: 'Lucía Paredes', telefono: '0994447788', origen: { dir: 'Av. de las Américas y Hermano Miguel', lat: -2.1700, lng: -79.8850 }, destino: { dir: 'Policentro', lat: -2.1720, lng: -79.8990 }, exacta: 'Frente a la farmacia', estado: 'pendiente', creada: now - 9 * MIN, ofertaDesde: now - 2 * MIN, comisionMinC: 50, precioFijo: false, cancelaciones: { c5: { nombre: 'Milca Fierro', unidad: '08', en: now - 2 * MIN } } }
     },
     recargas: { clientes: {} }
   };

@@ -202,6 +202,18 @@
   .mov.mas .ic{background:#E7F8EF;color:#079455}.mov.menos .ic{background:#FDECEC;color:var(--rojo)}
   .mov .t{flex:1;min-width:0}.mov .t b{display:block;font-size:15px}.mov .t small{color:var(--gris);font-size:12.5px}
   .mov .m{font-weight:800;font-size:16px}.mov.mas .m{color:#079455}.mov.menos .m{color:var(--rojo)}
+  /* ---------- Cancelar carrera ---------- */
+  .btn-cancelar{margin-top:10px;width:100%;height:50px;border:1.5px solid #F4C7C5;border-radius:16px;background:#fff;color:#B42318;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-cancelar:active{background:#FDECEC}
+  .confirmar{position:absolute;inset:0;z-index:70;background:rgba(10,15,60,.55);display:flex;align-items:center;justify-content:center;padding:22px;animation:entra .18s ease}
+  @keyframes entra{from{opacity:0}to{opacity:1}}
+  .confirmar .caja{background:#fff;border-radius:26px;padding:24px 20px 18px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:aparece .25s cubic-bezier(.2,1.3,.4,1)}
+  .confirmar .ic{width:62px;height:62px;border-radius:50%;background:#FDECEC;color:var(--rojo);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+  .confirmar h3{margin:0;font-size:20px;font-weight:800;color:var(--texto)}
+  .confirmar p{margin:8px 0 18px;color:#475467;font-size:14.5px;line-height:1.45}
+  .confirmar .b{display:grid;gap:10px}
+  .confirmar .si{height:54px;border:0;border-radius:16px;background:var(--rojo);color:#fff;font-weight:700;font-size:16px}
+  .confirmar .no{height:54px;border:0;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -355,6 +367,7 @@
     </aside>
 
     <div class="fin" id="fin" hidden></div>
+    <div class="confirmar" id="confirmar" hidden><div class="caja"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg></div><h3>¿Estás seguro de cancelar la carrera?</h3><p id="confirmar-txt"></p><div class="b"><button class="no" id="c-no">No, seguir con la carrera</button><button class="si" id="c-si">Sí, cancelar carrera</button></div></div></div>
     <div class="aviso" id="aviso" hidden></div>
   </div></div>
 
@@ -591,6 +604,7 @@
     }
     if (enCurso && c.exacta) h += '<div class="exacta solo-grande">Dirección exacta: ' + esc(c.exacta) + '</div>';
     if (!enCurso && c.exacta) h += '<div class="exacta solo-grande">Dirección exacta: ' + esc(c.exacta) + '</div>';
+    if (!enCurso) h += '<button class="btn-cancelar solo-grande" id="b-cancelar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>Cancelar carrera</button>';
     h += enCurso
       ? '<button class="btn-final" id="b-finalizar">Finalizar · cobrar ' + dineroC(valorDe(c)) + '</button>'
       : '<button class="btn-final" id="b-iniciar">' + (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
@@ -724,6 +738,14 @@
   });
   document.addEventListener('keydown', function (e) { if (e.target.id === 'codigo' && e.key === 'Enter') recargar(); });
 
+  // El conductor cancela: la carrera vuelve a la cola para otro conductor (a él ya no le vuelve a salir)
+  function cancelarPorConductor() {
+    var c = S.carrera; if (!c || c.estado !== 'aceptada') return;
+    S.carrera = null; puntosViaje(null); programarProxima(20);
+    aviso('Cancelaste la carrera. Se le ofrecerá a otro conductor.');
+    render();
+  }
+
   // Pantalla "¡Carrera completada!": cuánto cobrar, el detalle y calificar al cliente
   var ESTRELLA = '<svg viewBox="0 0 24 24"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>';
   function pintarFin() {
@@ -844,6 +866,12 @@
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
     if (e.target.closest('#b-finalizar')) { finalizar(); return; }
     if (e.target.closest('#b-recargar')) { recargar(); return; }
+    if (e.target.closest('#b-cancelar')) {
+      $('#confirmar-txt').textContent = 'La carrera de ' + S.carrera.cliente + ' se le ofrecerá a otro conductor. Esta acción no se puede deshacer.';
+      $('#confirmar').hidden = false; return;
+    }
+    if (e.target.closest('#c-no') || e.target.id === 'confirmar') { $('#confirmar').hidden = true; return; }
+    if (e.target.closest('#c-si')) { $('#confirmar').hidden = true; cancelarPorConductor(); return; }
   });
   $('#b-centrar').addEventListener('click', centrar);
   $('#b-ruta').addEventListener('click', verRuta);

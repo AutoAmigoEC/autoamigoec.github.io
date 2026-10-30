@@ -553,6 +553,7 @@
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
         (c.estado === 'pendiente' ? ' · ' + duracion(espera) : '') + '</span></div>' +
         (c.telefono ? '<div class="cliente-tel">' + telMenu(c.telefono, 'a-' + id) + '</div>' : '') +
+        etiquetaCancelada(c) +
         (typeof c.recogerEn === 'number' ? '<span class="etiqueta-prog">Programada · recoger ' + fechaHora(c.recogerEn) + '</span>' : '') +
         '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
         extra +
@@ -741,6 +742,17 @@
       if (d) d.close();
     }
   });
+
+  // Carrera que un conductor canceló desde la app: vuelve a la cola para otro conductor
+  function etiquetaCancelada(c) {
+    var lista = c.cancelaciones ? Object.keys(c.cancelaciones).map(function (u) { return c.cancelaciones[u]; }) : [];
+    if (!lista.length) return '';
+    lista.sort(function (a, b) { return (b.en || 0) - (a.en || 0); });
+    var u = lista[0];
+    var quien = esc(u.nombre || 'conductor') + (u.unidad ? ' · U' + esc(u.unidad) : '');
+    return '<span class="etiqueta-cancel">' + (c.estado === 'pendiente' ? 'Cancelada por el conductor ' : 'Antes la canceló ') + quien +
+      (u.en ? ' · ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
+  }
 
   function liberarConductor(up, c, id) {
     if (c.conductor && S.estados[c.conductor] && S.estados[c.conductor].carrera === id) {

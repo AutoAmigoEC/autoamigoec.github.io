@@ -269,5 +269,6 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .tab-tiempo.activo{background:var(--navy);color:#fff;border-color:var(--navy)}
 .programar-campos{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#F0F9FF;border:1px solid #B9E6FE;border-radius:12px;padding:12px}
 .programar-campos .muted{grid-column:1/-1;margin:0;color:#026AA2;font-weight:600}
+.etiqueta-cancel{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#B42318;background:#FDECEC;border-radius:999px;padding:2px 9px}
 .etiqueta-prog{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#026AA2;background:#E0F2FE;border-radius:999px;padding:2px 9px}
 .carrera.ejecucion{border:2px solid var(--ejecucion);background:#FAF8FF}

@@ -124,6 +124,7 @@
     var cand = listaElegibles
       .filter(function (c) {
         if (c.saldoC < minimo) return false;
+        if (carrera.cancelaciones && carrera.cancelaciones[c.uid]) return false; // el que la canceló ya no la recibe
         var t = rech[c.uid];
         return !(typeof t === 'number' && ahora - t < cfg.rechazoSeg * 1000);
       })
