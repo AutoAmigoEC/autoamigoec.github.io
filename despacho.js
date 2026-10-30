@@ -83,6 +83,7 @@
   function estadoVisible(est, ahora) {
     if (!est || !est.online || typeof est.t !== 'number' || ahora - est.t > GPS_MAX_EDAD_MS) return 'fuera';
     if (est.estado === 'aceptada' || est.estado === 'ejecucion') return est.estado;
+    if (est.estado === 'ocupado') return 'fuera'; // conectado pero sin recibir carreras
     return 'libre';
   }
 
