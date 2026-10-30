@@ -107,7 +107,7 @@
   .lateral .salir{margin-top:auto;color:var(--rojo)}.lateral .salir svg{color:var(--rojo)}
   /* ---------- Secciones ---------- */
   .seccion{position:absolute;left:0;right:0;top:100px;bottom:0;background:#F6F7FB;z-index:4;display:flex;flex-direction:column}
-  .seccion .cuerpo{flex:1;overflow:auto;padding:6px 18px 18px}
+  .seccion .cuerpo{flex:1;overflow:auto;padding:6px 18px 90px}
   .seccion h2{margin:4px 0 14px;font-size:24px;font-weight:800;color:var(--navy)}
   .vacio{background:#fff;border-radius:18px;padding:22px;text-align:center;color:var(--gris);font-size:14.5px;line-height:1.45}
   .item-b{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 10px rgba(16,24,40,.05)}
@@ -177,6 +177,33 @@
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
+  /* ---------- Billetera ---------- */
+  .saldo-card{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(135deg,#1B2370 0%,#0A0F3C 60%,#090145 100%);color:#fff;padding:18px 18px 16px;box-shadow:0 12px 26px rgba(10,15,60,.28)}
+  .saldo-card::before{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.06)}
+  .saldo-card::after{content:"";position:absolute;right:30px;bottom:-80px;width:150px;height:150px;border-radius:50%;background:rgba(222,11,19,.16)}
+  .saldo-card small{position:relative;display:block;color:#C9CDE6;font-size:13.5px;font-weight:500}
+  .saldo-card .monto{position:relative;font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:2px}
+  .saldo-card .sub{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.14)}
+  .saldo-card .sub b{display:block;font-size:17px;font-weight:800}
+  .saldo-card .sub span{display:block;color:#C9CDE6;font-size:12.5px}
+  .bajo{margin-top:10px;background:#FDECEC;color:#B42318;border-radius:14px;padding:10px 12px;font-size:13.5px;font-weight:600;display:flex;gap:8px;align-items:center}
+  .recargar{margin-top:14px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .recargar h3{margin:0;font-size:17px;font-weight:800;color:var(--navy)}
+  .recargar p{margin:4px 0 12px;color:var(--gris);font-size:13.5px;line-height:1.4}
+  .codigo{width:100%;height:58px;border:2px solid #D9DFEC;border-radius:16px;background:#F8FAFF;text-align:center;font:inherit;font-size:22px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:var(--navy);outline:none}
+  .codigo::placeholder{letter-spacing:2px;font-weight:600;font-size:16px;color:#98A2B3}
+  .codigo:focus{border-color:#1A5CE0;background:#fff}
+  .codigo.error{border-color:var(--rojo)}
+  .recargar .btn-azul{margin-top:10px;height:54px;border-radius:16px;font-size:17px}
+  .recargar .btn-azul:disabled{opacity:.45}
+  .msg-rec{margin-top:10px;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;text-align:center}
+  .msg-rec.ok{background:#E7F8EF;color:#067647}.msg-rec.mal{background:#FDECEC;color:#B42318}
+  .movs h3{margin:18px 0 8px;font-size:17px;font-weight:800;color:var(--navy)}
+  .mov{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(16,24,40,.04)}
+  .mov .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+  .mov.mas .ic{background:#E7F8EF;color:#079455}.mov.menos .ic{background:#FDECEC;color:var(--rojo)}
+  .mov .t{flex:1;min-width:0}.mov .t b{display:block;font-size:15px}.mov .t small{color:var(--gris);font-size:12.5px}
+  .mov .m{font-weight:800;font-size:16px}.mov.mas .m{color:#079455}.mov.menos .m{color:var(--rojo)}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -340,6 +367,7 @@
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
+    <p>Códigos de recarga de prueba: <b>PRUEBA20</b> ($20) y <b>PRUEBA50</b> ($50). <b>PRUEBA10</b> ya está usado.</p>
     <label>Color del carro del conductor
       <select id="sim-color">
         <option value="#F4F5F7">Blanco</option><option value="#1F2329">Negro</option><option value="#A9AFB8">Plateado</option>
@@ -360,7 +388,8 @@
   var CFG = { arranqueC: 50, kmC: 50, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30, minimaC: 250, comisionMinC: 50, comisionPct: 10, comisionDesdeC: 500 };
   var S = {
     nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
-    yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio',
+    yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio', codigo: '', msgRec: null,
+    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Código PRUEBA10', hora: '7:52' }],
     oferta: null, carrera: null, menu: false
   };
   var BANDEJA = [
@@ -474,6 +503,7 @@
 
   // ---------- Pantallas ----------
   function irA(p) {
+    if (p !== S.pantalla) S.msgRec = null;
     S.pantalla = p; S.menu = false;
     if (p !== 'inicio' && (S.carrera || S.oferta)) { /* durante la carrera se puede abrir y volver */ }
     render();
@@ -496,8 +526,22 @@
       }).join('') : '<div class="vacio">Hoy todavía no tienes carreras.<br>Esta pantalla la diseñamos con tus próximas imágenes.</div>');
     }
     if (p === 'billetera') {
-      return '<h2>Mi billetera y saldo</h2><div class="tarjetas" style="padding:0"><div class="tarjeta oscura"><div><b>' + dineroC(S.saldoC) + '</b><small>Saldo disponible</small></div></div><div class="tarjeta"><div><b>' + dineroC(S.consumidoC) + '</b><small>Consumido hoy</small></div></div></div>' +
-        '<div class="vacio" style="margin-top:12px">Aquí irán tus recargas y movimientos.<br>Esta pantalla la diseñamos con tus próximas imágenes.</div>';
+      var bajo = S.saldoC < CFG.comisionMinC
+        ? '<div class="bajo"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg>Sin saldo no te llegan carreras. Recarga para seguir trabajando.</div>' : '';
+      var msg = S.msgRec ? '<div class="msg-rec ' + S.msgRec.c + '">' + esc(S.msgRec.t) + '</div>' : '';
+      var movs = S.movs.slice().reverse().map(function (m) {
+        return '<div class="mov ' + m.tipo + '"><span class="ic">' + (m.tipo === 'mas'
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11zm2.2-.3h9.6l-1.1-3.1a.5.5 0 0 0-.5-.3H8.8a.5.5 0 0 0-.5.3z"/></svg>') +
+          '</span><div class="t"><b>' + esc(m.texto) + '</b><small>' + esc(m.det) + ' · ' + m.hora + '</small></div><div class="m">' + (m.tipo === 'mas' ? '+' : '−') + dineroC(m.montoC) + '</div></div>';
+      }).join('');
+      return '<h2>Mi billetera y saldo</h2>' +
+        '<div class="saldo-card"><small>Saldo disponible</small><div class="monto">' + dineroC(S.saldoC) + '</div>' +
+        '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
+        '<div class="recargar"><h3>Recargar saldo</h3><p>Escribe el código de recarga que te dio la central de AutoAmigo.</p>' +
+        '<input class="codigo" id="codigo" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO" value="' + esc(S.codigo) + '">' +
+        '<button class="btn-azul" id="b-recargar">Recargar</button>' + msg + '</div>' +
+        '<div class="movs"><h3>Movimientos de hoy</h3>' + (movs || '<div class="vacio">Todavía no tienes movimientos hoy.</div>') + '</div>';
     }
     var t = { perfil: 'Mi perfil', ayuda: 'Ayuda y soporte' }[p] || '';
     return '<h2>' + t + '</h2><div class="vacio">Esta pantalla la diseñamos con tus próximas imágenes.</div>';
@@ -556,7 +600,7 @@
   }
 
   // ---------- Render general ----------
-  var ultimaHoja = '';
+  var ultimaHoja = '', ultimaSec = '';
   function render() {
     var p = $('#pantalla');
     var enViaje = !!(S.oferta || S.carrera);
@@ -585,7 +629,8 @@
     // Secciones
     var sec = S.pantalla !== 'inicio' && !enViaje;
     $('#seccion').hidden = !sec;
-    if (sec) $('#seccion-cuerpo').innerHTML = seccionHTML(S.pantalla);
+    $('#b-centrar').hidden = sec;
+    if (sec) { var hs = seccionHTML(S.pantalla); if (hs !== ultimaSec) { $('#seccion-cuerpo').innerHTML = hs; ultimaSec = hs; } } else ultimaSec = '';
     // Hoja de viaje
     $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
     $('#b-centrar').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
@@ -655,11 +700,32 @@
     var c = S.carrera, total = valorDe(c), com = comisionC(total);
     S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
     var d = new Date();
+    S.movs.push({ tipo: 'menos', montoC: com, texto: 'Comisión carrera', det: c.o.dir, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.hechas.push({ cliente: c.cliente, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.carrera = null; puntosViaje(null);
     S.fin = { c: c, total: total, estrellas: 0 };
     render(); pintarFin();
   }
+  // Recarga con código (en la prueba: PRUEBA10 = $10, PRUEBA20 = $20, PRUEBA50 = $50; cualquier otro no es válido)
+  var CODIGOS = { PRUEBA10: { montoC: 1000, usado: true }, PRUEBA20: { montoC: 2000 }, PRUEBA50: { montoC: 5000 } };
+  function recargar() {
+    var k = (S.codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (k.length < 6) { S.msgRec = { c: 'mal', t: 'Escribe el código completo.' }; render(); marcarError(); return; }
+    var cod = CODIGOS[k];
+    if (!cod) { S.msgRec = { c: 'mal', t: 'Código no válido. Revísalo e intenta otra vez.' }; render(); marcarError(); return; }
+    if (cod.usado) { S.msgRec = { c: 'mal', t: 'Este código ya fue usado.' }; render(); marcarError(); return; }
+    cod.usado = true; S.saldoC += cod.montoC; S.codigo = '';
+    var d = new Date();
+    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Código ' + k, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.msgRec = { c: 'ok', t: '¡Recarga exitosa! Se sumaron ' + dineroC(cod.montoC) + ' a tu saldo.' };
+    render();
+  }
+  function marcarError() { var i = $('#codigo'); if (i) i.classList.add('error'); }
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'codigo') { S.codigo = e.target.value.toUpperCase(); e.target.value = S.codigo; e.target.classList.remove('error'); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.target.id === 'codigo' && e.key === 'Enter') recargar(); });
+
   // Pantalla "¡Carrera completada!": cuánto cobrar, el detalle y calificar al cliente
   var ESTRELLA = '<svg viewBox="0 0 24 24"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>';
   function pintarFin() {
@@ -779,6 +845,7 @@
     if (e.target.closest('#b-aceptar')) { aceptar(S.oferta); return; }
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
     if (e.target.closest('#b-finalizar')) { finalizar(); return; }
+    if (e.target.closest('#b-recargar')) { recargar(); return; }
   });
   $('#b-centrar').addEventListener('click', centrar);
   $('#b-ruta').addEventListener('click', verRuta);
