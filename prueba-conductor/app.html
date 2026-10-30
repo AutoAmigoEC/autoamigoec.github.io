@@ -688,7 +688,7 @@
       '<div class="filas">' + filas.map(function (r) { return '<div class="fila"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join('') + '</div>' +
       '<div class="calif">Califica al cliente</div><div class="estrellas">' + est + '</div>' +
       '<div class="razon' + (f.estrellas && f.estrellas <= 3 ? ' abierta' : '') + '"><label for="razon">Razón</label>' +
-      '<textarea id="razon" maxlength="300" placeholder="Explica por qué le das ' + f.estrellas + ' estrella' + (f.estrellas === 1 ? '' : 's') + '">' + esc(f.razon || '') + '</textarea><small>Obligatorio con 3 estrellas o menos. Solo la central de AutoAmigo lo verá.</small></div>' +
+      '<textarea id="razon" maxlength="300" placeholder="Explica por qué le das ' + f.estrellas + ' estrella' + (f.estrellas === 1 ? '' : 's') + '">' + esc(f.razon || '') + '</textarea></div>' +
       '<div class="espacio"></div><div class="pie"><button class="btn-final" id="b-continuar">Continuar</button></div>';
     el.hidden = false;
   }
