@@ -1842,7 +1842,7 @@
     for (var i = 0; i < 10; i++) out += i === 0 ? String(1 + buf[i] % 9) : String(buf[i] % 10);
     return out;
   }
-  function formatoCodigo(k) { return k.length === 10 ? k.slice(0, 5) + ' ' + k.slice(5) : (k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k); }
+  function formatoCodigo(k) { return k.length === 10 ? k : (k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k); }
 
   // Genera varios códigos de un mismo monto de una sola vez
   function crearCodigo(datos, intentos) {

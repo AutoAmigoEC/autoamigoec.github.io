@@ -387,7 +387,7 @@
   var S = {
     nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
     yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio', codigo: '', msgRec: null,
-    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 11111 11111', hora: '7:52' }],
+    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 1111111111', hora: '7:52' }],
     oferta: null, carrera: null, menu: false
   };
   var BANDEJA = [
@@ -714,7 +714,7 @@
     if (cod.usado) { S.msgRec = { c: 'mal', t: 'Esta recarga ya fue usada.' }; render(); marcarError(); return; }
     cod.usado = true; S.saldoC += cod.montoC; S.codigo = '';
     var d = new Date();
-    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Recarga ' + k.slice(0, 5) + ' ' + k.slice(5), hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Recarga ' + k, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.msgRec = { c: 'ok', t: '¡Recarga exitosa! Se sumaron ' + dineroC(cod.montoC) + ' a tu saldo.' };
     render();
   }
