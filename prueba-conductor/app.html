@@ -303,7 +303,7 @@
   <!-- Controles solo para la prueba -->
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
-    <p>Esto no sale en la app. Sirve para simular lo que pasa en la calle.</p>
+    <p>Esto no sale en la app. Al conectarte, a los pocos segundos llega una carrera sola a la pantalla. Con estos botones puedes hacerla llegar al instante.</p>
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
@@ -587,7 +587,7 @@
       [0, .25, .5].forEach(function (t) { var os = A.createOscillator(), g = A.createGain(); os.frequency.value = 880; os.connect(g); g.connect(A.destination); g.gain.setValueAtTime(.15, A.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, A.currentTime + t + .2); os.start(A.currentTime + t); os.stop(A.currentTime + t + .22); });
     } catch (e) {}
   }
-  function cerrarOferta(msg) { S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
+  function cerrarOferta(msg) { programarProxima(25); S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
   function aceptar(o) {
     S.oferta = null;
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
@@ -613,10 +613,19 @@
     S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
     var d = new Date();
     S.hechas.push({ cliente: c.cliente, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
-    S.carrera = null; puntosViaje(null);
+    S.carrera = null; puntosViaje(null); programarProxima(15);
     aviso('Carrera finalizada. Cobra ' + dineroC(total) + ' al cliente.');
     render();
   }
+
+  // Cuando estás conectado y libre, las carreras nuevas llegan solas a la pantalla
+  var proxima = 0;
+  function programarProxima(seg) { proxima = Date.now() + seg * 1000; }
+  setInterval(function () {
+    if (S.estado !== 'conectado' || S.oferta || S.carrera) { if (S.estado !== 'conectado') proxima = 0; return; }
+    if (!proxima) { programarProxima(6); return; }
+    if (Date.now() >= proxima) { proxima = 0; nuevaOferta(Math.random() < 0.3 ? 400 : 0); }
+  }, 1000);
 
   // Avanza cada segundo
   setInterval(function () {
@@ -661,7 +670,11 @@
     ponerEstado(b.getAttribute('data-e'));
   });
   document.addEventListener('click', function (e) { if (!e.target.closest('#estados') && !e.target.closest('#estado-btn')) { $('#estados').hidden = true; $('#estado-btn').classList.remove('abierto'); } });
-  $('#campana').addEventListener('click', function () { irA('bandeja'); });
+  // La campana abre la bandeja; tocarla otra vez regresa a donde estabas
+  $('#campana').addEventListener('click', function () {
+    if (S.pantalla === 'bandeja') { irA(S.antesBandeja || 'inicio'); return; }
+    S.antesBandeja = S.pantalla; irA('bandeja');
+  });
   $('#salir').addEventListener('click', function () { S.menu = false; render(); aviso('En la app aquí vuelve a la pantalla de iniciar sesión.'); });
   document.addEventListener('click', function (e) {
     var ir = e.target.closest('[data-ir]');
