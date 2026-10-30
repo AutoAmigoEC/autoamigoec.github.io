@@ -188,8 +188,8 @@
   .recargar{margin-top:14px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
   .recargar h3{margin:0;font-size:17px;font-weight:800;color:var(--navy)}
   .recargar p{margin:4px 0 12px;color:var(--gris);font-size:13.5px;line-height:1.4}
-  .codigo{width:100%;height:58px;border:2px solid #D9DFEC;border-radius:16px;background:#F8FAFF;text-align:center;font:inherit;font-size:22px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:var(--navy);outline:none}
-  .codigo::placeholder{letter-spacing:2px;font-weight:600;font-size:16px;color:#98A2B3}
+  .codigo{width:100%;height:58px;border:2px solid #D9DFEC;border-radius:16px;background:#F8FAFF;text-align:center;font:inherit;font-size:22px;font-weight:800;letter-spacing:4px;color:var(--navy);outline:none}
+  .codigo::placeholder{letter-spacing:1px;font-weight:600;font-size:16px;color:#98A2B3}
   .codigo:focus{border-color:#1A5CE0;background:#fff}
   .codigo.error{border-color:var(--rojo)}
   .recargar .btn-azul{margin-top:10px;height:54px;border-radius:16px;font-size:17px}
@@ -365,7 +365,7 @@
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
-    <p>Códigos de recarga de prueba: <b>PRUEBA20</b> ($20) y <b>PRUEBA50</b> ($50). <b>PRUEBA10</b> ya está usado.</p>
+    <p>Recargas de prueba: <b>2020202020</b> ($20) y <b>5050505050</b> ($50). <b>1111111111</b> ya está usada.</p>
     <label>Color del carro del conductor
       <select id="sim-color">
         <option value="#F4F5F7">Blanco</option><option value="#1F2329">Negro</option><option value="#A9AFB8">Plateado</option>
@@ -387,7 +387,7 @@
   var S = {
     nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
     yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio', codigo: '', msgRec: null,
-    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Código PRUEBA10', hora: '7:52' }],
+    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 11111 11111', hora: '7:52' }],
     oferta: null, carrera: null, menu: false
   };
   var BANDEJA = [
@@ -536,8 +536,8 @@
       return '<h2>Mi billetera</h2>' +
         '<div class="saldo-card"><small>Disponible</small><div class="monto">' + dineroC(S.saldoC) + '</div>' +
         '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
-        '<div class="recargar"><h3>Recargar</h3><p>Escribe el código de recarga que te dio la central de AutoAmigo.</p>' +
-        '<input class="codigo" id="codigo" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CÓDIGO" value="' + esc(S.codigo) + '">' +
+        '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
+        '<input class="codigo" id="codigo" maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="Números" value="' + esc(S.codigo) + '">' +
         '<button class="btn-azul" id="b-recargar">Recargar</button>' + msg + '</div>' +
         '<div class="movs"><h3>Movimientos de hoy</h3>' + (movs || '<div class="vacio">Todavía no tienes movimientos hoy.</div>') + '</div>';
     }
@@ -705,22 +705,22 @@
     render(); pintarFin();
   }
   // Recarga con código (en la prueba: PRUEBA10 = $10, PRUEBA20 = $20, PRUEBA50 = $50; cualquier otro no es válido)
-  var CODIGOS = { PRUEBA10: { montoC: 1000, usado: true }, PRUEBA20: { montoC: 2000 }, PRUEBA50: { montoC: 5000 } };
+  var CODIGOS = { '1111111111': { montoC: 1000, usado: true }, '2020202020': { montoC: 2000 }, '5050505050': { montoC: 5000 } };
   function recargar() {
-    var k = (S.codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (k.length < 6) { S.msgRec = { c: 'mal', t: 'Escribe el código completo.' }; render(); marcarError(); return; }
+    var k = (S.codigo || '').replace(/\D/g, '');
+    if (k.length !== 10) { S.msgRec = { c: 'mal', t: 'Escribe los 10 números completos.' }; render(); marcarError(); return; }
     var cod = CODIGOS[k];
-    if (!cod) { S.msgRec = { c: 'mal', t: 'Código no válido. Revísalo e intenta otra vez.' }; render(); marcarError(); return; }
-    if (cod.usado) { S.msgRec = { c: 'mal', t: 'Este código ya fue usado.' }; render(); marcarError(); return; }
+    if (!cod) { S.msgRec = { c: 'mal', t: 'Número de recarga no válido. Revísalo e intenta otra vez.' }; render(); marcarError(); return; }
+    if (cod.usado) { S.msgRec = { c: 'mal', t: 'Esta recarga ya fue usada.' }; render(); marcarError(); return; }
     cod.usado = true; S.saldoC += cod.montoC; S.codigo = '';
     var d = new Date();
-    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Código ' + k, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Recarga ' + k.slice(0, 5) + ' ' + k.slice(5), hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.msgRec = { c: 'ok', t: '¡Recarga exitosa! Se sumaron ' + dineroC(cod.montoC) + ' a tu saldo.' };
     render();
   }
   function marcarError() { var i = $('#codigo'); if (i) i.classList.add('error'); }
   document.addEventListener('input', function (e) {
-    if (e.target.id === 'codigo') { S.codigo = e.target.value.toUpperCase(); e.target.value = S.codigo; e.target.classList.remove('error'); }
+    if (e.target.id === 'codigo') { S.codigo = e.target.value.replace(/\D/g, '').slice(0, 10); e.target.value = S.codigo; e.target.classList.remove('error'); }
   });
   document.addEventListener('keydown', function (e) { if (e.target.id === 'codigo' && e.key === 'Enter') recargar(); });
 
