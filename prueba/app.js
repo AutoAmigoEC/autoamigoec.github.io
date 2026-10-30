@@ -751,7 +751,7 @@
     var u = lista[0];
     var quien = u.unidad ? 'U' + esc(u.unidad) : esc(u.nombre || '');
     return '<span class="etiqueta-cancel">Cancelada por el conductor ' + quien +
-      (u.en ? ' · ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
+      (u.en ? ' ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
   }
 
   function liberarConductor(up, c, id) {
