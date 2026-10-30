@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>AutoAmigo Conductor · Prueba de pantallas</title>
+<link rel="icon" href="../logo.png">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0A0F3C;--navy2:#141A52;--texto:#101828;--gris:#667085;--suave:#F2F4F7;--linea:#E4E7EC;--verde:#12B76A;--rojo:#E5252A;--amarillo:#F5B300;--azul:#1570EF;--morado:#6927DA}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{margin:0;height:100%;background:#E9EAF2;font-family:Inter,system-ui,sans-serif;color:var(--texto)}
+  button{font:inherit;color:inherit;cursor:pointer}
+  .escena{min-height:100%;display:flex;align-items:center;justify-content:center;gap:28px;padding:24px 16px}
+  .telefono{flex:none;width:390px;height:812px;border-radius:48px;background:#05070F;padding:11px;box-shadow:0 30px 70px rgba(9,1,69,.35)}
+  .pantalla{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:#F6F7FB;display:flex;flex-direction:column}
+  .estado-tel{flex:none;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 34px;font-weight:600;font-size:15px;position:relative;z-index:6}
+  .viaje .estado-tel{position:absolute;left:0;right:0;top:0;color:#fff}
+  @media (max-width:560px){
+    .escena{padding:0;display:block}
+    .telefono{width:100%;height:100svh;border-radius:0;padding:0;box-shadow:none}
+    .pantalla{border-radius:0}
+    .estado-tel{display:none}
+    .controles{display:none}
+    .controles.abierto{display:flex}
+    .btn-prueba{display:flex!important}
+  }
+  /* ---------- Encabezado ---------- */
+  .cabeza{flex:none;display:flex;align-items:center;gap:10px;padding:8px 18px 0;position:relative;z-index:30}
+  .ham{width:44px;height:44px;border:0;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.08);display:flex;align-items:center;justify-content:center;flex:none}
+  .ham span{display:block;width:20px;height:2.5px;border-radius:2px;background:var(--texto);position:relative;transition:.2s}
+  .ham span::before,.ham span::after{content:"";position:absolute;left:0;width:20px;height:2.5px;border-radius:2px;background:var(--texto);transition:.2s}
+  .ham span::before{top:-7px}.ham span::after{top:7px}
+  .menu-abierto .ham span{background:transparent}
+  .menu-abierto .ham span::before{top:0;transform:rotate(45deg)}
+  .menu-abierto .ham span::after{top:0;transform:rotate(-45deg)}
+  .avatar{position:relative;width:46px;height:46px;border-radius:50%;flex:none;background:linear-gradient(135deg,#2B3380,#0A0F3C);color:#fff;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(16,24,40,.15)}
+  .avatar i{position:absolute;right:-2px;bottom:-2px;width:15px;height:15px;border-radius:50%;border:2.5px solid #fff;background:var(--rojo)}
+  .avatar i.conectado{background:var(--verde)}.avatar i.ocupado{background:var(--amarillo)}
+  .estado-btn{position:relative;height:42px;border:0;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.08);padding:0 12px 0 14px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+  .estado-btn svg{transition:.2s}.estado-btn.abierto svg{transform:rotate(180deg)}
+  .estados{position:absolute;top:58px;left:118px;background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(16,24,40,.18);padding:6px;min-width:170px;z-index:40}
+  .estados button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:11px 12px;border-radius:10px;font-weight:600;font-size:15px;text-align:left}
+  .estados button:hover,.estados button.sel{background:var(--suave)}
+  .estados b{width:11px;height:11px;border-radius:50%}
+  .campana{margin-left:auto;position:relative;width:46px;height:46px;border:0;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.08);display:flex;align-items:center;justify-content:center;flex:none}
+  .campana i{position:absolute;top:7px;right:8px;width:11px;height:11px;border-radius:50%;background:var(--rojo);border:2px solid #fff}
+  /* ---------- Inicio ---------- */
+  .saludo{flex:none;display:flex;align-items:center;padding:14px 18px 0;min-height:128px;position:relative}
+  .saludo .txt{position:relative;z-index:1;max-width:58%}
+  .saludo .hola{font-size:22px;font-weight:500;line-height:1.1}
+  .saludo h1{margin:2px 0 6px;font-size:36px;font-weight:800;color:var(--navy);line-height:1.05;letter-spacing:-.5px}
+  .saludo p{margin:0;color:#475467;font-size:14.5px;line-height:1.35}
+  .saludo .carro{position:absolute;right:-6px;top:10px;width:190px}
+  .tarjetas{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px 0}
+  .tarjeta{border:0;text-align:left;border-radius:20px;background:#fff;padding:14px 14px 13px;box-shadow:0 4px 14px rgba(16,24,40,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:6px;min-height:84px}
+  .tarjeta b{display:block;font-size:26px;font-weight:800;letter-spacing:-.3px}
+  .tarjeta small{display:block;margin-top:4px;color:#475467;font-size:13.5px;font-weight:500}
+  .tarjeta.oscura{background:var(--navy);color:#fff}.tarjeta.oscura small{color:#C9CDE6}
+  .tarjeta .ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .tarjeta.oscura .ic{background:rgba(255,255,255,.1)}
+  .tarjeta.ancha{grid-column:1/-1;flex-direction:row;align-items:center;min-height:0;padding:11px 14px;justify-content:flex-start;gap:12px}
+  .tarjeta.ancha b{font-size:21px}.tarjeta.ancha small{margin-top:1px}
+  .tarjeta.ancha .flecha{margin-left:auto}
+  .tarjeta.ancha .ic{background:#FDECEC}
+  .mapa-caja{position:relative;flex:1;min-height:120px;margin-top:12px}
+  #mapa{position:absolute;inset:0}
+  .maplibregl-ctrl-top-left{display:none}
+  .maplibregl-ctrl-bottom-left{display:none}
+  .redondo{position:absolute;width:48px;height:48px;border:0;border-radius:50%;background:#fff;box-shadow:0 4px 12px rgba(16,24,40,.18);display:flex;align-items:center;justify-content:center;z-index:5}
+  .viaje .redondo{background:#141A3F;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+  .yo{position:relative;width:120px;height:120px;pointer-events:none}
+  .yo .halo{position:absolute;inset:0;border-radius:50%;background:rgba(18,183,106,.18);border:1px solid rgba(18,183,106,.35);animation:latido 2.4s ease-out infinite}
+  .yo .punto{position:absolute;left:50%;top:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:var(--verde);border:4px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .yo.gris .halo{background:rgba(138,148,166,.2);border-color:rgba(138,148,166,.4);animation:none}
+  .yo.gris .punto{background:#8A94A6}
+  @keyframes latido{0%{transform:scale(.55);opacity:1}100%{transform:scale(1);opacity:.35}}
+  .viaje .yo{width:70px;height:70px}
+  .pin-v{display:block;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+  /* Deslizar para conectarse */
+  .deslizar{flex:none;margin:10px 18px 0;height:66px;border-radius:22px;background:var(--verde);position:relative;overflow:hidden;user-select:none;touch-action:none;box-shadow:0 8px 20px rgba(18,183,106,.3);transition:background .25s}
+  .deslizar.off{background:#98A2B3;box-shadow:0 8px 20px rgba(16,24,40,.15)}
+  .deslizar .rotulo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;padding-left:40px;pointer-events:none}
+  .deslizar .rotulo small{display:block;font-weight:500;font-size:12.5px;opacity:.9}
+  .deslizar .rotulo div{text-align:center}
+  .deslizar .perilla{position:absolute;left:7px;top:7px;width:52px;height:52px;border-radius:17px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:left .2s}
+  .deslizar .perilla.arrastrando{transition:none}
+  .deslizar .flechas{position:absolute;right:18px;top:0;bottom:0;display:flex;align-items:center;color:rgba(255,255,255,.75);pointer-events:none}
+  /* Barra inferior */
+  .barra{flex:none;display:flex;justify-content:space-around;padding:10px 6px 14px;background:#fff;border-top:1px solid var(--linea);margin-top:10px;position:relative;z-index:5}
+  .barra button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#98A2B3;padding:2px 4px;min-width:60px}
+  .barra button.sel{color:var(--navy)}
+  .barra button svg{width:24px;height:24px}
+  /* ---------- Menú lateral ---------- */
+  .velo{position:absolute;inset:0;background:rgba(10,15,60,.35);z-index:20;opacity:0;pointer-events:none;transition:opacity .25s}
+  .menu-abierto .velo{opacity:1;pointer-events:auto}
+  .lateral{position:absolute;top:0;bottom:0;left:0;width:76%;max-width:300px;background:#fff;z-index:25;transform:translateX(-102%);transition:transform .28s ease;padding:118px 14px 20px;display:flex;flex-direction:column;box-shadow:8px 0 30px rgba(0,0,0,.18)}
+  .menu-abierto .lateral{transform:none}
+  .lateral .quien{display:flex;align-items:center;gap:10px;padding:0 8px 16px;border-bottom:1px solid var(--linea);margin-bottom:8px}
+  .lateral .quien b{display:block;font-size:16px}.lateral .quien small{color:var(--gris);font-size:13px}
+  .lateral button{display:flex;align-items:center;gap:14px;border:0;background:none;padding:13px 10px;border-radius:12px;font-size:15.5px;font-weight:600;text-align:left}
+  .lateral button:hover,.lateral button.sel{background:var(--suave)}
+  .lateral button.sel{color:var(--navy)}
+  .lateral button svg{width:22px;height:22px;flex:none;color:#475467}
+  .lateral .salir{margin-top:auto;color:var(--rojo)}.lateral .salir svg{color:var(--rojo)}
+  /* ---------- Secciones ---------- */
+  .seccion{position:absolute;left:0;right:0;top:100px;bottom:0;background:#F6F7FB;z-index:4;display:flex;flex-direction:column}
+  .seccion .cuerpo{flex:1;overflow:auto;padding:6px 18px 18px}
+  .seccion h2{margin:4px 0 14px;font-size:24px;font-weight:800;color:var(--navy)}
+  .vacio{background:#fff;border-radius:18px;padding:22px;text-align:center;color:var(--gris);font-size:14.5px;line-height:1.45}
+  .item-b{background:#fff;border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 10px rgba(16,24,40,.05)}
+  .item-b .fila{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .item-b .km{font-weight:800;font-size:20px}
+  .item-b .val{font-weight:800;font-size:18px;text-align:right}
+  .item-b .val small{display:block;font-size:12px;font-weight:600;color:var(--gris)}
+  .item-b .dirs{margin:8px 0 10px;font-size:14px;color:#344054;line-height:1.5}
+  .item-b .dirs i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+  .btn-azul{border:0;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;height:48px;width:100%}
+  /* ---------- Viaje (carrera) ---------- */
+  .viaje .cabeza,.viaje .saludo,.viaje .tarjetas,.viaje .deslizar,.viaje .barra{display:none}
+  .viaje .mapa-caja{position:absolute;inset:0;margin:0;z-index:0}
+  .arriba-v{display:none;position:absolute;left:14px;right:14px;top:50px;z-index:6;gap:10px}
+  .viaje .arriba-v{display:grid;grid-template-columns:1fr 1fr}
+  .pastilla{border:1px solid rgba(255,255,255,.14);border-radius:22px;background:rgba(16,22,64,.9);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;gap:8px;padding:9px 8px;text-align:left;min-width:0}
+  .pastilla .ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .pastilla small{display:block;font-size:11.5px;color:#C9CDE6;white-space:nowrap}
+  .pastilla div{min-width:0}
+  .pastilla b{display:block;font-size:18px;font-weight:800}
+  .pastilla .fl{margin-left:auto;opacity:.8}
+  .ham-v{display:none;position:absolute;left:14px;top:124px;z-index:30;width:46px;height:46px;border-radius:15px;border:0;background:#141A3F;box-shadow:0 4px 12px rgba(0,0,0,.35);align-items:center;justify-content:center}
+  .viaje .ham-v{display:flex}
+  .ham-v span,.ham-v span::before,.ham-v span::after{background:#fff!important}
+  .menu-abierto .ham-v span{background:transparent!important}
+  .hoja{position:absolute;left:0;right:0;bottom:0;z-index:8;background:#fff;border-radius:30px 30px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:6px 20px 18px;display:none;max-height:72%;overflow:auto}
+  .viaje .hoja{display:block}
+  .tirador{display:block;margin:4px auto 8px;width:64px;height:22px;border:0;background:none;position:relative;touch-action:none}
+  .tirador::after{content:"";position:absolute;left:12px;right:12px;top:8px;height:5px;border-radius:3px;background:#D0D5DD}
+  .etiqueta{display:inline-block;background:var(--rojo);color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:999px}
+  .datos{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}
+  .datos .km{font-size:34px;font-weight:800;letter-spacing:-.8px;line-height:1}
+  .datos .min{color:#475467;font-size:15.5px;margin-top:4px}
+  .datos .valor{text-align:right}
+  .datos .valor b{display:block;font-size:32px;font-weight:800;letter-spacing:-.8px;line-height:1}
+  .datos .valor small{display:block;color:#475467;font-size:14px;margin-top:5px}
+  .datos .sep{width:1px;align-self:stretch;background:var(--linea)}
+  .puntos{margin-top:14px;display:flex;flex-direction:column;gap:12px;position:relative}
+  .puntos .p{display:flex;gap:12px;align-items:flex-start}
+  .puntos .p svg{flex:none;margin-top:1px}
+  .puntos b{display:block;font-size:16px;font-weight:700}
+  .puntos small{display:block;color:var(--gris);font-size:14px;margin-top:1px}
+  .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+  .chip{background:var(--suave);border-radius:16px;padding:11px 6px;text-align:center}
+  .chip b{display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;font-weight:800}
+  .chip small{display:block;color:#475467;font-size:12px;margin-top:3px}
+  .botones{display:grid;grid-template-columns:1fr 1.25fr;gap:10px;margin-top:16px}
+  .btn-gris{border:0;border-radius:20px;background:var(--suave);font-weight:700;font-size:17px;height:60px}
+  .btn-acep{border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:17px;height:60px;display:flex;align-items:center;justify-content:center;gap:14px}
+  .ruedita{position:relative;width:42px;height:42px}
+  .ruedita svg{position:absolute;inset:0;transform:rotate(-90deg)}
+  .ruedita span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .cliente{display:flex;align-items:center;gap:12px}
+  .foto-c{width:56px;height:56px;border-radius:50%;flex:none;background:linear-gradient(135deg,#F5C9A9,#D9896A);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center}
+  .cliente .nom{flex:1;min-width:0}
+  .cliente .nom b{display:block;font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cliente .nom small svg{flex:none}
+  .cliente .nom small{display:flex;align-items:center;gap:5px;color:#475467;font-size:13px;margin-top:3px;white-space:nowrap}
+  .cliente .nom small i{width:1px;height:14px;background:#D0D5DD}
+  .circ{width:48px;height:48px;border-radius:50%;border:0;background:var(--suave);display:flex;align-items:center;justify-content:center;flex:none}
+  .taxi{margin-top:14px;background:#EFEAFE;border-radius:18px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .taxi .t{color:var(--morado);font-weight:800;font-size:13px;letter-spacing:.4px}
+  .taxi .i{color:#475467;font-size:13.5px;margin-top:3px;line-height:1.45}
+  .taxi .v{color:var(--morado);font-weight:800;font-size:34px;letter-spacing:-.8px}
+  .exacta{margin-top:10px;background:#FEF6DD;border-radius:14px;padding:12px 14px;font-size:14.5px}
+  .btn-final{margin-top:14px;width:100%;height:60px;border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:18px;box-shadow:0 8px 20px rgba(10,15,60,.25)}
+  .hoja.mini .solo-grande{display:none!important}
+  .hoja:not(.mini) .solo-mini{display:none!important}
+  .viaje .aviso{bottom:auto;top:180px}
+  .aviso{position:absolute;left:18px;right:18px;bottom:96px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:60;text-align:center}
+  /* ---------- Controles de la prueba ---------- */
+  .controles{width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:10px;align-self:center}
+  .controles h3{margin:0;font-size:16px;color:var(--navy)}
+  .controles p{margin:0;font-size:13px;color:var(--gris);line-height:1.4}
+  .controles button,.controles select{height:42px;border-radius:12px;border:1px solid var(--linea);background:#fff;font-weight:600;font-size:14px;padding:0 10px}
+  .controles button.prin{background:var(--navy);color:#fff;border:0}
+  .controles label{font-size:13px;font-weight:600;color:#344054;display:flex;flex-direction:column;gap:5px}
+  .btn-prueba{display:none;position:fixed;right:12px;bottom:100px;z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  @media (max-width:560px){.controles.abierto{position:fixed;left:12px;right:12px;bottom:150px;width:auto;z-index:100}}
+</style>
+</head>
+<body>
+<div class="escena">
+  <div class="telefono"><div class="pantalla" id="pantalla">
+    <div class="estado-tel"><span id="hora-tel">9:41</span><span>●●● 100%</span></div>
+
+    <!-- Encabezado -->
+    <div class="cabeza">
+      <button class="ham" id="ham" aria-label="Menú"><span></span></button>
+      <div class="avatar" id="avatar">CR<i id="punto-estado"></i></div>
+      <button class="estado-btn" id="estado-btn"><span id="estado-txt">Desconectado</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+      <button class="campana" id="campana" aria-label="Bandeja de carreras">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+        <i id="campana-punto"></i>
+      </button>
+    </div>
+    <div class="estados" id="estados" hidden>
+      <button data-e="conectado"><b style="background:var(--verde)"></b>Conectado</button>
+      <button data-e="desconectado"><b style="background:var(--rojo)"></b>Desconectado</button>
+      <button data-e="ocupado"><b style="background:var(--amarillo)"></b>Ocupado</button>
+    </div>
+
+    <!-- Saludo -->
+    <div class="saludo">
+      <div class="txt">
+        <div class="hola">Hola,</div>
+        <h1 id="nombre">Carlos</h1>
+        <p id="saludo-txt">¡Buenos días, que tengas una excelente jornada!</p>
+      </div>
+      <div class="carro" id="carro"></div>
+    </div>
+
+    <!-- Tarjetas -->
+    <div class="tarjetas">
+      <button class="tarjeta oscura" data-ir="carreras">
+        <div><b id="k-carreras">0</b><small>Carreras hoy</small></div>
+        <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="#5B8CFF"><rect x="4" y="13" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="11" rx="1"/><rect x="16" y="5" width="4" height="15" rx="1"/></svg></span>
+      </button>
+      <button class="tarjeta" data-ir="billetera">
+        <div><b id="k-saldo">$0.00</b><small>Saldo disponible</small></div>
+        <span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="var(--navy)"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/><circle cx="16" cy="14" r="1.5" fill="#fff"/></svg></span>
+      </button>
+      <button class="tarjeta ancha" data-ir="billetera">
+        <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--rojo)"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
+        <div><b id="k-consumido">$0.00</b><small>Consumido hoy</small></div>
+        <svg class="flecha" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Mapa -->
+    <div class="mapa-caja" id="mapa-caja">
+      <div id="mapa"></div>
+      <button class="redondo" id="b-centrar" style="right:16px;bottom:16px" aria-label="Mi ubicación">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg></button>
+      <button class="redondo" id="b-ruta" style="left:14px;bottom:16px;display:none" aria-label="Ver toda la ruta">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg></button>
+    </div>
+
+    <!-- Deslizar -->
+    <div class="deslizar" id="deslizar">
+      <div class="rotulo"><div><span id="desl-txt">Conectarme</span><small id="desl-sub">Desliza hacia la derecha</small></div></div>
+      <div class="flechas"><svg width="34" height="20" viewBox="0 0 34 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m4 4 6 6-6 6M14 4l6 6-6 6M24 4l6 6-6 6"/></svg></div>
+      <div class="perilla" id="perilla"><svg width="26" height="26" viewBox="0 0 24 24" fill="#12B76A" id="perilla-ic"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11zm2.2-.3h9.6l-1.1-3.1a.5.5 0 0 0-.5-.3H8.8a.5.5 0 0 0-.5.3zM7 14.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4zm10 0a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z"/></svg></div>
+    </div>
+
+    <!-- Barra inferior -->
+    <nav class="barra" id="barra">
+      <button data-ir="inicio" class="sel"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg>Inicio</button>
+      <button data-ir="carreras"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/></svg>Mis carreras</button>
+      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Billetera</button>
+      <button data-ir="bandeja"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-5l-3 4-3-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>Bandeja</button>
+      <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Perfil</button>
+    </nav>
+
+    <!-- Secciones -->
+    <div class="seccion" id="seccion" hidden><div class="cuerpo" id="seccion-cuerpo"></div></div>
+
+    <!-- Viaje: saldo y consumido arriba -->
+    <div class="arriba-v">
+      <button class="pastilla" data-ir="billetera">
+        <span class="ic" style="background:#1D3B8F"><svg width="22" height="22" viewBox="0 0 24 24" fill="#3B82F6"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/><circle cx="16" cy="14" r="1.5" fill="#1D3B8F"/></svg></span>
+        <div><small>Saldo disponible</small><b id="v-saldo">$0.00</b></div>
+        <svg class="fl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      <button class="pastilla" data-ir="billetera">
+        <span class="ic" style="background:#5A1A2A"><svg width="20" height="20" viewBox="0 0 24 24" fill="#F04438"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
+        <div><small>Consumido hoy</small><b id="v-consumido">$0.00</b></div>
+        <svg class="fl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+    </div>
+    <button class="ham ham-v" id="ham-v" aria-label="Menú"><span></span></button>
+
+    <!-- Hoja blanca de la carrera -->
+    <div class="hoja" id="hoja"></div>
+
+    <!-- Menú lateral -->
+    <div class="velo" id="velo"></div>
+    <aside class="lateral" id="lateral">
+      <div class="quien"><div class="avatar" style="width:42px;height:42px;font-size:15px">CR</div><div><b id="lat-nombre">Carlos Ruiz</b><small>Unidad 07</small></div></div>
+      <button data-ir="inicio"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg>Inicio</button>
+      <button data-ir="carreras"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/></svg>Mis carreras</button>
+      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Mi billetera y saldo</button>
+      <button data-ir="bandeja"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-5l-3 4-3-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>Bandeja de carreras</button>
+      <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Mi perfil</button>
+      <button data-ir="ayuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>Ayuda y soporte</button>
+      <button class="salir" id="salir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>Cerrar sesión</button>
+    </aside>
+
+    <div class="aviso" id="aviso" hidden></div>
+  </div></div>
+
+  <!-- Controles solo para la prueba -->
+  <div class="controles" id="controles">
+    <h3>Controles de la prueba</h3>
+    <p>Esto no sale en la app. Sirve para simular lo que pasa en la calle.</p>
+    <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
+    <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
+    <button id="sim-llegue">Simular: llegué donde el cliente</button>
+    <label>Color del carro del conductor
+      <select id="sim-color">
+        <option value="#F4F5F7">Blanco</option><option value="#1F2329">Negro</option><option value="#A9AFB8">Plateado</option>
+        <option value="#B3121B">Rojo</option><option value="#1E4FB8">Azul</option><option value="#6B7280">Gris</option>
+      </select></label>
+    <label>Mapa
+      <select id="sim-modo"><option value="">Según la hora (como en la app)</option><option value="dia">Forzar día</option><option value="noche">Forzar noche</option></select></label>
+  </div>
+  <button class="btn-prueba" id="btn-prueba">⚙ Prueba</button>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="../mapas.js?v=202610301400"></script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var CFG = { arranqueC: 50, kmC: 50, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30, minimaC: 250, comisionMinC: 50, comisionPct: 10, comisionDesdeC: 500 };
+  var S = {
+    nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
+    yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio',
+    oferta: null, carrera: null, menu: false
+  };
+  var BANDEJA = [
+    { cliente: 'Ana Morán', o: { dir: 'Av. Samborondón km 2.5', ref: 'Frente a Village Plaza', lat: -2.1405, lng: -79.8668 }, d: { dir: 'Mall del Sol', ref: 'Guayaquil', lat: -2.1550, lng: -79.8925 }, fijo: 0, estC: 400 },
+    { cliente: 'Luis Peña', o: { dir: 'Isla Mocolí', ref: 'Garita principal', lat: -2.1015, lng: -79.8565 }, d: { dir: 'Entre Ríos', ref: 'Samborondón', lat: -2.1530, lng: -79.8710 }, fijo: 500, estC: 500 },
+    { cliente: 'Rosa Vera', o: { dir: 'Ciudad Celeste', ref: 'Etapa La Brisa', lat: -2.0790, lng: -79.8485 }, d: { dir: 'Aeropuerto J.J. Olmedo', ref: 'Guayaquil', lat: -2.1574, lng: -79.8837 }, fijo: 0, estC: 650 },
+    { cliente: 'Pedro Alvarado', o: { dir: 'La Puntilla', ref: 'Junto al River Mall', lat: -2.1375, lng: -79.8815 }, d: { dir: 'Urdesa Central', ref: 'Guayaquil', lat: -2.1700, lng: -79.9100 }, fijo: 0, estC: 380 }
+  ];
+  var OFERTA_SEG = 20;
+
+  function dineroC(c) { return '$' + (c / 100).toFixed(2); }
+  function aviso(t) { var a = $('#aviso'); a.textContent = t; a.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.hidden = true; }, 3000); }
+  function distKm(a, b) {
+    var R = 6371, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(x)) * 1.3; // 1.3: las calles no son línea recta
+  }
+  function minutos(km) { return Math.max(1, Math.round(km / 0.42)); } // ≈ 25 km/h en ciudad
+  function iniciales(n) { return n.split(' ').map(function (p) { return p[0]; }).slice(0, 2).join('').toUpperCase(); }
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function taximetroC(m, esp) { return CFG.arranqueC + Math.floor(m / 100) * Math.round(CFG.kmC / 10) + Math.floor(esp / CFG.esperaCadaSeg) * CFG.esperaC; }
+  function comisionC(totalC) { return totalC < CFG.comisionDesdeC ? CFG.comisionMinC : Math.round(totalC * CFG.comisionPct / 100); }
+
+  // ---------- Carro (cambia de color según el carro registrado) ----------
+  function oscurecer(hex, f) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return 'rgb(' + Math.round(r * f) + ',' + Math.round(g * f) + ',' + Math.round(b * f) + ')';
+  }
+  function carroSVG(c) {
+    var sombra = oscurecer(c, 0.72), luz = 'rgba(255,255,255,.55)';
+    return '<svg viewBox="0 0 220 104" width="100%" aria-label="Carro del conductor">' +
+      '<ellipse cx="112" cy="92" rx="98" ry="7" fill="rgba(16,24,40,.18)"/>' +
+      '<path d="M14 66c0-9 5-14 14-16l30-6 26-20c6-5 13-7 21-7h42c9 0 16 3 22 9l20 19 15 3c9 2 14 8 14 17v10c0 4-3 7-7 7H21c-4 0-7-3-7-7z" fill="' + c + '" stroke="' + sombra + '" stroke-width="1.5"/>' +
+      '<path d="M14 72h196v4c0 4-3 7-7 7H21c-4 0-7-3-7-7z" fill="' + sombra + '"/>' +
+      '<path d="M66 46l22-17c5-4 10-6 17-6h17v23z" fill="#1C2433"/>' +
+      '<path d="M128 23h11c7 0 12 2 17 7l16 16h-44z" fill="#1C2433"/>' +
+      '<path d="M70 44l18-14c4-3 8-4 13-4" stroke="' + luz + '" stroke-width="2" fill="none"/>' +
+      '<path d="M124 23v24M62 50h132" stroke="' + sombra + '" stroke-width="1.2"/>' +
+      '<rect x="112" y="54" width="12" height="3" rx="1.5" fill="' + sombra + '"/>' +
+      '<path d="M196 56c5 0 10 2 12 6h-12z" fill="#FFE9A8"/><path d="M16 58h9v6h-11z" fill="#E5252A"/>' +
+      '<circle cx="56" cy="78" r="16" fill="#1C2129"/><circle cx="56" cy="78" r="8" fill="#B8BEC8"/><circle cx="56" cy="78" r="3" fill="#596273"/>' +
+      '<circle cx="170" cy="78" r="16" fill="#1C2129"/><circle cx="170" cy="78" r="8" fill="#B8BEC8"/><circle cx="170" cy="78" r="3" fill="#596273"/>' +
+      '</svg>';
+  }
+
+  // ---------- Saludo según la hora ----------
+  function saludo() {
+    var h = new Date().getHours();
+    var s = h >= 6 && h < 12 ? 'Buenos días' : (h >= 12 && h < 18 ? 'Buenas tardes' : 'Buenas noches');
+    $('#saludo-txt').textContent = '¡' + s + ', que tengas una excelente jornada!';
+    var d = new Date(); $('#hora-tel').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  // ---------- Mapa ----------
+  var M = MapaAA.crear('mapa', [S.yo.lat, S.yo.lng], 14.5);
+  function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
+  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div>';
+  var yoMk = new maplibregl.Marker({ element: yoEl }).setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
+  function pinV(color) {
+    var el = document.createElement('div');
+    el.innerHTML = '<svg class="pin-v" width="40" height="52" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="' + color + '" stroke="#fff" stroke-width="2"/><circle cx="20" cy="19" r="6.5" fill="#fff"/></svg>';
+    return el;
+  }
+  var mkO = null, mkD = null;
+  function relleno() {
+    var viaje = document.getElementById('pantalla').classList.contains('viaje');
+    var alto = M.getContainer().clientHeight;
+    return viaje ? { top: 130, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
+  }
+  function ponerRuta(coords) {
+    listo(function () {
+      var datos = { type: 'FeatureCollection', features: coords ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }] : [] };
+      if (M.getSource('v-ruta')) { M.getSource('v-ruta').setData(datos); return; }
+      M.addSource('v-ruta', { type: 'geojson', data: datos });
+      M.addLayer({ id: 'v-ruta-brillo', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 12, 'line-blur': 7, 'line-opacity': .55 } });
+      M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
+    });
+  }
+  // Ruta por las calles (servicio gratuito OSRM); si falla, línea recta
+  function trazar(o, d) {
+    ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]);
+    var url = 'https://router.project-osrm.org/route/v1/driving/' + o.lng + ',' + o.lat + ';' + d.lng + ',' + d.lat + '?overview=full&geometries=geojson';
+    var pedido = trazar.n = (trazar.n || 0) + 1;
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      if (pedido !== trazar.n || !j.routes || !j.routes[0]) return;
+      ponerRuta(j.routes[0].geometry.coordinates);
+    }).catch(function () {});
+  }
+  function puntosViaje(c) {
+    if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; ponerRuta(null); return; }
+    if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom' }).addTo(M);
+    if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom' }).addTo(M);
+    mkO.setLngLat([c.o.lng, c.o.lat]); mkD.setLngLat([c.d.lng, c.d.lat]);
+    trazar(c.o, c.d);
+  }
+  function verRuta() {
+    var c = S.carrera || S.oferta; if (!c) return;
+    var b = new maplibregl.LngLatBounds();
+    [S.yo, c.o, c.d].forEach(function (p) { b.extend([p.lng, p.lat]); });
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600 });
+  }
+  function centrar() { M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 }); }
+
+  // ---------- Estado del conductor ----------
+  var NOMBRE_ESTADO = { conectado: 'Conectado', desconectado: 'Desconectado', ocupado: 'Ocupado' };
+  function ponerEstado(e, callado) {
+    S.estado = e;
+    if (!callado) aviso(e === 'conectado' ? 'Estás conectado. Te llegarán carreras.' : e === 'ocupado' ? 'Estás ocupado. No te llegarán carreras.' : 'Te desconectaste.');
+    render();
+  }
+
+  // ---------- Pantallas ----------
+  function irA(p) {
+    S.pantalla = p; S.menu = false;
+    if (p !== 'inicio' && (S.carrera || S.oferta)) { /* durante la carrera se puede abrir y volver */ }
+    render();
+  }
+  function seccionHTML(p) {
+    if (p === 'bandeja') {
+      var lista = BANDEJA.map(function (c, i) { return { c: c, i: i, km: distKm(S.yo, c.o) }; }).sort(function (a, b) { return a.km - b.km; });
+      return '<h2>Bandeja de carreras</h2><p style="margin:-6px 0 14px;color:var(--gris);font-size:14px">Carreras que ningún conductor ha aceptado, de la más cercana a la más lejana.</p>' +
+        (lista.length ? lista.map(function (x) {
+          var c = x.c;
+          return '<div class="item-b"><div class="fila"><div><div class="km">' + x.km.toFixed(1) + ' km</div><small style="color:var(--gris)">' + minutos(x.km) + ' min para recoger</small></div>' +
+            '<div class="val">' + dineroC(c.fijo || c.estC) + '<small>' + (c.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>' +
+            '<div class="dirs"><div><i style="background:var(--rojo)"></i>' + esc(c.o.dir) + '</div><div><i style="background:var(--azul)"></i>' + esc(c.d.dir) + '</div></div>' +
+            '<button class="btn-azul" data-tomar="' + x.i + '">Aceptar</button></div>';
+        }).join('') : '<div class="vacio">No hay carreras en la bandeja.</div>');
+    }
+    if (p === 'carreras') {
+      return '<h2>Mis carreras</h2>' + (S.hechas.length ? S.hechas.slice().reverse().map(function (h) {
+        return '<div class="item-b"><div class="fila"><b>' + esc(h.cliente) + '</b><b>' + dineroC(h.cobradoC) + '</b></div><div class="dirs" style="margin-bottom:0">' + esc(h.o) + ' → ' + esc(h.d) + '<br><small style="color:var(--gris)">' + h.hora + ' · comisión ' + dineroC(h.comC) + '</small></div></div>';
+      }).join('') : '<div class="vacio">Hoy todavía no tienes carreras.<br>Esta pantalla la diseñamos con tus próximas imágenes.</div>');
+    }
+    if (p === 'billetera') {
+      return '<h2>Mi billetera y saldo</h2><div class="tarjetas" style="padding:0"><div class="tarjeta oscura"><div><b>' + dineroC(S.saldoC) + '</b><small>Saldo disponible</small></div></div><div class="tarjeta"><div><b>' + dineroC(S.consumidoC) + '</b><small>Consumido hoy</small></div></div></div>' +
+        '<div class="vacio" style="margin-top:12px">Aquí irán tus recargas y movimientos.<br>Esta pantalla la diseñamos con tus próximas imágenes.</div>';
+    }
+    var t = { perfil: 'Mi perfil', ayuda: 'Ayuda y soporte' }[p] || '';
+    return '<h2>' + t + '</h2><div class="vacio">Esta pantalla la diseñamos con tus próximas imágenes.</div>';
+  }
+
+  // ---------- Hoja de la carrera ----------
+  var ICONO_PIN = function (c) { return '<svg width="26" height="32" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="' + c + '"/><circle cx="20" cy="19" r="6.5" fill="#fff"/></svg>'; };
+  function puntosHTML(c, soloUno) {
+    var o = '<div class="p">' + ICONO_PIN('#E5252A') + '<div><b>' + esc(c.o.dir) + '</b><small>' + esc(c.o.ref) + '</small></div></div>';
+    var d = '<div class="p">' + ICONO_PIN('#1570EF') + '<div><b>' + esc(c.d.dir) + '</b><small>' + esc(c.d.ref) + '</small></div></div>';
+    if (soloUno === 'o') return '<div class="puntos">' + o + '</div>';
+    if (soloUno === 'd') return '<div class="puntos">' + d + '</div>';
+    return '<div class="puntos">' + o + d + '</div>';
+  }
+  function valorDe(c) { return c.fijo ? c.fijo : (c.estado === 'ejecucion' ? Math.max(CFG.minimaC, c.mostradoC || CFG.arranqueC) : c.estC); }
+  function hojaOferta(o) {
+    var km = distKm(S.yo, o.o), resta = Math.max(0, Math.ceil((o.vence - Date.now()) / 1000));
+    var L = 2 * Math.PI * 18;
+    return '<button class="tirador" aria-label="Deslizar"></button>' +
+      '<span class="etiqueta">Nueva carrera</span>' +
+      '<div class="datos"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min para recoger</div></div>' +
+      '<div class="valor"><b>' + dineroC(o.fijo || o.estC) + '</b><small>' + (o.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>' +
+      puntosHTML(o) +
+      '<div class="chips"><div class="chip"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>' + o.calif.toFixed(1) + '</b><small>Calificación</small></div>' +
+      '<div class="chip"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>' + o.viajes + '</b><small>Viajes realizados</small></div>' +
+      '<div class="chip"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a1 1 0 0 1 1 1v2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a1 1 0 0 1 1-1zm1 3h4V5h-4z"/></svg>' + (o.equipaje ? 'Sí' : 'No') + '</b><small>Equipaje grande</small></div></div>' +
+      '<div class="botones"><button class="btn-gris" id="b-rechazar">Rechazar</button>' +
+      '<button class="btn-acep" id="b-aceptar">Aceptar<span class="ruedita"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="18" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/>' +
+      '<circle id="rueda" cx="21" cy="21" r="18" fill="none" stroke="#F04438" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + L.toFixed(1) + '" stroke-dashoffset="' + (L * (1 - resta / OFERTA_SEG)).toFixed(1) + '"/></svg><span id="rueda-n">' + resta + '</span></span></button></div>';
+  }
+  function hojaCarrera(c) {
+    var enCurso = c.estado === 'ejecucion';
+    var meta = enCurso ? c.d : c.o;
+    var km = distKm(S.yo, meta);
+    var tel = c.tel.replace(/\D/g, '').replace(/^0/, '593');
+    var h = '<button class="tirador" aria-label="Deslizar"></button>' +
+      '<div class="cliente"><div class="foto-c">' + iniciales(c.cliente) + '</div><div class="nom"><b>' + esc(c.cliente) + '</b>' +
+      '<small>' + c.calif.toFixed(1) + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg><i></i>' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="#344054"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg> ' + c.viajes + ' viajes</small></div>' +
+      '<a class="circ" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4z"/><circle cx="8.5" cy="10" r="1.3" fill="#fff"/><circle cx="12" cy="10" r="1.3" fill="#fff"/><circle cx="15.5" cy="10" r="1.3" fill="#fff"/></svg></a>' +
+      '<a class="circ" href="tel:' + esc(c.tel) + '" aria-label="Llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a></div>' +
+      '<div class="datos"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min ' + (enCurso ? 'para llegar al destino' : (c.llegue ? '· ya llegaste' : 'para recoger')) + '</div></div>' +
+      '<div class="sep"></div><div class="valor"><b>' + dineroC(c.fijo || (enCurso ? Math.max(CFG.minimaC, c.mostradoC || CFG.arranqueC) : c.estC)) + '</b><small>' + (c.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>';
+    h += '<div class="solo-grande">' + puntosHTML(c) + '</div>';
+    h += '<div class="solo-mini">' + puntosHTML(c, (c.llegue || enCurso) ? 'd' : 'o') + '</div>';
+    if (enCurso && !c.fijo) {
+      h += '<div class="taxi solo-grande"><div><div class="t">TAXÍMETRO</div><div class="i">' + (c.metros / 1000).toFixed(2) + ' km · ' + Math.floor(c.espera / 60) + ':' + String(c.espera % 60).padStart(2, '0') + ' detenido' +
+        (c.mostradoC < CFG.minimaC ? '<br>Mínimo a cobrar ' + dineroC(CFG.minimaC) : '') + '</div></div><div class="v">' + dineroC(c.mostradoC) + '</div></div>';
+    }
+    if (enCurso && c.exacta) h += '<div class="exacta solo-grande">Dirección exacta: ' + esc(c.exacta) + '</div>';
+    if (!enCurso && c.exacta) h += '<div class="exacta solo-grande">Dirección exacta: ' + esc(c.exacta) + '</div>';
+    h += enCurso
+      ? '<button class="btn-final" id="b-finalizar">Finalizar · cobrar ' + dineroC(valorDe(c)) + '</button>'
+      : '<button class="btn-final" id="b-iniciar">' + (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
+    return h;
+  }
+
+  // ---------- Render general ----------
+  var ultimaHoja = '';
+  function render() {
+    var p = $('#pantalla');
+    var enViaje = !!(S.oferta || S.carrera);
+    var antes = p.classList.contains('viaje');
+    p.classList.toggle('viaje', enViaje);
+    p.classList.toggle('menu-abierto', S.menu);
+    // Encabezado
+    $('#punto-estado').className = S.estado;
+    $('#estado-txt').textContent = NOMBRE_ESTADO[S.estado];
+    $('#campana-punto').hidden = !BANDEJA.length;
+    $('#nombre').textContent = S.nombre;
+    // Tarjetas
+    $('#k-carreras').textContent = S.carrerasHoy;
+    $('#k-saldo').textContent = $('#v-saldo').textContent = dineroC(S.saldoC);
+    $('#k-consumido').textContent = $('#v-consumido').textContent = dineroC(S.consumidoC);
+    // Círculo del mapa: verde activo, gris inactivo
+    yoEl.className = 'yo ' + (S.estado === 'conectado' || S.carrera ? '' : 'gris');
+    yoMk.setLngLat([S.yo.lng, S.yo.lat]);
+    // Deslizar
+    var con = S.estado === 'conectado';
+    $('#deslizar').classList.toggle('off', con);
+    $('#desl-txt').textContent = con ? 'Desconectarme' : 'Conectarme';
+    $('#perilla-ic').setAttribute('fill', con ? '#98A2B3' : '#12B76A');
+    // Barra y menú
+    $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
+    // Secciones
+    var sec = S.pantalla !== 'inicio' && !enViaje;
+    $('#seccion').hidden = !sec;
+    if (sec) $('#seccion-cuerpo').innerHTML = seccionHTML(S.pantalla);
+    // Hoja de viaje
+    $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
+    $('#b-centrar').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
+    $('#b-ruta').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
+    var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
+    if (html !== ultimaHoja) { $('#hoja').innerHTML = html; ultimaHoja = html; }
+    if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
+  }
+
+  // ---------- Ofertas ----------
+  var DEMO = [
+    { cliente: 'María Torres', tel: '0991234567', o: { dir: 'Av. Samborondón', ref: 'Cerca de Plaza Lagos', lat: -2.1372, lng: -79.8650 }, d: { dir: 'C.C. Riocentro Entre Ríos', ref: 'Samborondón', lat: -2.1555, lng: -79.8866 }, exacta: 'Edificio azul, 3er piso', calif: 4.9, viajes: 28, equipaje: false },
+    { cliente: 'Jorge Salazar', tel: '0987654321', o: { dir: 'Urb. Ciudad Celeste', ref: 'Etapa La Marina', lat: -2.0805, lng: -79.8470 }, d: { dir: 'Aeropuerto J.J. Olmedo', ref: 'Guayaquil', lat: -2.1574, lng: -79.8837 }, exacta: 'Manzana 4 villa 12, carro gris', calif: 4.7, viajes: 12, equipaje: true }
+  ];
+  var nDemo = 0;
+  function nuevaOferta(fijo) {
+    if (S.carrera) { aviso('Ya tienes una carrera en curso.'); return; }
+    if (S.estado !== 'conectado') { aviso('Primero conéctate: desliza "Conectarme".'); return; }
+    var base = DEMO[nDemo++ % DEMO.length];
+    var o = JSON.parse(JSON.stringify(base));
+    o.fijo = fijo || 0;
+    o.estC = Math.max(CFG.minimaC, CFG.arranqueC + Math.round(distKm(o.o, o.d) * 10) * 5);
+    o.vence = Date.now() + OFERTA_SEG * 1000;
+    S.oferta = o; S.pantalla = 'inicio'; S.menu = false;
+    sonar();
+    puntosViaje(o);
+    render();
+  }
+  function sonar() {
+    try {
+      var A = new (window.AudioContext || window.webkitAudioContext)();
+      [0, .25, .5].forEach(function (t) { var os = A.createOscillator(), g = A.createGain(); os.frequency.value = 880; os.connect(g); g.connect(A.destination); g.gain.setValueAtTime(.15, A.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, A.currentTime + t + .2); os.start(A.currentTime + t); os.stop(A.currentTime + t + .22); });
+    } catch (e) {}
+  }
+  function cerrarOferta(msg) { S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
+  function aceptar(o) {
+    S.oferta = null;
+    S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
+    puntosViaje(o);
+    render(); setTimeout(verRuta, 60);
+  }
+  function tomarDeBandeja(i) {
+    if (S.carrera) { aviso('Ya tienes una carrera en curso.'); return; }
+    var b = BANDEJA.splice(i, 1)[0];
+    var o = { cliente: b.cliente, tel: '0990000000', o: b.o, d: b.d, exacta: '', calif: 4.8, viajes: 9, equipaje: false, fijo: b.fijo, estC: b.estC };
+    S.pantalla = 'inicio'; S.menu = false;
+    aceptar(o);
+  }
+
+  // ---------- Taxímetro (igual que la app: $0.00 por 3 s, luego el arranque; pantalla cada 10 s) ----------
+  function iniciar() {
+    var c = S.carrera; c.estado = 'ejecucion'; c.llegue = true; c.seg = 0; c.metros = 0; c.espera = 0; c.mostradoC = 0; c.ultMostrar = 0;
+    S.yo = { lat: c.o.lat, lng: c.o.lng };
+    render(); setTimeout(verRuta, 60);
+  }
+  function finalizar() {
+    var c = S.carrera, total = valorDe(c), com = comisionC(total);
+    S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
+    var d = new Date();
+    S.hechas.push({ cliente: c.cliente, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.carrera = null; puntosViaje(null);
+    aviso('Carrera finalizada. Cobra ' + dineroC(total) + ' al cliente.');
+    render();
+  }
+
+  // Avanza cada segundo
+  setInterval(function () {
+    if (S.oferta) {
+      var resta = Math.ceil((S.oferta.vence - Date.now()) / 1000);
+      if (resta <= 0) { cerrarOferta('Se acabó el tiempo. La carrera pasó a otro conductor.'); return; }
+      var L = 2 * Math.PI * 18, r = $('#rueda');
+      if (r) { r.setAttribute('stroke-dashoffset', (L * (1 - resta / OFERTA_SEG)).toFixed(1)); $('#rueda-n').textContent = resta; }
+      return;
+    }
+    var c = S.carrera;
+    if (!c) return;
+    if (c.estado === 'aceptada' && !c.llegue) {
+      // el carro se acerca al cliente
+      S.yo.lat += (c.o.lat - S.yo.lat) * 0.06; S.yo.lng += (c.o.lng - S.yo.lng) * 0.06;
+      if (distKm(S.yo, c.o) < 0.05) { c.llegue = true; aviso('Llegaste donde el cliente.'); }
+      render();
+    } else if (c.estado === 'ejecucion') {
+      c.seg++;
+      var parado = (c.seg % 90) > 70;
+      if (!parado) { S.yo.lat += (c.d.lat - S.yo.lat) * 0.01; S.yo.lng += (c.d.lng - S.yo.lng) * 0.01; }
+      if (c.seg > CFG.gratisSeg) { if (parado) c.espera++; else c.metros += 8.5; }
+      if (c.mostradoC === 0 && c.seg >= 3) c.mostradoC = CFG.arranqueC;
+      if (c.seg - c.ultMostrar >= 10) { c.ultMostrar = c.seg; c.mostradoC = c.seg <= CFG.gratisSeg ? CFG.arranqueC : taximetroC(c.metros, c.espera); }
+      render();
+    }
+  }, 1000);
+
+  // ---------- Eventos ----------
+  function alternarMenu() { S.menu = !S.menu; $('#estados').hidden = true; $('#estado-btn').classList.remove('abierto'); render(); }
+  $('#ham').addEventListener('click', alternarMenu);
+  $('#ham-v').addEventListener('click', alternarMenu);
+  $('#velo').addEventListener('click', alternarMenu);
+  $('#estado-btn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var ab = $('#estados').hidden; $('#estados').hidden = !ab; this.classList.toggle('abierto', ab);
+    $$('#estados button').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-e') === S.estado); });
+  });
+  $('#estados').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    $('#estados').hidden = true; $('#estado-btn').classList.remove('abierto');
+    ponerEstado(b.getAttribute('data-e'));
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('#estados') && !e.target.closest('#estado-btn')) { $('#estados').hidden = true; $('#estado-btn').classList.remove('abierto'); } });
+  $('#campana').addEventListener('click', function () { irA('bandeja'); });
+  $('#salir').addEventListener('click', function () { S.menu = false; render(); aviso('En la app aquí vuelve a la pantalla de iniciar sesión.'); });
+  document.addEventListener('click', function (e) {
+    var ir = e.target.closest('[data-ir]');
+    if (ir) {
+      var dest = ir.getAttribute('data-ir');
+      if ((S.carrera || S.oferta) && dest !== 'inicio') { S.menu = false; render(); aviso('Durante la carrera, "' + ir.textContent.trim() + '" se abre encima y vuelves a la carrera.'); return; }
+      irA(dest); return;
+    }
+    var t = e.target.closest('[data-tomar]'); if (t) { tomarDeBandeja(Number(t.getAttribute('data-tomar'))); return; }
+    if (e.target.closest('#b-rechazar')) { cerrarOferta('Rechazaste la carrera.'); return; }
+    if (e.target.closest('#b-aceptar')) { aceptar(S.oferta); return; }
+    if (e.target.closest('#b-iniciar')) { iniciar(); return; }
+    if (e.target.closest('#b-finalizar')) { finalizar(); return; }
+  });
+  $('#b-centrar').addEventListener('click', centrar);
+  $('#b-ruta').addEventListener('click', verRuta);
+
+  // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
+  (function () {
+    var y0 = null, hoja = $('#hoja');
+    function poner(mini) { hoja.classList.toggle('mini', mini); setTimeout(function () { render(); }, 20); }
+    hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
+    hoja.addEventListener('pointerup', function (e) {
+      if (y0 == null) return; var dy = e.clientY - y0; y0 = null;
+      if (dy > 25) poner(true); else if (dy < -25) poner(false); else poner(!hoja.classList.contains('mini'));
+    });
+  })();
+
+  // Deslizar para conectarse / desconectarse
+  (function () {
+    var caja = $('#deslizar'), per = $('#perilla'), x0 = null, max = 0;
+    caja.addEventListener('pointerdown', function (e) {
+      x0 = e.clientX; max = caja.clientWidth - per.offsetWidth - 14; per.classList.add('arrastrando');
+      caja.setPointerCapture(e.pointerId);
+    });
+    caja.addEventListener('pointermove', function (e) {
+      if (x0 == null) return; var dx = Math.max(0, Math.min(max, e.clientX - x0)); per.style.left = (7 + dx) + 'px';
+    });
+    function soltar(e) {
+      if (x0 == null) return; var dx = e.clientX - x0; x0 = null; per.classList.remove('arrastrando'); per.style.left = '7px';
+      if (dx > max * 0.8) ponerEstado(S.estado === 'conectado' ? 'desconectado' : 'conectado');
+      else if (Math.abs(dx) < 5) aviso('Desliza hacia la derecha.');
+    }
+    caja.addEventListener('pointerup', soltar);
+    caja.addEventListener('pointercancel', soltar);
+  })();
+
+  // Controles de la prueba
+  $('#sim-taxi').addEventListener('click', function () { nuevaOferta(0); });
+  $('#sim-pactada').addEventListener('click', function () { nuevaOferta(400); });
+  $('#sim-llegue').addEventListener('click', function () {
+    var c = S.carrera; if (!c || c.estado !== 'aceptada') { aviso('Primero acepta una carrera.'); return; }
+    S.yo = { lat: c.o.lat, lng: c.o.lng }; c.llegue = true; render();
+  });
+  $('#sim-color').addEventListener('change', function () { S.carro = this.value; $('#carro').innerHTML = carroSVG(S.carro); });
+  $('#sim-modo').addEventListener('change', function () { MapaAA.forzarModo(this.value || null); });
+  $('#btn-prueba').addEventListener('click', function () { $('#controles').classList.toggle('abierto'); });
+
+  $('#carro').innerHTML = carroSVG(S.carro);
+  saludo(); setInterval(saludo, 30000);
+  render();
+})();
+</script>
+</body>
+</html>
