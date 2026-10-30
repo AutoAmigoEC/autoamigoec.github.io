@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Francés corregido</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
+  header{background:#090145;color:#fff;padding:18px 20px}
+  h1{font-family:Manrope,sans-serif;margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#C9CDE6;font-size:14px}
+  main{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1400px;margin:0 auto}
+  .op{background:#fff;border:1px solid #E4E7EC;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .op h2{margin:0;font-family:Manrope,sans-serif;font-size:18px}
+  .op p{margin:0;color:#475467;font-size:13px}
+  .mapa{height:440px;border-radius:12px;overflow:hidden;border:1px solid #E4E7EC;background:#ddd}
+  .pin{filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));cursor:pointer}
+  #m3 .maplibregl-canvas{filter:saturate(.45) sepia(.22) brightness(1.03)}
+  @media (max-width:860px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mapa Francés corregido · menos rosado y menos colorido</h1>
+  <p>El mismo mapa Francés (con todas las etapas al hacer zoom) en 3 niveles de color, más 2 versiones de noche para comparar.</p>
+</header>
+<main>
+  <section class="op"><h2>A · Francés suave</h2><p>Colores bajados a la mitad: casi sin rosado, se siguen distinguiendo parques, agua y calles.</p><div class="mapa" id="m1"></div></section>
+  <section class="op"><h2>B · Francés muy suave</h2><p>Colores muy apagados y más claro: limpio, los carros resaltan más.</p><div class="mapa" id="m2"></div></section>
+  <section class="op"><h2>C · Francés suave cálido</h2><p>Suave con un toque beige, parecido al estilo Google; el rosado pasa a crema.</p><div class="mapa" id="m3"></div></section>
+  <section class="op"><h2>D · Noche (la que te gustó)</h2><p>La versión oscura de OpenStreetMap.</p><div class="mapa" id="m5"></div></section>
+  <section class="op"><h2>E · Noche Francés</h2><p>El mapa Francés en versión oscura, por si quieres que de noche sea el mismo diseño.</p><div class="mapa" id="m6"></div></section>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+var C = [-79.8565, -2.1015], Z = 16;
+var OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+function pin(color, texto) {
+  return '<svg class="pin" width="36" height="47" viewBox="0 0 40 52"><path d="M20 50 C20 50 4 31 4 19 A16 16 0 1 1 36 19 C36 31 20 50 20 50 Z" fill="' + color + '" stroke="#fff" stroke-width="2.5"/>' +
+    '<text x="20" y="24" text-anchor="middle" font-family="Inter,Arial" font-weight="800" font-size="13" fill="#fff">' + texto + '</text></svg>';
+}
+function crear(id, tiles, paint, atrib) {
+  var m = new maplibregl.Map({
+    container: id,
+    style: { version: 8, sources: { t: { type: 'raster', tiles: tiles, tileSize: 256, maxzoom: 19, attribution: atrib || '© OpenStreetMap' } },
+      layers: [{ id: 't', type: 'raster', source: 't', paint: paint || {} }] },
+    center: C, zoom: Z, scrollZoom: false, maxZoom: 19, attributionControl: { compact: true }
+  });
+  m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+  [[-2.1008, -79.8580, '#0E9F6E', '07'], [-2.1025, -79.8552, '#1E6FE8', '12'], [-2.0998, -79.8548, '#6927DA', '03']].forEach(function (c) {
+    var el = document.createElement('div'); el.innerHTML = pin(c[2], c[3]);
+    new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c[1], c[0]]).addTo(m);
+  });
+}
+var FR = ['https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', 'https://b.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png'];
+crear('m1', FR, { 'raster-saturation': -0.5 }, '© OpenStreetMap France');
+crear('m2', FR, { 'raster-saturation': -0.75, 'raster-brightness-min': 0.08 }, '© OpenStreetMap France');
+crear('m3', FR, {}, '© OpenStreetMap France');
+crear('m5', [OSM], { 'raster-brightness-min': 1, 'raster-brightness-max': 0.12, 'raster-hue-rotate': 180, 'raster-saturation': -0.3, 'raster-contrast': 0.1 });
+crear('m6', FR, { 'raster-brightness-min': 1, 'raster-brightness-max': 0.12, 'raster-hue-rotate': 180, 'raster-saturation': -0.5, 'raster-contrast': 0.1 }, '© OpenStreetMap France');
+</script>
+</body>
+</html>
