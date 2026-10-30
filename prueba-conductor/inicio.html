@@ -26,6 +26,7 @@
   .arriba{position:relative;flex:0 0 54%;display:flex;align-items:center;justify-content:center;background:var(--navy)}
   .arriba svg.calles{position:absolute;inset:0;width:100%;height:100%;opacity:.22}
   .logo-caja{position:relative;margin-top:18px;background:#fff;border-radius:36px;padding:16px;width:224px;height:224px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .gorro{position:absolute;width:132px;height:auto;top:-62px;left:58px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));transform:rotate(6deg)}
   .logo-caja img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
   /* Hoja blanca */
   .hoja{position:relative;flex:1;background:#fff;border-radius:34px 34px 0 0;margin-top:-34px;padding:34px 24px 22px;display:flex;flex-direction:column;gap:16px}
@@ -65,7 +66,19 @@
 
     <div class="arriba">
 
-      <div class="logo-caja"><img src="img/logo-recortado.png" alt="AutoAmigo"></div>
+      <div class="logo-caja"><img src="img/logo-recortado.png" alt="AutoAmigo">
+        <!-- Gorro de Navidad: solo del 1 al 31 de diciembre -->
+        <svg class="gorro" id="gorro" hidden viewBox="0 0 140 110" aria-hidden="true">
+          <defs>
+            <linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0303A"/><stop offset="1" stop-color="#B80F18"/></linearGradient>
+            <radialGradient id="gb" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4E7EC"/></radialGradient>
+          </defs>
+          <path d="M22 82 C30 48 58 18 92 14 C110 12 124 22 128 40 C118 32 104 32 96 42 C88 54 92 70 98 84 Z" fill="url(#gr)"/>
+          <path d="M70 26 C80 22 92 22 100 26" stroke="#fff" stroke-opacity=".25" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <circle cx="126" cy="46" r="12" fill="url(#gb)"/>
+          <rect x="10" y="74" width="100" height="24" rx="12" fill="url(#gb)" transform="rotate(-8 60 86)"/>
+        </svg>
+      </div>
     </div>
 
     <form class="hoja" id="f" autocomplete="off">
@@ -88,6 +101,11 @@
   </div></div>
 </div>
 <script>
+  // Navidad: del 1 al 31 de diciembre (o ?navidad=1 para ver la prueba)
+  (function () {
+    var hoy = new Date();
+    if (hoy.getMonth() === 11 || /[?&]navidad=1/.test(location.search)) document.getElementById('gorro').hidden = false;
+  })();
   function aviso(t) { var a = document.getElementById('aviso'); a.textContent = t; a.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.hidden = true; }, 3200); }
   document.getElementById('ojo').addEventListener('click', function () {
     var c = document.getElementById('clave'); var ver = c.type === 'password'; c.type = ver ? 'text' : 'password';
