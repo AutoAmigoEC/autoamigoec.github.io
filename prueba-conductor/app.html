@@ -418,8 +418,8 @@
   }
   function puntosViaje(c) {
     if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; ponerRuta(null); return; }
-    if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom' }).addTo(M);
-    if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom' }).addTo(M);
+    if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom' }).setLngLat([c.o.lng, c.o.lat]).addTo(M);
+    if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom' }).setLngLat([c.d.lng, c.d.lat]).addTo(M);
     mkO.setLngLat([c.o.lng, c.o.lat]); mkD.setLngLat([c.d.lng, c.d.lat]);
     trazar(c.o, c.d);
   }
