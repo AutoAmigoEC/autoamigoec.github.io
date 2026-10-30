@@ -553,6 +553,7 @@
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
         (c.estado === 'pendiente' ? ' · ' + duracion(espera) : '') + '</span></div>' +
         (c.telefono ? '<div class="cliente-tel">' + telMenu(c.telefono, 'a-' + id) + '</div>' : '') +
+        etiquetaCancelada(c) +
         (typeof c.recogerEn === 'number' ? '<span class="etiqueta-prog">Programada · recoger ' + fechaHora(c.recogerEn) + '</span>' : '') +
         '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
         extra +
@@ -741,6 +742,17 @@
       if (d) d.close();
     }
   });
+
+  // Carrera que un conductor canceló desde la app: vuelve a la cola para otro conductor
+  function etiquetaCancelada(c) {
+    var lista = c.cancelaciones ? Object.keys(c.cancelaciones).map(function (u) { return c.cancelaciones[u]; }) : [];
+    if (!lista.length || c.estado !== 'pendiente') return '';
+    lista.sort(function (a, b) { return (b.en || 0) - (a.en || 0); });
+    var u = lista[0];
+    var quien = u.unidad ? 'U' + esc(u.unidad) : esc(u.nombre || '');
+    return '<span class="etiqueta-cancel">Cancelada por el conductor ' + quien +
+      (u.en ? ' ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
+  }
 
   function liberarConductor(up, c, id) {
     if (c.conductor && S.estados[c.conductor] && S.estados[c.conductor].carrera === id) {
@@ -1947,13 +1959,23 @@
     if (!r) { toast('La fecha "Hasta" debe ser después de "Desde".', true); return; }
     db.ref('carreras').orderByChild('creada').startAt(r[0]).endAt(r[1]).once('value').then(function (s) {
       var todas = s.val() || {};
-      var porCond = {}, tot = { n: 0, total: 0, com: 0, cobrada: 0, perdida: 0, canceladas: 0 };
+      var porCond = {}, tot = { n: 0, total: 0, com: 0, cobrada: 0, perdida: 0, canceladas: 0, cancCond: 0 };
+      function filaCond(k, nombre, unidad) {
+        return porCond[k] = porCond[k] || { n: 0, total: 0, com: 0, cobrada: 0, perdida: 0, canc: 0, nombre: nombre || nombreCond(k), unidad: unidad || '' };
+      }
       Object.keys(todas).forEach(function (id) {
         var c = todas[id];
+        // Cancelaciones hechas por conductores desde la app
+        Object.keys(c.cancelaciones || {}).forEach(function (u) {
+          var cc = c.cancelaciones[u] || {}, cd = S.conductores[u] || {};
+          var y = filaCond(u, cc.nombre || cd.nombre, cc.unidad || cd.unidad);
+          if (!y.unidad && (cc.unidad || cd.unidad)) y.unidad = cc.unidad || cd.unidad;
+          y.canc++; tot.cancCond++;
+        });
         if (c.estado === 'cancelada') { tot.canceladas++; return; }
         if (c.estado !== 'finalizada') return;
         var k = c.conductor || '-';
-        var x = porCond[k] = porCond[k] || { n: 0, total: 0, com: 0, cobrada: 0, perdida: 0, nombre: c.conductorNombre || nombreCond(k), unidad: c.unidad || '' };
+        var x = filaCond(k, c.conductorNombre, c.unidad);
         var t = Number(c.tarifa) || 0, cm = Number(c.comisionC) || 0, cb = Number(c.comisionCobradaC) || 0, pe = Number(c.perdidaC) || 0;
         x.n++; x.total += t; x.com += cm; x.cobrada += cb; x.perdida += pe;
         tot.n++; tot.total += t; tot.com += cm; tot.cobrada += cb; tot.perdida += pe;
@@ -1964,28 +1986,30 @@
         kpi('aceptada', 'Total cobrado a pasajeros', dinero(tot.total)) +
         kpi('pendiente', 'Comisión cobrada', dineroC(tot.cobrada)) +
         kpi('sinsaldo', 'Pérdida por saldo', dineroC(tot.perdida)) +
-        kpi('fuera', 'Canceladas', tot.canceladas));
+        kpi('fuera', 'Canceladas', tot.canceladas) +
+        kpi('sinsaldo', 'Canceladas por conductor', tot.cancCond));
       var filas = Object.keys(porCond).sort(function (a, b) { return porCond[b].total - porCond[a].total; }).map(function (k) {
         var x = porCond[k];
         return '<tr><td><strong>' + esc(x.unidad ? 'U' + x.unidad : '') + '</strong></td><td>' + esc(x.nombre) + '</td><td>' + x.n +
           '</td><td><strong>' + dinero(x.total) + '</strong></td><td>' + dineroC(x.com) + '</td><td>' + dineroC(x.cobrada) +
-          '</td><td class="' + (x.perdida ? 'saldo-bajo' : '') + '">' + dineroC(x.perdida) + '</td></tr>';
+          '</td><td class="' + (x.perdida ? 'saldo-bajo' : '') + '">' + dineroC(x.perdida) + '</td><td class="' + (x.canc ? 'saldo-bajo' : '') + '">' + x.canc + '</td></tr>';
       }).join('');
-      setHTML('#tabla-reporte', '<thead><tr><th>Unidad</th><th>Conductor</th><th>Carreras</th><th>Cobrado</th><th>Comisión</th><th>Comisión cobrada</th><th>Pérdida</th></tr></thead><tbody>' +
-        (filas || '<tr><td colspan="7" class="muted" style="text-align:center;padding:28px">No hay carreras finalizadas en esas fechas.</td></tr>') + '</tbody>');
+      setHTML('#tabla-reporte', '<thead><tr><th>Unidad</th><th>Conductor</th><th>Carreras</th><th>Cobrado</th><th>Comisión</th><th>Comisión cobrada</th><th>Pérdida</th><th>Canceladas por conductor</th></tr></thead><tbody>' +
+        (filas || '<tr><td colspan="8" class="muted" style="text-align:center;padding:28px">No hay carreras finalizadas en esas fechas.</td></tr>') + '</tbody>');
     }).catch(function (e) { toast(errorTexto(e), true); });
   });
 
   $('#boton-csv').addEventListener('click', function () {
     if (!S.reporte) { toast('Primero presiona "Ver reporte".'); return; }
-    var filas = [['Numero', 'Fecha', 'Cliente', 'Telefono', 'Recogida', 'Destino', 'Unidad', 'Conductor', 'Estado', 'Tipo', 'Tarifa', 'Comision', 'Comision cobrada', 'Perdida']];
+    var filas = [['Numero', 'Fecha', 'Cliente', 'Telefono', 'Recogida', 'Destino', 'Unidad', 'Conductor', 'Estado', 'Tipo', 'Tarifa', 'Comision', 'Comision cobrada', 'Perdida', 'Canceladas por conductor']];
     var cs = S.reporte.carreras;
     Object.keys(cs).sort(function (a, b) { return (cs[a].creada || 0) - (cs[b].creada || 0); }).forEach(function (id) {
       var c = cs[id];
       filas.push([c.numero, fechaHora(c.creada), c.cliente, c.telefono || '', (c.origen || {}).dir || '', (c.destino || {}).dir || '',
         c.unidad || '', c.conductorNombre || '', NOMBRE_CARRERA[c.estado] || c.estado, c.precioFijo ? 'Precio fijo' : 'Taxímetro',
         (Number(c.tarifa) || 0).toFixed(2), ((Number(c.comisionC) || 0) / 100).toFixed(2),
-        ((Number(c.comisionCobradaC) || 0) / 100).toFixed(2), ((Number(c.perdidaC) || 0) / 100).toFixed(2)]);
+        ((Number(c.comisionCobradaC) || 0) / 100).toFixed(2), ((Number(c.perdidaC) || 0) / 100).toFixed(2),
+        Object.keys(c.cancelaciones || {}).map(function (u) { var cc = c.cancelaciones[u] || {}; return 'U' + (cc.unidad || (S.conductores[u] || {}).unidad || '?') + ' ' + (cc.en ? hora(cc.en) : ''); }).join(', ')]);
     });
     var csv = '﻿' + filas.map(function (f) {
       return f.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';');
