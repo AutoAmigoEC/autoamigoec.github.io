@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · PRUEBA del panel</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="estilos.css?v=202610290515">
+</head>
+<body>
+
+<!-- ============ INGRESO ============ -->
+<div id="pantalla-login" class="login">
+  <form id="form-login" class="login-card">
+    <img src="logo.png" alt="AutoAmigo" class="login-logo">
+    <h1 id="login-titulo">Panel de la central</h1>
+    <p id="login-sub" class="muted">Ingresa con tu correo de administrador.</p>
+    <label>Correo
+      <input type="email" id="login-email" autocomplete="username" required>
+    </label>
+    <label>Contraseña
+      <input type="password" id="login-pass" autocomplete="current-password" minlength="6" required>
+    </label>
+    <button type="submit" class="btn btn-primario btn-grande" id="login-boton">Ingresar</button>
+    <p id="login-error" class="error" hidden></p>
+    <button type="button" class="link" id="login-modo">¿Primera vez? Crear el primer administrador</button>
+  </form>
+</div>
+
+<!-- ============ APLICACIÓN ============ -->
+<div id="app" class="app" hidden>
+  <nav class="menu" aria-label="Menú principal">
+    <div class="marca">
+      <img src="logo.png" alt="">
+      <span>AutoAmigo</span>
+    </div>
+    <button class="menu-item activo" data-vista="mapa">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></svg>Mapa en vivo</button>
+    <button class="menu-item" data-vista="carreras">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
+    <button class="menu-item" data-vista="conductores">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="clientes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></svg>Clientes</button>
+    <button class="menu-item" data-vista="reportes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Reportes</button>
+    <button class="menu-item" data-vista="recargas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>Recargas</button>
+    <button class="menu-item" data-vista="perdidas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l7 7 4-4 7 7M21 10v6h-6"/></svg>Pérdidas</button>
+    <button class="menu-item" data-vista="config">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Configuración</button>
+    <div class="menu-pie">
+      <span id="admin-email" class="muted-claro"></span>
+      <button class="menu-item" id="boton-salir">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/></svg>Salir</button>
+    </div>
+  </nav>
+
+  <main class="contenido">
+    <p style="background:#FEF0C7;color:#93370D;font-weight:700;padding:8px 14px;border-radius:10px;margin:0 0 14px">PRUEBA · Datos de ejemplo. Nada de esto se guarda en tu panel real. La carrera #1005 (programada) entra a Carreras activas en 1 minuto.</p>
+    <!-- Alertas de saldo bajo (aparecen arriba en cualquier vista) -->
+    <div id="alertas" class="alertas" aria-live="assertive"></div>
+
+    <!-- ---------- MAPA ---------- -->
+    <section id="vista-mapa" class="vista">
+      <header class="cabecera">
+        <div>
+          <h1>Mapa en vivo</h1>
+          <p class="muted" id="mapa-sub">Cargando…</p>
+        </div>
+        <button class="btn btn-primario" data-accion="nueva-carrera">+ Nueva carrera</button>
+      </header>
+      <div class="kpis" id="kpis"></div>
+      <div class="mapa-layout">
+        <div class="mapa-caja"><div id="mapa"></div>
+          <div class="leyenda">
+            <span><i class="punto libre"></i>Libre</span>
+            <span><i class="punto aceptada"></i>Aceptada</span>
+            <span><i class="punto ejecucion"></i>En ejecución</span>
+            <span><i class="punto sinsaldo"></i>Sin recarga</span>
+            <span><i class="punto fuera"></i>Fuera de servicio</span>
+            <span><i class="punto pendiente"></i>Carrera esperando</span>
+            <span><i class="punto tarde"></i>+30 min sin aceptar</span>
+          </div>
+        </div>
+        <aside class="activas">
+          <h2>Carreras activas</h2>
+          <div id="lista-activas"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ---------- CARRERAS ---------- -->
+    <section id="vista-carreras" class="vista" hidden>
+      <header class="cabecera">
+        <div>
+          <h1>Carreras</h1>
+          <p class="muted">Activas y de los últimos 2 días. Para fechas anteriores usa Reportes.</p>
+        </div>
+        <button class="btn btn-primario" data-accion="nueva-carrera">+ Nueva carrera</button>
+      </header>
+      <div class="chips" id="filtros-carreras">
+        <button class="chip activo" data-filtro="activas">Activas</button>
+        <button class="chip" data-filtro="pendiente">Esperando</button>
+        <button class="chip" data-filtro="programada">Programadas</button>
+        <button class="chip" data-filtro="finalizada">Finalizadas</button>
+        <button class="chip" data-filtro="cancelada">Canceladas</button>
+        <button class="chip" data-filtro="todas">Todas</button>
+      </div>
+      <div class="tabla-caja"><table class="tabla" id="tabla-carreras"></table></div>
+    </section>
+
+    <!-- ---------- CLIENTES ---------- -->
+    <section id="vista-clientes" class="vista" hidden>
+      <header class="cabecera">
+        <div><h1>Clientes</h1><p class="muted" id="clientes-sub"></p></div>
+        <button class="btn btn-primario" id="nuevo-cliente">+ Nuevo cliente</button>
+      </header>
+      <input class="buscador" id="buscar-clientes" placeholder="Buscar por nombre o teléfono" autocomplete="off">
+      <div class="tabla-caja"><table class="tabla" id="tabla-clientes"></table></div>
+    </section>
+
+    <!-- ---------- CONDUCTORES ---------- -->
+    <section id="vista-conductores" class="vista" hidden>
+      <header class="cabecera">
+        <div>
+          <h1>Conductores</h1>
+          <p class="muted" id="conductores-sub"></p>
+        </div>
+        <button class="btn btn-primario" id="boton-nuevo-conductor">+ Nuevo conductor</button>
+      </header>
+      <div class="tabla-caja"><table class="tabla" id="tabla-conductores"></table></div>
+    </section>
+
+    <!-- ---------- REPORTES ---------- -->
+    <section id="vista-reportes" class="vista" hidden>
+      <header class="cabecera">
+        <div>
+          <h1>Reportes y ganancias</h1>
+          <p class="muted">Carreras finalizadas por conductor.</p>
+        </div>
+        <button class="btn" id="boton-csv">Descargar Excel (CSV)</button>
+      </header>
+      <form class="filtros-fecha" id="form-reporte">
+        <label>Desde <input type="date" id="rep-desde" required></label>
+        <label>Hasta <input type="date" id="rep-hasta" required></label>
+        <button class="btn btn-primario" type="submit">Ver reporte</button>
+      </form>
+      <div class="kpis" id="rep-kpis"></div>
+      <div class="tabla-caja"><table class="tabla" id="tabla-reporte"></table></div>
+    </section>
+
+    <!-- ---------- RECARGAS ---------- -->
+    <section id="vista-recargas" class="vista" hidden>
+      <header class="cabecera">
+        <div>
+          <h1>Recargas</h1>
+          <p class="muted">Genera códigos de recarga y envíalos al conductor por WhatsApp.</p>
+        </div>
+        <button class="btn" id="boton-bloquear-recargas" hidden>Bloquear sección</button>
+      </header>
+
+      <form id="form-clave" class="tarjeta form-grid candado">
+        <h2 id="clave-titulo">Sección protegida</h2>
+        <p class="muted" id="clave-sub" style="grid-column:1/-1">Ingresa la clave de recargas.</p>
+        <label>Clave de recargas <input type="password" id="clave-input" minlength="4" required autocomplete="off"></label>
+        <label id="clave2-fila" hidden>Repite la clave <input type="password" id="clave-input2" minlength="4" autocomplete="off"></label>
+        <div class="fila-botones"><button class="btn btn-primario" type="submit" id="clave-boton">Entrar</button></div>
+        <p class="error" id="clave-error" hidden style="grid-column:1/-1"></p>
+      </form>
+
+      <div id="recargas-contenido" hidden>
+        <div class="kpis" id="recargas-kpis"></div>
+        <div class="dos-columnas">
+          <div class="tarjeta">
+            <h2>Generar códigos</h2>
+            <p class="muted">Pon cuántos códigos quieres y de qué monto. Se crean todos de una sola vez.</p>
+            <form id="form-lote" class="fila-form">
+              <label>Cantidad <input id="lote-cantidad" type="number" min="1" max="100" step="1" placeholder="Ej: 20" required></label>
+              <label>Monto <select id="lote-monto" required>
+                <option value="">Elige</option>
+                <option value="10">$10</option>
+                <option value="20">$20</option>
+                <option value="50">$50</option>
+                <option value="100">$100</option>
+              </select></label>
+              <button class="btn btn-primario" type="submit" id="lote-boton">Generar códigos</button>
+            </form>
+          </div>
+          <div class="tarjeta">
+            <h2>Saldo de conductores</h2>
+            <div class="tabla-mini"><table class="tabla tabla-compacta" id="tabla-saldos"></table></div>
+          </div>
+        </div>
+        <div class="cabecera"><h2>Códigos generados</h2>
+          <div class="chips" id="filtros-codigos">
+            <button class="chip activo" data-filtro="todos">Todos</button>
+            <button class="chip" data-filtro="disponible">Disponibles</button>
+            <button class="chip" data-filtro="usado">Usados</button>
+          </div>
+        </div>
+        <div id="lotes-codigos" class="lotes"></div>
+      </div>
+    </section>
+
+    <!-- ---------- PÉRDIDAS ---------- -->
+    <section id="vista-perdidas" class="vista" hidden>
+      <header class="cabecera">
+        <div>
+          <h1>Pérdidas por saldo</h1>
+          <p class="muted">Comisión que no se pudo cobrar porque el conductor no tenía saldo suficiente. El conductor nunca ve este valor.</p>
+        </div>
+      </header>
+      <form class="filtros-fecha" id="form-perdidas">
+        <label>Desde <input type="date" id="per-desde" required></label>
+        <label>Hasta <input type="date" id="per-hasta" required></label>
+        <button class="btn btn-primario" type="submit">Ver pérdidas</button>
+      </form>
+      <div class="kpis" id="per-kpis"></div>
+      <div class="tabla-caja"><table class="tabla" id="tabla-perdidas-cond"></table></div>
+      <h2>Detalle por carrera</h2>
+      <div class="tabla-caja"><table class="tabla" id="tabla-perdidas"></table></div>
+    </section>
+
+    <!-- ---------- CONFIGURACIÓN ---------- -->
+    <section id="vista-config" class="vista" hidden>
+      <header class="cabecera"><div><h1>Configuración</h1></div>
+        <button class="btn" id="boton-bloquear-config" hidden>Bloquear sección</button>
+      </header>
+
+      <form id="form-clave-cfg" class="tarjeta form-grid candado">
+        <h2 id="clave-titulo-cfg">Sección protegida</h2>
+        <p class="muted" id="clave-sub-cfg" style="grid-column:1/-1">Ingresa la clave.</p>
+        <label>Clave <input type="password" id="clave-input-cfg" minlength="4" required autocomplete="off"></label>
+        <label id="clave2-fila-cfg" hidden>Repite la clave <input type="password" id="clave-input2-cfg" minlength="4" autocomplete="off"></label>
+        <div class="fila-botones"><button class="btn btn-primario" type="submit" id="clave-boton-cfg">Entrar</button></div>
+        <p class="error" id="clave-error-cfg" hidden style="grid-column:1/-1"></p>
+      </form>
+
+      <div id="config-contenido" class="bloque-config" hidden>
+      <form id="form-config" class="tarjeta form-grid">
+        <h2>Reparto automático</h2>
+        <label>Segundos antes de sumar al siguiente conductor
+          <input type="number" id="cfg-cascada" min="3" max="120" required></label>
+        <label>Minutos de espera para dar prioridad a una carrera
+          <input type="number" id="cfg-prioridad" min="1" max="600" required></label>
+        <label>Segundos que no le suena a quien rechazó
+          <input type="number" id="cfg-rechazo" min="10" max="900" required></label>
+        <h2>Taxímetro</h2>
+        <label>Arranque ($)
+          <input type="number" id="cfg-arranque" step="0.05" min="0" required></label>
+        <label>Precio por km ($) — se suma cada 100 m
+          <input type="number" id="cfg-km" step="0.10" min="0" required></label>
+        <label>Cobro por espera ($)
+          <input type="number" id="cfg-espera" step="0.01" min="0" required></label>
+        <label>…cada cuántos segundos detenido
+          <input type="number" id="cfg-espera-seg" min="5" max="600" required></label>
+        <label>Segundos sin cobro al arrancar
+          <input type="number" id="cfg-gratis" min="0" max="600" required></label>
+        <label>Carrera mínima ($)
+          <input type="number" id="cfg-minima" step="0.05" min="0" required></label>
+        <h2>Comisión y saldo</h2>
+        <label>Comisión mínima por carrera ($)
+          <input type="number" id="cfg-com-min" step="0.05" min="0" required></label>
+        <label>Comisión (%)
+          <input type="number" id="cfg-com-pct" step="1" min="0" max="100" required></label>
+        <label>…el % se aplica desde carreras de ($)
+          <input type="number" id="cfg-com-desde" step="0.5" min="0" required></label>
+        <label>Avisarme si toma una carrera sin destino con saldo menor a ($)
+          <input type="number" id="cfg-saldo-alerta" step="0.05" min="0" required></label>
+        <div class="fila-botones"><button class="btn btn-primario" type="submit">Guardar configuración</button></div>
+      </form>
+      <form id="form-admin" class="tarjeta form-grid">
+        <h2>Agregar otro administrador</h2>
+        <label>Correo <input type="email" id="adm-email" required></label>
+        <label>Contraseña <input type="password" id="adm-pass" minlength="6" required></label>
+        <div class="fila-botones"><button class="btn" type="submit">Crear administrador</button></div>
+      </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ MODAL: NUEVA CARRERA ============ -->
+<dialog id="modal-carrera" class="modal modal-ancho">
+  <form id="form-carrera" method="dialog" class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2 id="c-titulo">Nueva carrera</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <div class="carrera-grid">
+      <div class="carrera-form">
+        <div class="dos">
+          <div class="campo-cli"><label for="c-cliente">Cliente</label>
+            <input id="c-cliente" placeholder="Nombre" autocomplete="off" required>
+            <div class="sugerencias" id="sug-cli-cliente" hidden></div></div>
+          <div class="campo-cli"><label for="c-telefono">Teléfono</label>
+            <input id="c-telefono" type="tel" placeholder="Número" autocomplete="off">
+            <div class="sugerencias" id="sug-cli-telefono" hidden></div></div>
+        </div>
+        <div class="cliente-ok" id="c-cliente-ok" hidden></div>
+        <div class="cliente-mal" id="c-cliente-mal" hidden></div>
+        <div class="modo-tiempo" role="group" aria-label="Cuándo">
+          <button type="button" class="tab-tiempo activo" data-tiempo="ahora">Solicitar ahora</button>
+          <button type="button" class="tab-tiempo" data-tiempo="programar">Programar</button>
+        </div>
+        <div class="programar-campos" id="c-programar" hidden>
+          <label>Fecha de recogida <input type="date" id="c-fecha"></label>
+          <label>Hora de recogida <input type="time" id="c-hora" step="60"></label>
+          <p class="muted" id="c-programar-info">Elige la fecha y la hora.</p>
+        </div>
+        <div class="campo-dir">
+          <label for="c-origen">Recogida</label>
+          <div class="dir-fila">
+            <i class="punto libre"></i>
+            <input id="c-origen" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off" required>
+            <button type="button" class="btn btn-chico" data-buscar="origen">Buscar</button>
+            <button type="button" class="btn btn-chico" data-marcar="origen">Marcar en mapa</button>
+          </div>
+          <div class="sugerencias" id="sug-origen" hidden></div>
+          <div class="guardadas" id="g-origen" hidden></div>
+        </div>
+        <div class="campo-dir">
+          <label for="c-destino">Destino (opcional)</label>
+          <div class="dir-fila">
+            <i class="punto destino"></i>
+            <input id="c-destino" placeholder="Escribe la dirección y presiona Buscar" autocomplete="off">
+            <button type="button" class="btn btn-chico" data-buscar="destino">Buscar</button>
+            <button type="button" class="btn btn-chico" data-marcar="destino">Marcar en mapa</button>
+          </div>
+          <div class="sugerencias" id="sug-destino" hidden></div>
+          <div class="guardadas" id="g-destino" hidden></div>
+        </div>
+        <div class="dos">
+          <label>Precio fijo ($) <input id="c-tarifa" type="number" step="0.05" min="0" placeholder="Vacío = taxímetro"></label>
+          <div class="sugerida"><span class="muted">Estimado con taxímetro</span><strong id="c-sugerida">Pon el destino</strong></div>
+        </div>
+        <p class="muted" id="c-comision">Sin destino: suena a quien tenga al menos la comisión mínima.</p>
+        <label>Dirección exacta <input id="c-exacta" placeholder="Ej: Manzana y villa, carro blanco"></label>
+        <label>Notas para el conductor <input id="c-notas" placeholder="Ej: lleva maleta grande"></label>
+        <label class="guardar-cli" id="c-guardar-cli-fila"><input type="checkbox" id="c-guardar-cli" checked> Guardar o actualizar este cliente</label>
+        <fieldset class="modo" id="c-modo">
+          <legend>¿Cómo asignar?</legend>
+          <label class="opcion"><input type="radio" name="modo" value="auto" checked>
+            <span><strong>Automática</strong><small>Suena al más cercano y cada pocos segundos se suma el siguiente</small></span></label>
+          <label class="opcion"><input type="radio" name="modo" value="manual">
+            <span><strong>Manual</strong><small>Tú eliges el conductor</small></span></label>
+        </fieldset>
+        <div id="c-manual" hidden>
+          <label for="c-conductor">Conductor</label>
+          <select id="c-conductor"></select>
+        </div>
+        <p class="error" id="c-error" hidden></p>
+      </div>
+      <div class="carrera-mapa">
+        <p class="muted" id="c-ayuda-mapa">Usa "Marcar en mapa" y luego toca el punto exacto.</p>
+        <div id="mapa-carrera"></div>
+      </div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="c-guardar" value="ok">Crear carrera</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: CLIENTE ============ -->
+<dialog id="modal-cliente" class="modal">
+  <form id="form-cliente" class="modal-cuerpo">
+    <header class="modal-cab"><h2 id="mc-titulo">Nuevo cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <div class="dos">
+      <label>Nombre <input id="mc-nombre" required></label>
+      <label>Teléfono <input id="mc-telefono" type="tel" required></label>
+    </div>
+    <label>Direcciones de recogida <small class="muted">(una por línea)</small><textarea id="mc-direcciones" rows="3"></textarea></label>
+    <label>Destinos <small class="muted">(uno por línea)</small><textarea id="mc-destinos" rows="3"></textarea></label>
+    <label>Notas <input id="mc-notas" placeholder="Ej: casa esquinera, portón negro"></label>
+    <p class="muted">Las direcciones escritas aquí se ubican en el mapa con "Buscar" cuando se pide la carrera. Las que vienen de carreras ya tienen su punto exacto.</p>
+    <p class="error" id="mc-error" hidden></p>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario">Guardar</button></footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: RESTRINGIR CLIENTE ============ -->
+<dialog id="modal-restringir" class="modal">
+  <form id="form-restringir" class="modal-cuerpo">
+    <header class="modal-cab"><h2>Restringir cliente</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></header>
+    <p><strong id="mr-nombre"></strong></p>
+    <p class="muted">Mientras esté restringido no se le podrán crear carreras. Al escribir su número o nombre saldrá "Cliente restringido".</p>
+    <label>Justificación <textarea id="mr-justificacion" rows="4" required placeholder="Escribe la razón de la restricción"></textarea></label>
+    <footer class="modal-pie"><button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-peligro-lleno">Restringir</button></footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: ASIGNAR MANUAL ============ -->
+<dialog id="modal-asignar" class="modal">
+  <div class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2 id="asignar-titulo">Asignar carrera</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <p class="muted" id="asignar-sub"></p>
+    <div id="asignar-lista" class="lista-asignar"></div>
+  </div>
+</dialog>
+
+<!-- ============ MODAL: CONDUCTOR ============ -->
+<dialog id="modal-conductor" class="modal">
+  <form id="form-conductor" method="dialog" class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2 id="cond-titulo">Nuevo conductor</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <div class="form-grid">
+      <label>Nombre completo <input id="cd-nombre" required></label>
+      <label>Teléfono <input id="cd-telefono" type="tel"></label>
+      <label>Unidad (número) <input id="cd-unidad" placeholder="Ej: 07" required></label>
+      <label>Placa <input id="cd-placa" required></label>
+      <label>Vehículo <input id="cd-vehiculo" placeholder="Ej: Kia Rio blanco"></label>
+      <label id="cd-usuario-fila">Usuario para la app <input id="cd-usuario" placeholder="Ej: carlos07" pattern="[a-z0-9._-]{3,30}" title="Solo minúsculas, números, punto, guion" required></label>
+      <label id="cd-pass-fila">Contraseña (mín. 6) <input id="cd-pass" type="text" minlength="6" required></label>
+    </div>
+    <p class="muted" id="cd-nota"></p>
+    <p class="error" id="cd-error" hidden></p>
+    <footer class="modal-pie">
+      <button type="button" class="btn" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="cd-guardar" value="ok">Guardar</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ============ MODAL: CÓDIGO GENERADO ============ -->
+<dialog id="modal-codigo" class="modal">
+  <div class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2>Código de recarga</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <p class="muted" id="codigo-monto"></p>
+    <div class="codigo-grande" id="codigo-texto"></div>
+    <label>Enviar a (opcional)
+      <select id="codigo-conductor"></select>
+    </label>
+    <footer class="modal-pie">
+      <button type="button" class="btn" id="codigo-copiar">Copiar código</button>
+      <a class="btn btn-primario" id="codigo-whatsapp" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+    </footer>
+  </div>
+</dialog>
+
+<dialog id="modal-lote" class="modal">
+  <div class="modal-cuerpo">
+    <header class="modal-cab">
+      <h2 id="lote-titulo">Códigos generados</h2>
+      <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+    <p class="muted">Cada código vale una sola vez. Para enviar uno a un conductor, usa "Enviar" en la lista de códigos.</p>
+    <div class="lote-lista" id="lote-lista"></div>
+    <footer class="modal-pie">
+      <button type="button" class="btn" data-cerrar>Cerrar</button>
+      <button type="button" class="btn btn-primario" id="lote-copiar">Copiar todos</button>
+    </footer>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="seed.js"></script>
+<script src="fake-firebase.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="mapas.js?v=202610290515"></script>
+<script src="config.js?v=202610290515"></script>
+<script src="despacho.js?v=202610290515"></script>
+<script src="app.js?v=202610290515"></script>
+</body>
+</html>
