@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoAmigo · Modelos de mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F5F6F8;font-family:Inter,system-ui,sans-serif;color:#101828}
+  header{background:#090145;color:#fff;padding:18px 20px}
+  h1{font-family:Manrope,sans-serif;margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:#C9CDE6;font-size:14px}
+  main{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1400px;margin:0 auto}
+  .op{background:#fff;border:1px solid #E4E7EC;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .op h2{margin:0;font-family:Manrope,sans-serif;font-size:18px}
+  .op p{margin:0;color:#475467;font-size:13px}
+  .mapa{height:420px;border-radius:12px;overflow:hidden;border:1px solid #E4E7EC}
+  @media (max-width:860px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Modelos de mapa · acercado en Isla Mocolí</h1>
+  <p>Mueve y haz zoom en cada uno. Todos son gratis. Compara cuáles muestran más nombres de urbanizaciones, calles y negocios.</p>
+</header>
+<main>
+  <section class="op"><h2>1 · OpenStreetMap Estándar</h2><p>El mapa más detallado de OpenStreetMap: urbanizaciones, calles, negocios, parques. Muestra todo lo que la gente ha registrado.</p><div class="mapa" id="m1"></div></section>
+  <section class="op"><h2>2 · Estilo Google (el actual) con todos los nombres</h2><p>El mapa que tienes hoy, pero mostrando nombres de negocios, lugares y barrios al acercarte (antes los ocultábamos).</p><div class="mapa" id="m2"></div></section>
+  <section class="op"><h2>3 · Esri Calles</h2><p>Mapa de calles clásico y limpio, con nombres de calles y lugares importantes.</p><div class="mapa" id="m3"></div></section>
+  <section class="op"><h2>4 · Satélite con nombres</h2><p>Foto satelital real con calles y nombres encima. Muy útil para ubicar casas, garitas y urbanizaciones.</p><div class="mapa" id="m4"></div></section>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+var C = [-79.8617, -2.1044], Z = 15.6;
+function raster(id, capas, atrib) {
+  var fuentes = {}, layers = [];
+  capas.forEach(function (u, i) {
+    fuentes['s' + i] = { type: 'raster', tiles: [u], tileSize: 256, maxzoom: 19, attribution: atrib };
+    layers.push({ id: 'l' + i, type: 'raster', source: 's' + i });
+  });
+  var m = new maplibregl.Map({ container: id, style: { version: 8, sources: fuentes, layers: layers }, center: C, zoom: Z, scrollZoom: false, attributionControl: { compact: true } });
+  m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+  return m;
+}
+raster('m1', ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], '© OpenStreetMap');
+raster('m3', ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'], '© Esri');
+raster('m4', ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'], '© Esri');
+// 2: liberty con colores tipo Google, sin ocultar lugares
+var m2 = new maplibregl.Map({ container: 'm2', style: 'https://tiles.openfreemap.org/styles/liberty', center: C, zoom: Z, scrollZoom: false, pixelRatio: Math.max(devicePixelRatio || 1, 2), attributionControl: { compact: true } });
+m2.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+m2.on('load', function () {
+  var P = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043' };
+  m2.getStyle().layers.forEach(function (l) {
+    var id = l.id;
+    try {
+      if (l.paint && l.paint['fill-pattern']) { m2.setLayoutProperty(id, 'visibility', 'none'); return; }
+      if (l.type === 'background') m2.setPaintProperty(id, 'background-color', P.fondo);
+      else if (l.type === 'fill') {
+        if (/water/.test(id)) m2.setPaintProperty(id, 'fill-color', P.agua);
+        else if (/park|wood|forest|grass|landcover|pitch/.test(id)) m2.setPaintProperty(id, 'fill-color', P.parque);
+        else if (/building/.test(id)) m2.setPaintProperty(id, 'fill-color', P.edificio);
+      } else if (l.type === 'line') {
+        if (/waterway/.test(id)) m2.setPaintProperty(id, 'line-color', P.agua);
+        else if (/casing/.test(id)) m2.setPaintProperty(id, 'line-color', P.borde);
+        else if (/motorway|trunk/.test(id)) m2.setPaintProperty(id, 'line-color', P.autopista);
+        else if (/road|street|minor|service|tertiary|secondary|primary|path/.test(id)) m2.setPaintProperty(id, 'line-color', P.calle);
+      } else if (l.type === 'symbol') {
+        if (/shield/.test(id)) m2.setLayoutProperty(id, 'visibility', 'none');
+      }
+    } catch (e) {}
+  });
+});
+</script>
+</body>
+</html>
