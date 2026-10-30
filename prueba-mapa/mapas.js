@@ -48,7 +48,7 @@
         try { localStorage.setItem(LUGARES_CLAVE, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { /* lleno o bloqueado */ }
         entregar(d);
       })
-      .catch(function () { lugaresPedidos = false; lugaresEspera = []; });
+      .catch(function (e) { if (window.console) console.warn('AutoAmigo lugares:', e); lugaresPedidos = false; lugaresEspera = []; });
     function entregar(d) {
       lugaresDatos = lugaresGeo(d);
       var f = lugaresEspera; lugaresEspera = [];
