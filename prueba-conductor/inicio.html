@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AutoAmigo Conductor · Inicio de sesión</title>
+<link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0A0F3C;--navy2:#141A52;--texto:#101828;--gris:#667085;--campo:#F2F4F7;--azul:#1570EF}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#E9EAF2;font-family:Inter,system-ui,sans-serif;color:var(--texto)}
+  .escena{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .telefono{width:390px;height:812px;border-radius:48px;background:#05070F;padding:11px;box-shadow:0 30px 70px rgba(9,1,69,.35)}
+  .pantalla{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--navy);display:flex;flex-direction:column}
+  @media (max-width:520px){
+    .escena{padding:0}
+    .telefono{width:100%;height:100svh;border-radius:0;padding:0;box-shadow:none}
+    .pantalla{border-radius:0}
+    .estado{display:none!important}
+  }
+  /* Barra de estado (solo decorativa en la prueba) */
+  .estado{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 34px;color:#fff;font-weight:600;font-size:15px;z-index:3}
+  .estado .ic{display:flex;gap:6px;align-items:center}
+  /* Parte de arriba: azul con calles de fondo */
+  .arriba{position:relative;flex:0 0 44%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 90% at 50% 20%, #161D5E 0%, var(--navy) 60%)}
+  .arriba svg.calles{position:absolute;inset:0;width:100%;height:100%;opacity:.22}
+  .logo-caja{position:relative;margin-top:18px;background:#fff;border-radius:32px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .logo-caja img{display:block;width:150px;height:150px;border-radius:20px}
+  /* Hoja blanca */
+  .hoja{position:relative;flex:1;background:#fff;border-radius:34px 34px 0 0;margin-top:-34px;padding:30px 24px 22px;display:flex;flex-direction:column;gap:14px}
+  .campo{display:flex;align-items:center;gap:12px;height:62px;background:var(--campo);border-radius:20px;padding:0 18px;border:2px solid transparent;transition:border-color .15s}
+  .campo:focus-within{border-color:#C7CDEA;background:#fff}
+  .campo svg{flex:none;color:var(--texto)}
+  .campo input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;color:var(--texto);outline:none;height:100%}
+  .campo input::placeholder{color:#8A93A6}
+  .ojo{border:0;background:none;padding:6px;cursor:pointer;color:var(--texto);display:flex}
+  .recordar{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:500;cursor:pointer;user-select:none;margin:2px 0 4px}
+  .recordar input{appearance:none;width:22px;height:22px;border:2px solid #98A2B3;border-radius:6px;margin:0;display:grid;place-content:center;cursor:pointer}
+  .recordar input:checked{background:var(--navy);border-color:var(--navy)}
+  .recordar input:checked::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+  .boton{height:62px;border:0;border-radius:22px;background:var(--navy);color:#fff;font:inherit;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(10,15,60,.25)}
+  .boton:active{transform:scale(.99)}
+  .link{background:none;border:0;color:var(--azul);font:inherit;font-weight:600;font-size:15px;cursor:pointer;align-self:center;padding:4px}
+  .separador{display:flex;align-items:center;gap:12px;color:var(--gris);font-size:14px;margin-top:2px}
+  .separador::before,.separador::after{content:"";flex:1;height:1px;background:#E4E7EC}
+  .redondos{display:flex;justify-content:center;gap:22px}
+  .redondo{width:76px;height:76px;border-radius:50%;background:#fff;border:1px solid #E4E7EC;box-shadow:0 4px 14px rgba(16,24,40,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:2px;font:inherit}
+  .redondo span{font-size:10px;font-weight:600;color:var(--gris)}
+  .pie{margin-top:auto;text-align:center;font-size:15px;color:var(--texto)}
+  .pie button{background:none;border:0;color:var(--azul);font:inherit;font-weight:700;cursor:pointer;padding:0}
+  .aviso{position:absolute;left:18px;right:18px;bottom:20px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:5;text-align:center}
+</style>
+</head>
+<body>
+<div class="escena">
+  <div class="telefono"><div class="pantalla">
+    <div class="estado"><span>9:41</span>
+      <span class="ic">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.4 1.4a4.5 4.5 0 0 0-6.4 0zM1 4.4a9.9 9.9 0 0 1 14 0l-1.4 1.4a7.9 7.9 0 0 0-11.2 0z"/></svg>
+        <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2.5" y="2.5" width="18" height="7" rx="2" fill="#fff"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg>
+      </span>
+    </div>
+
+    <div class="arriba">
+      <!-- Calles de fondo (decoración) -->
+      <svg class="calles" viewBox="0 0 390 360" preserveAspectRatio="xMidYMid slice" fill="none" stroke="#7C86D9" stroke-width="1.2">
+        <path d="M-20 60 C80 40 140 90 230 70 S360 30 420 50"/>
+        <path d="M-20 150 C60 130 150 170 250 150 S370 120 420 140"/>
+        <path d="M-20 250 C90 230 170 270 260 245 S360 215 420 235"/>
+        <path d="M-20 330 C70 320 160 345 240 330 S360 300 420 320"/>
+        <path d="M40 -20 C55 80 30 180 60 380"/>
+        <path d="M120 -20 C110 90 140 200 115 380"/>
+        <path d="M205 -20 C220 100 190 210 215 380"/>
+        <path d="M290 -20 C275 90 305 190 285 380"/>
+        <path d="M360 -20 C350 100 375 220 355 380"/>
+        <path d="M-10 20 L180 380" opacity=".6"/>
+        <path d="M150 -20 L400 300" opacity=".6"/>
+        <circle cx="205" cy="150" r="26" opacity=".7"/>
+      </svg>
+      <div class="logo-caja"><img src="../logo.png" alt="AutoAmigo"></div>
+    </div>
+
+    <form class="hoja" id="f" autocomplete="off">
+      <label class="campo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <input id="usuario" placeholder="Usuario" autocapitalize="none">
+      </label>
+      <label class="campo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.7" r="1.3" fill="currentColor"/></svg>
+        <input id="clave" type="password" placeholder="Contraseña">
+        <button type="button" class="ojo" id="ojo" aria-label="Mostrar contraseña">
+          <svg id="ojo-ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </label>
+      <label class="recordar"><input type="checkbox" checked> Recordarme</label>
+      <button class="boton" type="submit">Iniciar sesión</button>
+      <button type="button" class="link" id="olvido">¿Olvidaste tu contraseña?</button>
+      <div class="separador">o comunícate con la central</div>
+      <div class="redondos">
+        <button type="button" class="redondo" id="wa" aria-label="WhatsApp">
+          <svg width="30" height="30" viewBox="0 0 32 32"><path fill="#25D366" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3z"/><path fill="#fff" d="M22.6 18.9c-.4-.2-2.2-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.4.3-.8.1-.4-.2-1.6-.6-3-1.9-1.1-1-1.9-2.2-2.1-2.6-.2-.4 0-.6.2-.8l.6-.7c.2-.2.3-.4.4-.7.1-.3 0-.5 0-.7l-1.1-2.7c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-1 .5-.3.4-1.3 1.3-1.3 3.1s1.3 3.6 1.5 3.9c.2.2 2.6 4 6.3 5.6.9.4 1.6.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.6.2-1.8-.1-.1-.4-.2-.8-.4z"/></svg>
+          <span>WhatsApp</span>
+        </button>
+        <button type="button" class="redondo" id="tel" aria-label="Llamar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0A0F3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+          <span>Llamar</span>
+        </button>
+      </div>
+      <div class="pie">¿No tienes una cuenta? <button type="button" id="solicitar">Solicítala</button></div>
+    </form>
+    <div class="aviso" id="aviso" hidden></div>
+  </div></div>
+</div>
+<script>
+  function aviso(t) { var a = document.getElementById('aviso'); a.textContent = t; a.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.hidden = true; }, 3200); }
+  document.getElementById('ojo').addEventListener('click', function () {
+    var c = document.getElementById('clave'); var ver = c.type === 'password'; c.type = ver ? 'text' : 'password';
+    document.getElementById('ojo-ic').innerHTML = ver
+      ? '<path d="M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'
+      : '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>';
+  });
+  document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!document.getElementById('usuario').value.trim() || !document.getElementById('clave').value) { aviso('Escribe tu usuario y tu contraseña.'); return; }
+    aviso('En la app, aquí entra a la pantalla principal.');
+  });
+  document.getElementById('olvido').addEventListener('click', function () { aviso('Abre WhatsApp con la central para pedir una nueva contraseña.'); });
+  document.getElementById('wa').addEventListener('click', function () { aviso('Abre un chat de WhatsApp con la central.'); });
+  document.getElementById('tel').addEventListener('click', function () { aviso('Llama a la central.'); });
+  document.getElementById('solicitar').addEventListener('click', function () { aviso('Abre WhatsApp con la central para pedir tu cuenta de conductor.'); });
+</script>
+</body>
+</html>
