@@ -25,8 +25,8 @@
   /* Parte de arriba: azul con calles de fondo */
   .arriba{position:relative;flex:0 0 54%;display:flex;align-items:center;justify-content:center;background:var(--navy)}
   .arriba svg.calles{position:absolute;inset:0;width:100%;height:100%;opacity:.22}
-  .logo-caja{position:relative;margin-top:18px;background:#fff;border-radius:36px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
-  .logo-caja img{display:block;width:220px;height:220px;border-radius:30px}
+  .logo-caja{position:relative;margin-top:18px;background:#fff;border-radius:36px;padding:16px;width:232px;height:232px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .logo-caja img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
   /* Hoja blanca */
   .hoja{position:relative;flex:1;background:#fff;border-radius:34px 34px 0 0;margin-top:-34px;padding:34px 24px 22px;display:flex;flex-direction:column;gap:16px}
   .campo{display:flex;align-items:center;gap:12px;height:62px;background:var(--campo);border-radius:20px;padding:0 18px;border:2px solid transparent;transition:border-color .15s}
@@ -65,7 +65,7 @@
 
     <div class="arriba">
 
-      <div class="logo-caja"><img src="../logo.png" alt="AutoAmigo"></div>
+      <div class="logo-caja"><img src="img/logo-recortado.png" alt="AutoAmigo"></div>
     </div>
 
     <form class="hoja" id="f" autocomplete="off">
