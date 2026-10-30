@@ -402,7 +402,7 @@
   $('#b-principal').addEventListener('click', function () {
     var c = S.carrera; if (!c) return;
     if (c.estado === 'aceptada') {
-      c.estado = 'ejecucion'; c.inicio = Date.now(); c.seg = 0; c.mostradoC = CFG.arranqueC; c.ultMostrar = 0;
+      c.estado = 'ejecucion'; c.inicio = Date.now(); c.seg = 0; c.mostradoC = 0; c.ultMostrar = 0;
       marcarObjetivo(c.d, '#101828'); render();
       return;
     }
@@ -458,6 +458,7 @@
         c.seg++;
         var parado = (c.seg % 90) > 70; // a ratos detenido (semáforo)
         if (c.seg > CFG.gratisSeg) { if (parado) c.espera++; else c.metros += 8.5; }
+        if (c.mostradoC === 0 && c.seg >= 3) c.mostradoC = CFG.arranqueC; // 3 s en $0.00 y luego el arranque
         if (c.seg - c.ultMostrar >= 10) { c.ultMostrar = c.seg; c.mostradoC = c.seg <= CFG.gratisSeg ? CFG.arranqueC : taximetroC(c.metros, c.espera); }
       }
       renderCarrera(c);
