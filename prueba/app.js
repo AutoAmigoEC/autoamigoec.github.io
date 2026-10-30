@@ -136,7 +136,7 @@
   var telAbiertos = {};
   function opcionesTel(tel) {
     var wa = telefonoWhatsapp(tel);
-    return '<div class="tel-opciones"><a href="tel:' + esc(String(tel).replace(/[^\d+]/g, '')) + '">📞 Llamar</a>' +
+    return '<div class="tel-opciones"><a href="tel:' + esc(String(tel).replace(/[^\d+]/g, '')) + '">Llamar</a>' +
       (wa ? '<a class="wa" href="https://wa.me/' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + '</div>';
   }
   function telMenu(tel, clave) {

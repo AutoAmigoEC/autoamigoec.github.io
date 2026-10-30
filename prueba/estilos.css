@@ -256,11 +256,11 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .tel-menu{display:inline-block;position:relative}
 .tel-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--navy)}
 .tel-menu>summary::-webkit-details-marker{display:none}
-.tel-menu>summary strong{text-decoration:underline dotted;text-underline-offset:3px}
+.tel-menu>summary strong{text-decoration:none}
 .tel-opciones{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .tel-opciones a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--linea);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--tinta);background:#fff}
 .tel-opciones a.wa{color:#067647;border-color:#ABEFC6;background:#ECFDF3}
-.carrera .cliente-tel{margin-top:2px;font-size:14px}
+.carrera .cliente-tel{margin-top:-6px;font-size:14px}
 .btn-eliminar{background:var(--peligro)!important;color:#fff!important;border-color:var(--peligro)!important}
 .maplibregl-popup-content .tel-opciones a{font-size:12px;padding:4px 10px}
 /* Solicitar ahora / Programar */
