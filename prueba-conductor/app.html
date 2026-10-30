@@ -633,9 +633,9 @@
     yoMk.setLngLat([S.yo.lng, S.yo.lat]);
     // Deslizar
     var con = S.estado === 'conectado';
-    $('#deslizar').classList.toggle('off', con);
+    $('#deslizar').classList.toggle('off', !con); // gris desconectado, verde conectado
     $('#desl-txt').textContent = con ? 'Desconectarme' : 'Conectarme';
-    $('#perilla-ic').setAttribute('fill', con ? '#98A2B3' : '#12B76A');
+    $('#perilla-ic').setAttribute('fill', con ? '#12B76A' : '#98A2B3');
     // Barra y menú
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
     // Secciones
