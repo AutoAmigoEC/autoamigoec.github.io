@@ -303,7 +303,7 @@
   <!-- Controles solo para la prueba -->
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
-    <p>Esto no sale en la app. Al conectarte, a los pocos segundos llega una carrera sola a la pantalla. Con estos botones puedes hacerla llegar al instante.</p>
+    <p>Esto no sale en la app. Al estar libre, la carrera sale sola en la pantalla (primero las de la bandeja, de la más cercana). Con estos botones puedes hacerla llegar al instante.</p>
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
@@ -568,13 +568,22 @@
     { cliente: 'Jorge Salazar', tel: '0987654321', o: { dir: 'Urb. Ciudad Celeste', ref: 'Etapa La Marina', lat: -2.0805, lng: -79.8470 }, d: { dir: 'Aeropuerto J.J. Olmedo', ref: 'Guayaquil', lat: -2.1574, lng: -79.8837 }, exacta: 'Manzana 4 villa 12, carro gris', calif: 4.7, viajes: 12, equipaje: true }
   ];
   var nDemo = 0;
-  function nuevaOferta(fijo) {
+  // Carrera de la bandeja que este conductor todavía no rechazó (la más cercana)
+  function deBandeja() {
+    var lista = BANDEJA.filter(function (b) { return !b.rechazada; }).sort(function (a, b) { return distKm(S.yo, a.o) - distKm(S.yo, b.o); });
+    if (!lista.length) return null;
+    var b = lista[0];
+    return { cliente: b.cliente, tel: '0990000000', o: b.o, d: b.d, exacta: '', calif: 4.8, viajes: 9, equipaje: false, fijo: b.fijo, estC: b.estC, deBandeja: b };
+  }
+  function nuevaOferta(fijo, auto) {
     if (S.carrera) { aviso('Ya tienes una carrera en curso.'); return; }
     if (S.estado !== 'conectado') { aviso('Primero conéctate: desliza "Conectarme".'); return; }
-    var base = DEMO[nDemo++ % DEMO.length];
-    var o = JSON.parse(JSON.stringify(base));
-    o.fijo = fijo || 0;
-    o.estC = Math.max(CFG.minimaC, CFG.arranqueC + Math.round(distKm(o.o, o.d) * 10) * 5);
+    var o = auto ? deBandeja() : null;
+    if (!o) {
+      o = JSON.parse(JSON.stringify(DEMO[nDemo++ % DEMO.length]));
+      o.fijo = fijo || 0;
+      o.estC = Math.max(CFG.minimaC, CFG.arranqueC + Math.round(distKm(o.o, o.d) * 10) * 5);
+    }
     o.vence = Date.now() + OFERTA_SEG * 1000;
     S.oferta = o; S.pantalla = 'inicio'; S.menu = false;
     sonar();
@@ -587,9 +596,10 @@
       [0, .25, .5].forEach(function (t) { var os = A.createOscillator(), g = A.createGain(); os.frequency.value = 880; os.connect(g); g.connect(A.destination); g.gain.setValueAtTime(.15, A.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, A.currentTime + t + .2); os.start(A.currentTime + t); os.stop(A.currentTime + t + .22); });
     } catch (e) {}
   }
-  function cerrarOferta(msg) { programarProxima(25); S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
+  function cerrarOferta(msg) { if (S.oferta && S.oferta.deBandeja) S.oferta.deBandeja.rechazada = true; programarProxima(deBandeja() ? 2 : 25); S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
   function aceptar(o) {
     S.oferta = null;
+    if (o.deBandeja) { var i = BANDEJA.indexOf(o.deBandeja); if (i >= 0) BANDEJA.splice(i, 1); delete o.deBandeja; }
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
     puntosViaje(o);
     render(); setTimeout(verRuta, 60);
@@ -623,8 +633,8 @@
   function programarProxima(seg) { proxima = Date.now() + seg * 1000; }
   setInterval(function () {
     if (S.estado !== 'conectado' || S.oferta || S.carrera) { if (S.estado !== 'conectado') proxima = 0; return; }
-    if (!proxima) { programarProxima(6); return; }
-    if (Date.now() >= proxima) { proxima = 0; nuevaOferta(Math.random() < 0.3 ? 400 : 0); }
+    if (!proxima) { programarProxima(1); return; }
+    if (Date.now() >= proxima) { proxima = 0; nuevaOferta(Math.random() < 0.3 ? 400 : 0, true); }
   }, 1000);
 
   // Avanza cada segundo
