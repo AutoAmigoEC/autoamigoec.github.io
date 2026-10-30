@@ -1834,15 +1834,15 @@
     });
   });
 
-  var LETRAS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  // Códigos de recarga: 10 números (el primero nunca es 0)
   function nuevoCodigo() {
-    var out = '', buf = new Uint32Array(8);
+    var out = '', buf = new Uint32Array(10);
     if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(buf);
-    else for (var j = 0; j < 8; j++) buf[j] = Math.floor(Math.random() * 1e9);
-    for (var i = 0; i < 8; i++) out += LETRAS.charAt(buf[i] % LETRAS.length);
+    else for (var j = 0; j < 10; j++) buf[j] = Math.floor(Math.random() * 4e9);
+    for (var i = 0; i < 10; i++) out += i === 0 ? String(1 + buf[i] % 9) : String(buf[i] % 10);
     return out;
   }
-  function formatoCodigo(k) { return k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k; }
+  function formatoCodigo(k) { return k.length === 10 ? k : (k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k); }
 
   // Genera varios códigos de un mismo monto de una sola vez
   function crearCodigo(datos, intentos) {
