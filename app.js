@@ -132,6 +132,27 @@
     if (n.indexOf('593') !== 0) return '593' + n;
     return n;
   }
+  // Teléfono del cliente: al tocarlo muestra Llamar y WhatsApp
+  var telAbiertos = {};
+  function opcionesTel(tel) {
+    var wa = telefonoWhatsapp(tel);
+    return '<div class="tel-opciones"><a href="tel:' + esc(String(tel).replace(/[^\d+]/g, '')) + '">Llamar</a>' +
+      (wa ? '<a class="wa" href="https://wa.me/' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + '</div>';
+  }
+  function telMenu(tel, clave) {
+    if (!tel) return '';
+    return '<details class="tel-menu" data-tel="' + esc(clave) + '"' + (telAbiertos[clave] ? ' open' : '') + '>' +
+      '<summary><strong>' + esc(tel) + '</strong></summary>' + opcionesTel(tel) + '</details>';
+  }
+  document.addEventListener('toggle', function (ev) {
+    var d = ev.target;
+    if (d.classList && d.classList.contains('tel-menu')) {
+      var k = d.getAttribute('data-tel');
+      if (d.open) telAbiertos[k] = true; else delete telAbiertos[k];
+    }
+  }, true);
+  function esProgramada(c) { return Despacho.esProgramada(c, ahora()); }
+
   function conductoresActivos() {
     return Object.keys(S.conductores).filter(function (uid) { return S.conductores[uid].activo !== false; });
   }
@@ -403,6 +424,7 @@
     Object.keys(S.carreras).forEach(function (id) {
       var c = S.carreras[id];
       if (c.estado !== 'pendiente' || !c.origen || typeof c.origen.lat !== 'number') return;
+      if (Despacho.esProgramada(c, t)) return;
       vistasC[id] = true;
       var mc = marcadoresCarrera[id];
       if (!mc) {
@@ -416,10 +438,13 @@
       }
       var ll = mc.getLngLat();
       if (ll.lat !== c.origen.lat || ll.lng !== c.origen.lng) mc.setLngLat([c.origen.lng, c.origen.lat]);
-      var tarde = typeof c.creada === 'number' && t - c.creada >= MIN30;
+      var desdeE = Despacho.inicioEspera(c);
+      var tarde = desdeE > 0 && t - desdeE >= MIN30;
       mc.getElement().classList.toggle('tarde', tarde);
       var pop = '<strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong><br>' + esc(c.origen.dir || '') +
-        (typeof c.creada === 'number' ? '<br><small' + (tarde ? ' class="texto-rojo"' : '') + '>Esperando ' + duracion(t - c.creada) + '</small>' : '');
+        (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') +
+        (desdeE > 0 ? '<br><small' + (tarde ? ' class="texto-rojo"' : '') + '>Esperando ' + duracion(Math.floor((t - desdeE) / 60000) * 60000) + '</small>' : '') +
+        (c.telefono ? '<br><strong>' + esc(c.telefono) + '</strong>' + opcionesTel(c.telefono) : '');
       if (mc.__popup !== pop) { mc.getPopup().setHTML(pop); mc.__popup = pop; }
       puntos.push([c.origen.lat, c.origen.lng]);
     });
@@ -442,13 +467,19 @@
   //  Render
   // ------------------------------------------------------------------
   function contar() {
-    var n = { libre: 0, aceptada: 0, ejecucion: 0, sinsaldo: 0, fuera: 0, pendientes: 0 };
+    var n = { libre: 0, aceptada: 0, ejecucion: 0, sinsaldo: 0, fuera: 0, pendientes: 0, programadas: 0 };
+    var t = ahora();
     conductoresActivos().forEach(function (uid) { n[estadoDe(uid)]++; });
-    Object.keys(S.carreras).forEach(function (id) { if (S.carreras[id].estado === 'pendiente') n.pendientes++; });
+    // Una misma hora "t" para las dos cuentas: una carrera nunca está en ambas ni en ninguna
+    Object.keys(S.carreras).forEach(function (id) {
+      var c = S.carreras[id];
+      if (c.estado !== 'pendiente') return;
+      if (Despacho.esProgramada(c, t)) n.programadas++; else n.pendientes++;
+    });
     return n;
   }
-  function kpi(clase, texto, valor) {
-    return '<div class="kpi"><div class="eti"><i class="punto ' + clase + '"></i>' + esc(texto) +
+  function kpi(clase, texto, valor, extra) {
+    return '<div class="kpi"' + (extra || '') + '><div class="eti"><i class="punto ' + clase + '"></i>' + esc(texto) +
       '</div><div class="num">' + valor + '</div></div>';
   }
   function renderKpis() {
@@ -461,13 +492,14 @@
       kpi('ejecucion', 'En ejecución', n.ejecucion) +
       kpi('sinsaldo', 'Conectados sin recarga', n.sinsaldo) +
       kpi('fuera', 'Fuera de servicio', n.fuera) +
-      kpi('pendiente', 'Carreras esperando', n.pendientes));
+      kpi('pendiente', 'Carreras esperando', n.pendientes) +
+      kpi('programada', 'Carreras programadas', n.programadas, ' data-ir-programadas="" role="button" tabindex="0" title="Ver carreras programadas" style="cursor:pointer"'));
   }
 
   function ordenActivas(a, b) {
     // Siempre primero la más reciente
     var ca = S.carreras[a], cb = S.carreras[b];
-    return (cb.creada || 0) - (ca.creada || 0);
+    return (Despacho.inicioEspera(cb) || 0) - (Despacho.inicioEspera(ca) || 0);
   }
   function filtrarEstadosActivos() {
     var r = {};
@@ -478,7 +510,8 @@
   function renderActivas() {
     var t = ahora();
     var ids = Object.keys(S.carreras).filter(function (id) {
-      return ['pendiente', 'aceptada', 'ejecucion'].indexOf(S.carreras[id].estado) >= 0;
+      var c = S.carreras[id];
+      return ['pendiente', 'aceptada', 'ejecucion'].indexOf(c.estado) >= 0 && !Despacho.esProgramada(c, t);
     }).sort(ordenActivas);
     if (!ids.length) {
       setHTML('#lista-activas', '<div class="vacio">No hay carreras activas.<br>Crea una con "+ Nueva carrera".</div>');
@@ -488,7 +521,7 @@
     var limite = S.config.prioridadMin * 60000;
     setHTML('#lista-activas', ids.map(function (id) {
       var c = S.carreras[id];
-      var espera = t - (c.creada || t);
+      var espera = t - (Despacho.inicioEspera(c) || t);
       var extra = '', clase = c.estado;
       if (c.estado === 'pendiente') {
         var sonando = Despacho.sonandoA(c, eleg, t, S.config);
@@ -513,14 +546,17 @@
         if (e && typeof e.lat === 'number') acciones += '<button class="btn btn-chico" data-ver="' + c.conductor + '">Ver carro</button>';
         if (c.estado === 'aceptada') acciones += '<button class="btn btn-chico" data-reofrecer="' + id + '">Devolver a la cola</button>';
       }
-      acciones += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>';
+      acciones += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>' +
+        '<button class="btn btn-chico btn-eliminar" data-eliminar-carrera="' + id + '">Eliminar</button>';
       return '<div class="carrera ' + clase + '">' +
         '<div class="fila"><strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong>' +
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
         (c.estado === 'pendiente' ? ' · ' + duracion(espera) : '') + '</span></div>' +
+        (c.telefono ? '<div class="cliente-tel">' + telMenu(c.telefono, 'a-' + id) + '</div>' : '') +
+        (typeof c.recogerEn === 'number' ? '<span class="etiqueta-prog">Programada · recoger ' + fechaHora(c.recogerEn) + '</span>' : '') +
         '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
         extra +
-        '<div class="fila meta"><span>' + precioTexto(c) + (c.telefono ? ' · ' + esc(c.telefono) : '') + '</span><span>creada ' + hora(c.creada) + '</span></div>' +
+        '<div class="fila meta"><span>' + precioTexto(c) + '</span><span>creada ' + hora(c.creada) + '</span></div>' +
         '<div class="acciones">' + acciones + '</div></div>';
     }).join(''));
   }
@@ -562,8 +598,10 @@
     var t = ahora();
     var f = S.filtroCarreras;
     var ids = Object.keys(S.carreras).filter(function (id) {
-      var e = S.carreras[id].estado;
-      if (f === 'activas') return ['pendiente', 'aceptada', 'ejecucion'].indexOf(e) >= 0;
+      var c0 = S.carreras[id], e = c0.estado, prog = Despacho.esProgramada(c0, t);
+      if (f === 'activas') return ['pendiente', 'aceptada', 'ejecucion'].indexOf(e) >= 0 && !prog;
+      if (f === 'programada') return prog;
+      if (f === 'pendiente') return e === 'pendiente' && !prog;
       if (f === 'todas') return true;
       return e === f;
     }).sort(function (a, b) { return (S.carreras[b].creada || 0) - (S.carreras[a].creada || 0); });
@@ -574,14 +612,17 @@
       if (c.estado === 'aceptada') acc += '<button class="btn btn-chico" data-reofrecer="' + id + '">Devolver a la cola</button>';
       if (['pendiente', 'aceptada', 'ejecucion'].indexOf(c.estado) >= 0)
         acc += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>';
-      var espera = c.estado === 'pendiente' ? duracion(t - c.creada) :
+      acc += '<button class="btn btn-chico btn-eliminar" data-eliminar-carrera="' + id + '">Eliminar</button>';
+      var prog = Despacho.esProgramada(c, t);
+      var espera = prog ? 'Recoger ' + fechaHora(c.recogerEn) + '<small>entra a las ' + hora(c.activarEn) + '</small>' :
+        c.estado === 'pendiente' ? duracion(t - (Despacho.inicioEspera(c) || t)) :
         (c.aceptada ? duracion(c.aceptada - c.creada) : '—');
       var com = c.estado === 'finalizada' ? dineroC(c.comisionC) + (c.perdidaC ? '<small>pérdida ' + dineroC(c.perdidaC) + '</small>' : '') : '—';
       return '<tr><td><strong>#' + esc(c.numero) + '</strong><small>' + fechaHora(c.creada) + '</small></td>' +
         '<td>' + esc(c.cliente) + '<small>' + esc(c.telefono || '') + '</small></td>' +
         '<td>' + esc((c.origen || {}).dir || '—') + '<small>→ ' + esc((c.destino || {}).dir || 'Sin destino') + '</small></td>' +
         '<td>' + (c.conductor ? esc(c.conductorNombre || nombreCond(c.conductor)) + '<small>' + esc(c.unidad ? 'U' + c.unidad : '') + '</small>' : '—') + '</td>' +
-        '<td><span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] + '</span></td>' +
+        '<td><span class="pill ' + (prog ? 'programada' : c.estado) + '">' + (prog ? 'Programada' : NOMBRE_CARRERA[c.estado]) + '</span></td>' +
         '<td>' + espera + '</td>' +
         '<td>' + precioTexto(c) + '</td>' +
         '<td>' + com + '</td>' +
@@ -591,12 +632,13 @@
       (filas || '<tr><td colspan="9" class="muted" style="text-align:center;padding:28px">No hay carreras en este filtro.</td></tr>') + '</tbody>');
   }
 
+  function filtrarCarreras(f) {
+    S.filtroCarreras = f;
+    $$('#filtros-carreras .chip').forEach(function (x) { x.classList.toggle('activo', x.getAttribute('data-filtro') === f); });
+    renderTablaCarreras();
+  }
   $$('#filtros-carreras .chip').forEach(function (b) {
-    b.addEventListener('click', function () {
-      S.filtroCarreras = b.getAttribute('data-filtro');
-      $$('#filtros-carreras .chip').forEach(function (x) { x.classList.toggle('activo', x === b); });
-      renderTablaCarreras();
-    });
+    b.addEventListener('click', function () { filtrarCarreras(b.getAttribute('data-filtro')); });
   });
 
   function renderTablaConductores() {
@@ -668,11 +710,13 @@
   //  Acciones (delegación de eventos)
   // ------------------------------------------------------------------
   document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('button, a');
+    var b = ev.target.closest('button, a, [data-ir-programadas]');
     if (!b) return;
     if (b.getAttribute('data-accion') === 'nueva-carrera') { abrirNuevaCarrera(null); return; }
     if (accionCliente(b)) return;
     var id;
+    if ((id = b.getAttribute('data-eliminar-carrera'))) { eliminarCarrera(id); return; }
+    if ((id = b.getAttribute('data-ir-programadas')) !== null) { irA('carreras'); filtrarCarreras('programada'); return; }
     if ((id = b.getAttribute('data-asignar'))) { abrirAsignar(id); return; }
     if ((id = b.getAttribute('data-editar-carrera'))) { abrirNuevaCarrera(id); return; }
     if ((id = b.getAttribute('data-cancelar'))) { cancelarCarrera(id); return; }
@@ -715,6 +759,17 @@
     up['carreras/' + id + '/solicitudes'] = null;
     liberarConductor(up, c, id);
     db.ref().update(up).then(function () { toast('Carrera #' + c.numero + ' cancelada.'); })
+      .catch(function (e) { toast(errorTexto(e), true); });
+  }
+
+  function eliminarCarrera(id) {
+    var c = S.carreras[id];
+    if (!c) return;
+    if (!confirm('¿ELIMINAR definitivamente la carrera #' + c.numero + ' de ' + c.cliente + '?\nSe borra del sistema y no aparecerá en reportes. Esto no se puede deshacer.')) return;
+    var up = {};
+    up['carreras/' + id] = null;
+    liberarConductor(up, c, id);
+    db.ref().update(up).then(function () { toast('Carrera #' + c.numero + ' eliminada.'); })
       .catch(function (e) { toast(errorTexto(e), true); });
   }
 
@@ -825,6 +880,51 @@
   // ------------------------------------------------------------------
   var NC = { cliente: null, editId: null, origen: null, destino: null, km: null, marcando: null, mapa: null, mOrigen: null, mDestino: null, linea: null, consulta: 0 };
 
+  // ---- Solicitar ahora / Programar ----
+  var ANTICIPO_PROG = 20 * 60 * 1000; // entra a "Carreras activas" 20 min antes de la recogida
+  function dosDig(n) { return (n < 10 ? '0' : '') + n; }
+  function fechaInput(d) { return d.getFullYear() + '-' + dosDig(d.getMonth() + 1) + '-' + dosDig(d.getDate()); }
+  function fechaProgramada() {
+    var f = $('#c-fecha').value, h = $('#c-hora').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{1,2}:\d{2}/.test(h)) return null;
+    var pf = f.split('-').map(Number), ph = h.split(':').map(Number);
+    var d = new Date(pf[0], pf[1] - 1, pf[2], ph[0], ph[1], 0, 0);
+    return isNaN(d.getTime()) ? null : d.getTime();
+  }
+  function infoProgramada() {
+    var info = $('#c-programar-info');
+    var ts = fechaProgramada();
+    info.classList.remove('error');
+    if (!ts) { info.textContent = 'Elige la fecha y la hora de recogida.'; return; }
+    if (ts <= ahora() + 60000) { info.textContent = '⚠ Esa fecha u hora ya pasó. Elige una futura.'; return; }
+    var act = ts - ANTICIPO_PROG;
+    info.textContent = act <= ahora()
+      ? 'Faltan menos de 20 minutos: entrará a Carreras activas en cuanto la crees.'
+      : 'Se guarda como programada. Entrará a Carreras activas y empezará a sonar a los conductores el ' + fechaHora(act) + ' (20 min antes).';
+  }
+  function ponerModoTiempo(modo, ts) {
+    NC.programar = modo === 'programar';
+    $$('.tab-tiempo').forEach(function (b) { b.classList.toggle('activo', b.getAttribute('data-tiempo') === modo); });
+    $('#c-programar').hidden = !NC.programar;
+    var hoy = new Date(ahora());
+    $('#c-fecha').min = fechaInput(hoy);
+    if (ts) {
+      var d = new Date(ts);
+      $('#c-fecha').value = fechaInput(d);
+      $('#c-hora').value = dosDig(d.getHours()) + ':' + dosDig(d.getMinutes());
+    } else if (NC.programar && !$('#c-fecha').value) {
+      $('#c-fecha').value = fechaInput(hoy);
+    }
+    if (NC.programar) infoProgramada();
+  }
+  $$('.tab-tiempo').forEach(function (b) {
+    b.addEventListener('click', function () {
+      ponerModoTiempo(b.getAttribute('data-tiempo'), null);
+      if (NC.programar) setTimeout(function () { $('#c-hora').focus(); }, 30);
+    });
+  });
+  ['#c-fecha', '#c-hora'].forEach(function (s) { $(s).addEventListener('input', infoProgramada); $(s).addEventListener('change', infoProgramada); });
+
   function abrirNuevaCarrera(editId) {
     var c = editId ? S.carreras[editId] : null;
     if (editId && (!c || ['pendiente', 'aceptada'].indexOf(c.estado) < 0)) { toast('Solo se puede editar una carrera que aún no empieza.', true); return; }
@@ -837,6 +937,7 @@
     $('#c-manual').hidden = true;
     $('#sug-origen').hidden = true; $('#sug-destino').hidden = true;
     resetClienteModal(editId);
+    ponerModoTiempo(c && typeof c.recogerEn === 'number' ? 'programar' : 'ahora', c && typeof c.recogerEn === 'number' ? c.recogerEn : null);
     $('#modal-carrera').showModal();
     if (!NC.mapa) {
       var cc = mapa ? mapa.getCenter() : null;
@@ -1075,8 +1176,17 @@
       err.textContent = 'Cliente restringido: no se le pueden crear carreras. Puedes quitar la restricción en Clientes.';
       err.hidden = false; return;
     }
+    var prog = null;
+    if (NC.programar) {
+      prog = fechaProgramada();
+      if (!prog) { err.textContent = 'Pon la fecha y la hora de recogida.'; err.hidden = false; return; }
+      if (prog <= ahora() + 60000) { err.textContent = 'No se puede programar una carrera para una fecha u hora que ya pasó.'; err.hidden = false; return; }
+    }
     var p = datosPrecio();
     var datos = {
+      recogerEn: prog,
+      activarEn: prog ? prog - ANTICIPO_PROG : null,
+      programada: prog ? true : null,
       cliente: $('#c-cliente').value.trim(),
       telefono: $('#c-telefono').value.trim(),
       origen: { dir: $('#c-origen').value.trim(), lat: NC.origen.lat, lng: NC.origen.lng },
@@ -1093,6 +1203,7 @@
     // ---- Editar ----
     if (NC.editId) {
       var id = NC.editId;
+      if (prog && S.carreras[id] && S.carreras[id].estado === 'pendiente') datos.ofertaDesde = Math.max(datos.activarEn, ahora());
       $('#c-guardar').disabled = true;
       var up = {};
       Object.keys(datos).forEach(function (k) { up['carreras/' + id + '/' + k] = datos[k]; });
@@ -1123,7 +1234,7 @@
       c.numero = numero;
       c.estado = 'pendiente';
       c.creada = TS;
-      c.ofertaDesde = TS;
+      c.ofertaDesde = (prog && datos.activarEn > ahora()) ? datos.activarEn : TS;
       c.creadaPor = auth.currentUser ? auth.currentUser.uid : '';
       Object.keys(c).forEach(function (k) { if (c[k] === null) delete c[k]; });
       var up = {};

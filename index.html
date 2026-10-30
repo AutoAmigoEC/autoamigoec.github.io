@@ -6,9 +6,9 @@
 <title>AutoAmigo · Panel de la central</title>
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=202610290515">
+<link rel="stylesheet" href="estilos.css?v=202610292233">
 </head>
 <body>
 
@@ -83,7 +83,7 @@
             <span><i class="punto sinsaldo"></i>Sin recarga</span>
             <span><i class="punto fuera"></i>Fuera de servicio</span>
             <span><i class="punto pendiente"></i>Carrera esperando</span>
-            <span><i class="punto ejecucion"></i>+30 min sin aceptar</span>
+            <span><i class="punto tarde"></i>+30 min sin aceptar</span>
           </div>
         </div>
         <aside class="activas">
@@ -105,6 +105,7 @@
       <div class="chips" id="filtros-carreras">
         <button class="chip activo" data-filtro="activas">Activas</button>
         <button class="chip" data-filtro="pendiente">Esperando</button>
+        <button class="chip" data-filtro="programada">Programadas</button>
         <button class="chip" data-filtro="finalizada">Finalizadas</button>
         <button class="chip" data-filtro="cancelada">Canceladas</button>
         <button class="chip" data-filtro="todas">Todas</button>
@@ -302,6 +303,15 @@
         </div>
         <div class="cliente-ok" id="c-cliente-ok" hidden></div>
         <div class="cliente-mal" id="c-cliente-mal" hidden></div>
+        <div class="modo-tiempo" role="group" aria-label="Cuándo">
+          <button type="button" class="tab-tiempo activo" data-tiempo="ahora">Solicitar ahora</button>
+          <button type="button" class="tab-tiempo" data-tiempo="programar">Programar</button>
+        </div>
+        <div class="programar-campos" id="c-programar" hidden>
+          <label>Fecha de recogida <input type="date" id="c-fecha"></label>
+          <label>Hora de recogida <input type="time" id="c-hora" step="60"></label>
+          <p class="muted" id="c-programar-info">Elige la fecha y la hora.</p>
+        </div>
         <div class="campo-dir">
           <label for="c-origen">Recogida</label>
           <div class="dir-fila">
@@ -466,9 +476,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapas.js?v=202610290515"></script>
-<script src="config.js?v=202610290515"></script>
-<script src="despacho.js?v=202610290515"></script>
-<script src="app.js?v=202610290515"></script>
+<script src="mapas.js?v=202610292233"></script>
+<script src="config.js?v=202610292233"></script>
+<script src="despacho.js?v=202610292233"></script>
+<script src="app.js?v=202610292233"></script>
 </body>
 </html>

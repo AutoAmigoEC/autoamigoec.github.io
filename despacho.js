@@ -104,10 +104,20 @@
     return lista;
   }
 
+  // Carrera programada que todavía no llega a su hora de activación (20 min antes de la recogida)
+  function esProgramada(c, ahora) {
+    return !!c && c.estado === 'pendiente' && typeof c.activarEn === 'number' && ahora < c.activarEn;
+  }
+  // Desde cuándo cuenta la espera: la activación (programadas) o la creación
+  function inicioEspera(c) {
+    return typeof c.activarEn === 'number' ? Math.max(c.activarEn, c.creada || 0) : (c.creada || 0);
+  }
+
   // Devuelve [{uid, km}] de los conductores a los que les SUENA ahora esta carrera
   function sonandoA(carrera, listaElegibles, ahora, cfg) {
     cfg = cfgCompleta(cfg);
     if (!carrera || carrera.estado !== 'pendiente') return [];
+    if (esProgramada(carrera, ahora)) return [];
     var o = carrera.origen || {};
     var rech = carrera.rechazos || {};
     var minimo = Number(carrera.comisionMinC) > 0 ? Number(carrera.comisionMinC) : cfg.comisionMinC;
@@ -136,7 +146,7 @@
       var lista = sonandoA(c, eleg, ahora, cfg);
       for (var i = 0; i < lista.length; i++) {
         if (lista[i].uid === uid) {
-          opciones.push({ id: id, km: lista[i].km, espera: ahora - (c.creada || ahora) });
+          opciones.push({ id: id, km: lista[i].km, espera: ahora - (inicioEspera(c) || ahora) });
           break;
         }
       }
@@ -156,6 +166,8 @@
     CONFIG_DEFECTO: CONFIG_DEFECTO,
     GPS_MAX_EDAD_MS: GPS_MAX_EDAD_MS,
     cfgCompleta: cfgCompleta,
+    esProgramada: esProgramada,
+    inicioEspera: inicioEspera,
     comisionC: comisionC,
     tarifaEstimadaC: tarifaEstimadaC,
     taximetroC: taximetroC,
