@@ -177,6 +177,31 @@
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
+  /* ---------- Carrera completada ---------- */
+  .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
+  .fin>*{flex:none}
+  .fin .check{position:relative;width:150px;height:88px;margin:0 auto}
+  .fin .check .c{position:absolute;left:35px;top:0;width:80px;height:80px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(10,15,60,.25);animation:aparece .45s cubic-bezier(.2,1.4,.4,1)}
+  .fin .check i{position:absolute;width:8px;height:8px;border-radius:2px;transform:rotate(45deg)}
+  @keyframes aparece{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+  .fin h2{margin:6px 0 0;text-align:center;font-size:25px;font-weight:800}
+  .fin .total{text-align:center;font-size:42px;font-weight:800;letter-spacing:-1.2px;margin-top:8px;line-height:1.05}
+  .fin .total-t{text-align:center;color:var(--gris);font-size:14.5px;margin-top:4px}
+  .fin .nota-min{margin:10px auto 0;background:#FEF6DD;border-radius:12px;padding:8px 12px;font-size:13px;color:#7A5A00;text-align:center}
+  .fin .filas{margin-top:16px;border-top:1px solid var(--linea)}
+  .fin .fila{display:flex;justify-content:space-between;gap:14px;padding:8px 2px;border-bottom:1px solid var(--linea);font-size:14.5px}
+  .fin .fila span{color:var(--gris);flex:none}
+  .fin .fila b{text-align:right;font-weight:700}
+  .fin .calif{text-align:center;font-weight:700;font-size:17px;margin-top:14px}
+  .fin .estrellas{display:flex;justify-content:center;gap:10px;margin-top:10px}
+  .fin .estrellas button{border:0;background:none;padding:2px}
+  .fin .estrellas svg{width:40px;height:40px;fill:#E4E7EC;transition:fill .15s,transform .15s}
+  .fin .estrellas button.on svg{fill:#F5B300}
+  .fin .estrellas button:active svg{transform:scale(.9)}
+  .fin .btn-final{margin-top:auto;position:sticky;bottom:0}
+  .fin .pie{margin-top:auto;position:sticky;bottom:0;background:#fff;padding:4px 0 18px}
+  .fin .pie .btn-final{margin-top:0;position:static}
+  .fin .espacio{height:18px;flex:none}
   .aviso{position:absolute;left:18px;right:18px;bottom:96px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:60;text-align:center}
   /* ---------- Controles de la prueba ---------- */
   .controles{width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:10px;align-self:center}
@@ -297,6 +322,7 @@
       <button class="salir" id="salir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>Cerrar sesión</button>
     </aside>
 
+    <div class="fin" id="fin" hidden></div>
     <div class="aviso" id="aviso" hidden></div>
   </div></div>
 
@@ -623,16 +649,55 @@
     S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
     var d = new Date();
     S.hechas.push({ cliente: c.cliente, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
-    S.carrera = null; puntosViaje(null); programarProxima(15);
-    aviso('Carrera finalizada. Cobra ' + dineroC(total) + ' al cliente.');
-    render();
+    S.carrera = null; puntosViaje(null);
+    S.fin = { c: c, total: total, estrellas: 0 };
+    render(); pintarFin();
   }
+  // Pantalla "¡Carrera completada!": cuánto cobrar, el detalle y calificar al cliente
+  var ESTRELLA = '<svg viewBox="0 0 24 24"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>';
+  function pintarFin() {
+    var f = S.fin, el = $('#fin');
+    if (!f) { el.hidden = true; return; }
+    var c = f.c, seg = c.seg || 0, min = Math.max(1, Math.round(seg / 60));
+    var filas = [['Recogida', c.o.dir], ['Destino', c.d.dir], ['Distancia', ((c.metros || 0) / 1000).toFixed(2) + ' km'], ['Tiempo', min + ' min']];
+    var nota = '';
+    if (c.fijo) filas.push(['Precio pactado', dineroC(c.fijo)]);
+    else {
+      var rec = Math.floor((c.metros || 0) / 100) * Math.round(CFG.kmC / 10), esp = Math.floor((c.espera || 0) / CFG.esperaCadaSeg) * CFG.esperaC;
+      var marcado = CFG.arranqueC + rec + esp;
+      filas.push(['Arranque', dineroC(CFG.arranqueC)], ['Recorrido', dineroC(rec)],
+        ['Tiempo detenido (' + Math.floor((c.espera || 0) / 60) + ':' + String((c.espera || 0) % 60).padStart(2, '0') + ')', dineroC(esp)],
+        ['Taxímetro marcó', dineroC(marcado)]);
+      if (marcado < CFG.minimaC) nota = '<div class="nota-min">El taxímetro marcó menos de ' + dineroC(CFG.minimaC) + ', se cobra la carrera mínima.</div>';
+    }
+    var est = '';
+    for (var i = 1; i <= 5; i++) est += '<button data-estrella="' + i + '" class="' + (i <= f.estrellas ? 'on' : '') + '" aria-label="' + i + ' estrellas">' + ESTRELLA + '</button>';
+    el.innerHTML =
+      '<div class="check"><i style="left:8px;top:58px;background:var(--rojo)"></i><i style="left:14px;top:18px;background:#5B8CFF;border-radius:50%"></i>' +
+      '<i style="right:6px;top:10px;background:#8DB4FF;border-radius:50%"></i><i style="right:18px;top:40px;background:#5B8CFF;border-radius:50%"></i><i style="right:2px;top:70px;background:var(--rojo)"></i>' +
+      '<div class="c"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div></div>' +
+      '<h2>¡Carrera completada!</h2>' +
+      '<div class="total">' + dineroC(f.total) + '</div><div class="total-t">Total a cobrar' + (c.fijo ? ' · Pactada' : ' · Taxímetro') + '</div>' + nota +
+      '<div class="filas">' + filas.map(function (r) { return '<div class="fila"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join('') + '</div>' +
+      '<div class="calif">Califica al cliente</div><div class="estrellas">' + est + '</div>' +
+      '<div class="espacio"></div><div class="pie"><button class="btn-final" id="b-continuar">Continuar</button></div>';
+    el.hidden = false;
+  }
+  document.getElementById('fin').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-estrella]');
+    if (b) { S.fin.estrellas = Number(b.getAttribute('data-estrella')); pintarFin(); return; }
+    if (e.target.closest('#b-continuar')) {
+      var n = S.fin.estrellas;
+      S.fin = null; pintarFin(); programarProxima(15); render();
+      aviso(n ? 'Gracias, calificaste al cliente con ' + n + ' estrella' + (n > 1 ? 's' : '') + '.' : 'Listo, ya estás libre para otra carrera.');
+    }
+  });
 
   // Cuando estás conectado y libre, las carreras nuevas llegan solas a la pantalla
   var proxima = 0;
   function programarProxima(seg) { proxima = Date.now() + seg * 1000; }
   setInterval(function () {
-    if (S.estado !== 'conectado' || S.oferta || S.carrera) { if (S.estado !== 'conectado') proxima = 0; return; }
+    if (S.estado !== 'conectado' || S.oferta || S.carrera || S.fin) { if (S.estado !== 'conectado') proxima = 0; return; }
     if (!proxima) { programarProxima(1); return; }
     if (Date.now() >= proxima) { proxima = 0; nuevaOferta(Math.random() < 0.3 ? 400 : 0, true); }
   }, 1000);
