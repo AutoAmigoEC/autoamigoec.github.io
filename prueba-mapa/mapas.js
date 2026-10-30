@@ -121,6 +121,15 @@
     if (lin) m.setPaintProperty('aa-ruta', 'line-color', modo === 'noche' ? '#8FB4FF' : '#090145');
   }
   setInterval(function () { mapas.forEach(aplicarModo); }, 30000);
+  // Cambio exacto a las 6:00 p. m. (noche) y 6:00 a. m. (día), según la hora del aparato
+  (function programarCambio() {
+    var d = new Date(), sig = new Date(d.getTime());
+    sig.setSeconds(0, 0);
+    if (d.getHours() < 6) sig.setHours(6, 0);
+    else if (d.getHours() < 18) sig.setHours(18, 0);
+    else { sig.setDate(sig.getDate() + 1); sig.setHours(6, 0); }
+    setTimeout(function () { mapas.forEach(aplicarModo); programarCambio(); }, Math.max(1000, sig.getTime() - d.getTime() + 200));
+  })();
 
   // centro: [lat, lng] como antes
   // modo (opcional, para pruebas): 'dia' | 'noche'

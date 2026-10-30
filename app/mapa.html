@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AutoAmigo · Mapa del conductor</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#F3F1ED;font-family:Inter,system-ui,sans-serif}
+  #m{position:absolute;inset:0}
+  .maplibregl-ctrl-top-left{display:none}
+  .maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{display:none}
+  .maplibregl-ctrl-top-right{margin-top:64px}
+  .pin-gps{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .punto{width:22px;height:22px;border-radius:50%;border:4px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);box-sizing:border-box}
+  .punto.recoger{background:#12B76A}
+  .punto.destino{background:#101828;border-radius:5px}
+</style>
+</head>
+<body>
+<div id="m"></div>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="../mapas.js?v=202610292359"></script>
+<script>
+// Mapa de la app del conductor: mismo diseño que el panel (día/noche y etapas).
+// La app lo controla con window.app.*
+(function () {
+  var M = MapaAA.crear('m', [-2.17, -79.9224], 13);
+  M.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-right');
+  function relleno() { return { top: 70, bottom: Math.round(window.innerHeight * 0.48), left: 30, right: 30 }; }
+  M.setPadding(relleno());
+  window.addEventListener('resize', function () { M.setPadding(relleno()); });
+
+  var yo = null, recoger = null, destino = null, primera = true;
+  function marcador(actual, lat, lng, crearEl) {
+    if (lat == null || lng == null) { if (actual) actual.remove(); return null; }
+    if (!actual) actual = new maplibregl.Marker({ element: crearEl(), anchor: crearEl.ancla || 'center' }).setLngLat([lng, lat]).addTo(M);
+    else actual.setLngLat([lng, lat]);
+    return actual;
+  }
+  function punto(clase) { var f = function () { var d = document.createElement('div'); d.className = 'punto ' + clase; return d; }; return f; }
+
+  window.app = {
+    // Mi carro: pin con el número de unidad, color según mi estado
+    yo: function (lat, lng, color, texto) {
+      if (lat == null || lng == null) { if (yo) { yo.remove(); yo = null; } return; }
+      if (!yo) {
+        var el = document.createElement('div');
+        yo = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([lng, lat]).addTo(M);
+      }
+      yo.setLngLat([lng, lat]);
+      var html = MapaAA.pinSVG(color, texto || '');
+      if (yo.__html !== html) { yo.getElement().innerHTML = html; yo.__html = html; }
+      if (primera) { primera = false; M.jumpTo({ center: [lng, lat], zoom: 15.5 }); }
+    },
+    // Puntos de la carrera (null para quitar)
+    puntos: function (olat, olng, dlat, dlng) {
+      recoger = marcador(recoger, olat, olng, punto('recoger'));
+      destino = marcador(destino, dlat, dlng, punto('destino'));
+    },
+    centrar: function (lat, lng) {
+      M.easeTo({ center: [lng, lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
+    },
+    // Muestra dos puntos a la vez (yo y la recogida o el destino)
+    enfocar: function (alat, alng, blat, blng) {
+      if (blat == null || blng == null) { if (alat != null) app.centrar(alat, alng); return; }
+      if (alat == null || alng == null) { app.centrar(blat, blng); return; }
+      var b = new maplibregl.LngLatBounds();
+      b.extend([alng, alat]); b.extend([blng, blat]);
+      M.fitBounds(b, { maxZoom: 16, duration: 700 });
+    }
+  };
+})();
+</script>
+</body>
+</html>

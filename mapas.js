@@ -4,11 +4,76 @@
  */
 (function () {
   var ESTILO = 'https://tiles.openfreemap.org/styles/liberty';
-  var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#FFFFFF', autopista: '#F8D576', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF', textoAgua: '#4A7FB0' };
-  var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#4B5563', autopista: '#746855', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835', textoAgua: '#5B7FA6' };
+  var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#CED2D8', autopista: '#CED2D8', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF', textoAgua: '#4A7FB0', lugar: '#5F6673' };
+  var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#6B7380', autopista: '#6B7380', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835', textoAgua: '#5B7FA6', lugar: '#AEB4BE' };
   var COLORES = { libre: '#0E9F6E', aceptada: '#1E6FE8', ejecucion: '#6927DA', sinsaldo: '#7A1F2B', fuera: '#8A94A6' };
 
-  function esNoche() { var h = new Date().getHours(); return h >= 18 || h < 6; }
+  var modoForzado = null; // solo para pruebas: 'dia' | 'noche'
+  function esNoche() { if (modoForzado) return modoForzado === 'noche'; var h = new Date().getHours(); return h >= 18 || h < 6; }
+
+  // ---------- Etapas, urbanizaciones y barrios (OpenStreetMap) ----------
+  // Se descargan una vez por semana y se guardan en el navegador; salen al acercar el mapa.
+  var LUGARES_CLAVE = 'aa_lugares_v1', LUGARES_DIAS = 7;
+  var lugaresDatos = null, lugaresPedidos = false, lugaresEspera = [];
+  function lugaresGeo(lista) {
+    return { type: 'FeatureCollection', features: lista.map(function (l) {
+      return { type: 'Feature', properties: { n: l[0], g: l[3] ? 1 : 0 }, geometry: { type: 'Point', coordinates: [l[2], l[1]] } };
+    }) };
+  }
+  function pedirLugares(listo) {
+    if (lugaresDatos) { listo(lugaresDatos); return; }
+    lugaresEspera.push(listo);
+    if (lugaresPedidos) return;
+    lugaresPedidos = true;
+    try {
+      var g = JSON.parse(localStorage.getItem(LUGARES_CLAVE) || 'null');
+      if (g && g.t > Date.now() - LUGARES_DIAS * 86400000 && g.d && g.d.length) { entregar(g.d); return; }
+    } catch (e) { /* sin almacenamiento */ }
+    var q = '[out:json][timeout:60][bbox:-2.42,-80.12,-1.88,-79.72];(' +
+      'way["landuse"="residential"]["name"];relation["landuse"="residential"]["name"];' +
+      'node["place"~"^(neighbourhood|suburb|quarter)$"]["name"];way["place"~"^(neighbourhood|suburb|quarter)$"]["name"];' +
+      ');out center tags;';
+    fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        var vistos = {}, d = [];
+        (j.elements || []).forEach(function (e) {
+          var c = e.center || { lat: e.lat, lon: e.lon };
+          if (!c || typeof c.lat !== 'number' || !e.tags || !e.tags.name) return;
+          var k = e.tags.name + '|' + c.lat.toFixed(3) + '|' + c.lon.toFixed(3);
+          if (vistos[k]) return; vistos[k] = 1;
+          var grande = e.tags.place === 'suburb' ? 1 : 0;
+          d.push([e.tags.name, +c.lat.toFixed(5), +c.lon.toFixed(5), grande]);
+        });
+        try { localStorage.setItem(LUGARES_CLAVE, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { /* lleno o bloqueado */ }
+        entregar(d);
+      })
+      .catch(function (e) { if (window.console) console.warn('AutoAmigo lugares:', e); lugaresPedidos = false; lugaresEspera = []; });
+    function entregar(d) {
+      lugaresDatos = lugaresGeo(d);
+      var f = lugaresEspera; lugaresEspera = [];
+      f.forEach(function (x) { x(lugaresDatos); });
+    }
+  }
+  function ponerLugares(m) {
+    pedirLugares(function (geo) {
+      if (m.getSource('aa-lugares')) { m.getSource('aa-lugares').setData(geo); return; }
+      var P = m.__modo === 'noche' ? NOCHE : DIA;
+      m.addSource('aa-lugares', { type: 'geojson', data: geo });
+      m.addLayer({
+        id: 'aa-lugares', type: 'symbol', source: 'aa-lugares', minzoom: 13.5,
+        layout: {
+          'text-field': ['get', 'n'],
+          'text-font': ['Noto Sans Italic'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 13.5, ['case', ['==', ['get', 'g'], 1], 13, 11], 17, ['case', ['==', ['get', 'g'], 1], 16, 14]],
+          'text-max-width': 9,
+          'text-padding': 4,
+          'symbol-sort-key': ['-', 1, ['get', 'g']]
+        },
+        paint: { 'text-color': P.lugar, 'text-halo-color': P.halo, 'text-halo-width': 1.6 }
+      });
+    });
+  }
 
   function pintar(m, P) {
     (m.getStyle().layers || []).forEach(function (l) {
@@ -44,17 +109,31 @@
   var mapas = [];
   function aplicarModo(m) {
     if (!m.__listo) return;
-    var modo = esNoche() ? 'noche' : 'dia';
+    var modo = m.__forzado || (esNoche() ? 'noche' : 'dia');
     if (m.__modo === modo) return;
     m.__modo = modo;
     pintar(m, modo === 'noche' ? NOCHE : DIA);
+    if (m.getLayer('aa-lugares')) {
+      m.setPaintProperty('aa-lugares', 'text-color', (modo === 'noche' ? NOCHE : DIA).lugar);
+      m.setPaintProperty('aa-lugares', 'text-halo-color', (modo === 'noche' ? NOCHE : DIA).halo);
+    }
     var lin = m.getLayer('aa-ruta');
     if (lin) m.setPaintProperty('aa-ruta', 'line-color', modo === 'noche' ? '#8FB4FF' : '#090145');
   }
   setInterval(function () { mapas.forEach(aplicarModo); }, 30000);
+  // Cambio exacto a las 6:00 p. m. (noche) y 6:00 a. m. (día), según la hora del aparato
+  (function programarCambio() {
+    var d = new Date(), sig = new Date(d.getTime());
+    sig.setSeconds(0, 0);
+    if (d.getHours() < 6) sig.setHours(6, 0);
+    else if (d.getHours() < 18) sig.setHours(18, 0);
+    else { sig.setDate(sig.getDate() + 1); sig.setHours(6, 0); }
+    setTimeout(function () { mapas.forEach(aplicarModo); programarCambio(); }, Math.max(1000, sig.getTime() - d.getTime() + 200));
+  })();
 
   // centro: [lat, lng] como antes
-  function crear(contenedor, centro, zoom) {
+  // modo (opcional, para pruebas): 'dia' | 'noche'
+  function crear(contenedor, centro, zoom, modo) {
     var m = new maplibregl.Map({
       container: contenedor,
       style: ESTILO,
@@ -69,10 +148,12 @@
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
     m.__listos = [];
+    m.__forzado = modo || null;
     function listo() {
       if (m.__listo) return;
       m.__listo = true;
       aplicarModo(m);
+      ponerLugares(m);
       m.__listos.forEach(function (f) { f(); });
       m.__listos = [];
     }
@@ -112,5 +193,6 @@
     m.fitBounds(b, { padding: 50, maxZoom: maxZoom || 15, duration: 0 });
   }
 
-  window.MapaAA = { crear: crear, pinSVG: pinSVG, colores: COLORES, ruta: ruta, encuadrar: encuadrar, esNoche: esNoche };
+  function forzarModo(modo) { modoForzado = modo; mapas.forEach(function (m) { m.__modo = null; aplicarModo(m); }); }
+  window.MapaAA = { forzarModo: forzarModo, crear: crear, pinSVG: pinSVG, colores: COLORES, ruta: ruta, encuadrar: encuadrar, esNoche: esNoche };
 })();
