@@ -254,9 +254,9 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .pill.programada{color:#026AA2;background:#E0F2FE}
 /* Teléfono del cliente con opciones */
 .tel-menu{display:inline-block;position:relative}
-.tel-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--navy)}
+.tel-menu>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--tinta)}
 .tel-menu>summary::-webkit-details-marker{display:none}
-.tel-menu>summary strong{text-decoration:none}
+.tel-menu>summary strong{text-decoration:none;font-weight:800;color:var(--tinta)}
 .tel-opciones{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .tel-opciones a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--linea);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;text-decoration:none;color:var(--tinta);background:#fff}
 .tel-opciones a.wa{color:#067647;border-color:#ABEFC6;background:#ECFDF3}
