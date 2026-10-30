@@ -749,8 +749,8 @@
     if (!lista.length) return '';
     lista.sort(function (a, b) { return (b.en || 0) - (a.en || 0); });
     var u = lista[0];
-    var quien = esc(u.nombre || 'conductor') + (u.unidad ? ' · U' + esc(u.unidad) : '');
-    return '<span class="etiqueta-cancel">' + (c.estado === 'pendiente' ? 'Cancelada por el conductor ' : 'Antes la canceló ') + quien +
+    var quien = u.unidad ? 'U' + esc(u.unidad) : esc(u.nombre || '');
+    return '<span class="etiqueta-cancel">' + (c.estado === 'pendiente' ? 'Cancelada por el conductor ' : 'Antes la canceló el conductor ') + quien +
       (u.en ? ' · ' + hora(u.en) : '') + (lista.length > 1 ? ' (+' + (lista.length - 1) + ')' : '') + '</span>';
   }
 
