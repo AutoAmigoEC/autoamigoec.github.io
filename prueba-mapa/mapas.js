@@ -4,7 +4,7 @@
  */
 (function () {
   var ESTILO = 'https://tiles.openfreemap.org/styles/liberty';
-  var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#D9DCE1', autopista: '#D9DCE1', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF', textoAgua: '#4A7FB0', lugar: '#5F6673' };
+  var DIA = { fondo: '#F3F1ED', agua: '#9CD0F5', parque: '#C3E6C0', edificio: '#E8E4DE', calle: '#FFFFFF', avenida: '#CED2D8', autopista: '#CED2D8', borde: '#DADADA', texto: '#3C4043', halo: '#FFFFFF', textoAgua: '#4A7FB0', lugar: '#5F6673' };
   var NOCHE = { fondo: '#242F3E', agua: '#17263C', parque: '#263C3F', edificio: '#2B3544', calle: '#38414E', avenida: '#6B7380', autopista: '#6B7380', borde: '#212A37', texto: '#C9CDD3', halo: '#1F2835', textoAgua: '#5B7FA6', lugar: '#AEB4BE' };
   var COLORES = { libre: '#0E9F6E', aceptada: '#1E6FE8', ejecucion: '#6927DA', sinsaldo: '#7A1F2B', fuera: '#8A94A6' };
 
