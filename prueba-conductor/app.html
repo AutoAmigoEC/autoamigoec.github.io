@@ -256,6 +256,13 @@
   .rango input:focus{border-color:#1A5CE0;background:#fff}
   .rango .btn-azul{margin-top:10px;height:48px;border-radius:14px}
   .rango .err{margin-top:8px;color:#B42318;font-size:13px;font-weight:600}
+  .movs-cab{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 0 8px}
+  .periodo-mov{display:inline-flex;align-items:center;gap:6px;border:0;background:#E6EEFF;color:var(--navy);border-radius:999px;padding:8px 12px 8px 14px;font-size:14.5px;font-weight:800}
+  .periodo-mov svg{transition:transform .2s}
+  .periodo-mov.abierto svg{transform:rotate(180deg)}
+  .movs-cab .periodos{left:0;top:44px;margin-bottom:20px}
+  .movs-cab .cuenta{color:var(--gris);font-size:13px;font-weight:600}
+  .rango.mov-rango{margin:0 0 10px}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -444,7 +451,8 @@
     nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
     periodo: 'hoy', persDesde: '', persHasta: '', menuPeriodo: false, errRango: '',
     yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio', codigo: '', msgRec: null,
-    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 1111111111', hora: '7:52' }],
+    movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 1111111111', t: (function () { var d = new Date(); d.setHours(7, 52, 0, 0); return d.getTime(); })() }],
+    periodoMov: 'hoy', movDesde: '', movHasta: '', menuPeriodoMov: false, errRangoMov: '',
     oferta: null, carrera: null, menu: false
   };
   var BANDEJA = [
@@ -469,6 +477,9 @@
     }
     return l;
   })();
+  // Movimientos de días anteriores (solo para la prueba): comisiones de esas carreras y algunas recargas
+  var HIST_MOVS = HISTORIAL.map(function (h) { return { tipo: 'menos', montoC: h.comC, texto: 'Comisión carrera', det: h.o, t: h.t }; });
+  (function () { for (var dia = 2; dia <= 45; dia += 4) { var d = new Date(); d.setDate(d.getDate() - dia); d.setHours(8, 15, 0, 0); HIST_MOVS.push({ tipo: 'mas', montoC: dia % 8 === 2 ? 2000 : 1000, texto: 'Recarga', det: 'Recarga ' + (5000000000 + dia * 1234567), t: d.getTime() }); } })();
 
   function dineroC(c) { return '$' + (c / 100).toFixed(2); }
   function aviso(t) { var a = $('#aviso'); a.textContent = t; a.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.hidden = true; }, 3000); }
@@ -586,6 +597,17 @@
   function fechaCorta(ms) { var d = new Date(ms); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
   function fechaInput(ms) { var d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function todas() { return HISTORIAL.concat(S.hechas); }
+  // [desde, hasta, texto del botón, esHoy] para hoy / 7 / 30 / personalizado
+  function rangoDe(periodo, desde, hasta, textoHoy) {
+    var hoy0 = inicioDia(Date.now()), fin = hoy0 + 86400000 - 1;
+    if (periodo === '7') return [hoy0 - 6 * 86400000, fin, 'Últimos 7 días', false];
+    if (periodo === '30') return [hoy0 - 29 * 86400000, fin, 'Últimos 30 días', false];
+    if (periodo === 'pers' && desde && hasta) {
+      var a = leerFecha(desde), b = leerFecha(hasta) + 86400000 - 1;
+      return [a, b, 'Del ' + fechaCorta(a) + ' al ' + fechaCorta(b), false];
+    }
+    return [hoy0, fin, textoHoy, true];
+  }
   function rangoPeriodo() {
     var hoy0 = inicioDia(Date.now()), fin = hoy0 + 86400000 - 1;
     if (S.periodo === '7') return [hoy0 - 6 * 86400000, fin, 'Últimos 7 días'];
@@ -661,12 +683,23 @@
       var bajo = S.saldoC < CFG.comisionMinC
         ? '<div class="bajo"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg>Sin saldo no te llegan carreras. Recarga para seguir trabajando.</div>' : '';
       var msg = S.msgRec ? '<div class="msg-rec ' + S.msgRec.c + '">' + esc(S.msgRec.t) + '</div>' : '';
-      var movs = S.movs.slice().reverse().map(function (m) {
+      var rm = rangoDe(S.periodoMov, S.movDesde, S.movHasta, 'Movimientos de hoy');
+      var esHoyMov = rm[3];
+      var listaMovs = HIST_MOVS.concat(S.movs).filter(function (m) { return m.t >= rm[0] && m.t <= rm[1]; }).sort(function (a, b) { return b.t - a.t; });
+      var movs = listaMovs.slice(0, 80).map(function (m) {
+        var d = new Date(m.t), hora = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
         return '<div class="mov ' + m.tipo + '"><span class="ic">' + (m.tipo === 'mas'
           ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
           : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11zm2.2-.3h9.6l-1.1-3.1a.5.5 0 0 0-.5-.3H8.8a.5.5 0 0 0-.5.3z"/></svg>') +
-          '</span><div class="t"><b>' + esc(m.texto) + '</b><small>' + esc(m.det) + ' · ' + m.hora + '</small></div><div class="m">' + (m.tipo === 'mas' ? '+' : '−') + dineroC(m.montoC) + '</div></div>';
+          '</span><div class="t"><b>' + esc(m.texto) + '</b><small>' + esc(m.det) + ' · ' + (esHoyMov ? hora : fechaCorta(m.t) + ' ' + hora) + '</small></div><div class="m">' + (m.tipo === 'mas' ? '+' : '−') + dineroC(m.montoC) + '</div></div>';
       }).join('');
+      var flechaM = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>';
+      var cabMovs = '<div class="movs-cab"><button class="periodo-mov' + (S.menuPeriodoMov ? ' abierto' : '') + '" id="b-periodo-mov">' + esc(rm[2]) + flechaM + '</button>' +
+        '<span class="cuenta">' + listaMovs.length + ' movimiento' + (listaMovs.length === 1 ? '' : 's') + '</span>' +
+        (S.menuPeriodoMov ? '<div class="periodos">' + [['hoy', 'Movimientos de hoy'], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días'], ['pers', 'Personalizado']].map(function (x) { return '<button data-periodo-mov="' + x[0] + '" class="' + (S.periodoMov === x[0] ? 'sel' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' : '') + '</div>';
+      var rangoMov = S.periodoMov === 'pers' ? '<div class="rango mov-rango"><div class="f"><label>Desde<input type="date" id="mov-desde" value="' + esc(S.movDesde) + '" max="' + fechaInput(Date.now()) + '"></label>' +
+        '<label>Hasta<input type="date" id="mov-hasta" value="' + esc(S.movHasta) + '" max="' + fechaInput(Date.now()) + '"></label></div>' +
+        '<button class="btn-azul" id="b-rango-mov">Ver movimientos</button>' + (S.errRangoMov ? '<div class="err">' + esc(S.errRangoMov) + '</div>' : '') + '</div>' : '';
       // Billetera: lo que el conductor ganó hoy, ya restada la comisión de AutoAmigo
       var esBill = p === 'billetera';
       var tarjeta = '<div class="saldo-card"><small>Disponible</small><div class="monto">' + dineroC(S.saldoC) + '</div>' +
@@ -676,7 +709,7 @@
         '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
         '<input class="codigo" id="codigo" maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="Números" value="' + esc(S.codigo) + '">' +
         '<button class="btn-azul" id="b-recargar">Recargar</button>' + msg + '</div>' +
-        '<div class="movs"><h3>Movimientos de hoy</h3>' + (movs || '<div class="vacio">Todavía no tienes movimientos hoy.</div>') + '</div>';
+        '<div class="movs">' + cabMovs + rangoMov + (movs || '<div class="vacio">' + (esHoyMov ? 'Todavía no tienes movimientos hoy.' : 'No hay movimientos en esas fechas.') + '</div>') + '</div>';
     }
     var t = { perfil: 'Mi perfil', ayuda: 'Ayuda y soporte' }[p] || '';
     return '<h2>' + t + '</h2><div class="vacio">Esta pantalla la diseñamos con tus próximas imágenes.</div>';
@@ -836,7 +869,7 @@
     var c = S.carrera, total = valorDe(c), com = comisionC(total);
     S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
     var d = new Date();
-    S.movs.push({ tipo: 'menos', montoC: com, texto: 'Comisión carrera', det: c.o.dir, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.movs.push({ tipo: 'menos', montoC: com, texto: 'Comisión carrera', det: c.o.dir, t: Date.now() });
     S.hechas.push({ t: Date.now(), cliente: c.cliente, metros: c.metros || 0, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.carrera = null; puntosViaje(null);
     S.fin = { c: c, total: total, estrellas: 0 };
@@ -853,7 +886,7 @@
     if (cod.usado) { S.msgRec = { c: 'mal', t: 'Esta recarga ya fue usada.' }; render(); marcarError(); return; }
     cod.usado = true; S.saldoC += cod.montoC; S.codigo = '';
     var d = new Date();
-    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Recarga ' + k, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.movs.push({ tipo: 'mas', montoC: cod.montoC, texto: 'Recarga', det: 'Recarga ' + k, t: Date.now() });
     S.msgRec = { c: 'ok', t: '¡Recarga exitosa! Se sumaron ' + dineroC(cod.montoC) + ' a tu saldo.' };
     render();
   }
@@ -991,6 +1024,20 @@
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
     if (e.target.closest('#b-finalizar')) { finalizar(); return; }
     if (e.target.closest('#b-recargar')) { recargar(); return; }
+    if (e.target.closest('#b-periodo-mov')) { S.menuPeriodoMov = !S.menuPeriodoMov; render(); setTimeout(function () { var m = $('.movs-cab .periodos'); if (m) m.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30); return; }
+    var pm = e.target.closest('[data-periodo-mov]');
+    if (pm) {
+      S.periodoMov = pm.getAttribute('data-periodo-mov'); S.menuPeriodoMov = false; S.errRangoMov = '';
+      if (S.periodoMov === 'pers' && !S.movDesde) { S.movHasta = fechaInputHoy(0); S.movDesde = fechaInputHoy(-14); }
+      render(); return;
+    }
+    if (e.target.closest('#b-rango-mov')) {
+      var md = $('#mov-desde').value, mh = $('#mov-hasta').value;
+      if (!md || !mh) { S.errRangoMov = 'Elige las dos fechas.'; render(); return; }
+      if (md > mh) { S.errRangoMov = 'La fecha "Desde" debe ser antes que "Hasta".'; render(); return; }
+      S.movDesde = md; S.movHasta = mh; S.errRangoMov = ''; render(); return;
+    }
+    if (S.menuPeriodoMov && !e.target.closest('.movs-cab .periodos')) { S.menuPeriodoMov = false; render(); }
     if (e.target.closest('#b-periodo')) { S.menuPeriodo = !S.menuPeriodo; render(); return; }
     var per = e.target.closest('[data-periodo]');
     if (per) {
