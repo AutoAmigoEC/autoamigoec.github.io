@@ -240,6 +240,7 @@
   .gan .m{text-align:right;flex:none}.gan .m b{display:block;color:#079455;font-size:16px;font-weight:800}
   .gan .m small{display:block;color:var(--gris);font-size:11.5px}
   /* Selector de período en la tarjeta de Mi billetera */
+  .saldo-card .sub.tres{grid-template-columns:1fr 1fr 1fr}
   .periodo-btn{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:6px 12px 6px 14px;font-size:13.5px;font-weight:700}
   .periodo-btn svg{transition:transform .2s}
   .periodo-btn.abierto svg{transform:rotate(180deg)}
@@ -604,7 +605,8 @@
     var menu = S.menuPeriodo ? '<div class="periodos">' + PERIODOS.map(function (x) { return '<button data-periodo="' + x[0] + '" class="' + (S.periodo === x[0] ? 'sel' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' : '';
     var tarjeta = '<div class="saldo-card"><button class="periodo-btn' + (S.menuPeriodo ? ' abierto' : '') + '" id="b-periodo">' + esc(r[2]) + flecha + '</button>' + menu +
       '<div class="monto" style="margin-top:8px">' + dineroC(ganancia) + '</div>' +
-      '<div class="sub"><div><b>' + dineroC(com) + '</b><span>' + (esHoy ? 'Consumido hoy' : 'Comisión pagada') + '</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div></div></div>';
+      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>' + (esHoy ? 'Consumido hoy' : 'Comisión pagada') + '</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
+      '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos</span></div></div></div>';
     var rango = S.periodo === 'pers' ? '<div class="rango"><div class="f"><label>Desde<input type="date" id="pers-desde" value="' + esc(S.persDesde) + '" max="' + fechaInput(Date.now()) + '"></label>' +
       '<label>Hasta<input type="date" id="pers-hasta" value="' + esc(S.persHasta) + '" max="' + fechaInput(Date.now()) + '"></label></div>' +
       '<button class="btn-azul" id="b-rango">Ver ganancias</button>' + (S.errRango ? '<div class="err">' + esc(S.errRango) + '</div>' : '') + '</div>' : '';
@@ -633,7 +635,7 @@
     }).join('');
     var carreras = '<div class="bloque"><h3>' + (esHoy ? 'Ganancias de hoy' : 'Ganancias por carrera') + ' <small>' + n + ' carrera' + (n === 1 ? '' : 's') + '</small></h3>' +
       (filas || '<div class="vacio" style="padding:14px">' + (esHoy ? 'Cuando termines una carrera, aquí verás cuánto ganaste en cada una.' : 'No hay carreras en esas fechas.') + '</div>') + '</div>';
-    return tarjeta + rango + resumen + semana + carreras;
+    return tarjeta + rango + semana + carreras;
   }
 
   function seccionHTML(p) {
