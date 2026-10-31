@@ -361,7 +361,7 @@
       <button data-ir="carreras"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/></svg>Mis carreras</button>
       <button data-ir="recargas"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>Recargas</button>
       <button data-ir="bandeja"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-5l-3 4-3-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>Bandeja de carreras</button>
-      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Billetera</button>
+      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Mi billetera</button>
       <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Mi perfil</button>
       <button data-ir="ayuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>Ayuda y soporte</button>
       <button class="salir" id="salir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>Cerrar sesión</button>
@@ -550,7 +550,7 @@
       // Billetera: lo que el conductor ganó hoy, ya restada la comisión de AutoAmigo
       var ganancia = S.hechas.reduce(function (t, h) { return t + (h.cobradoC - h.comC); }, 0);
       var esBill = p === 'billetera';
-      return '<h2>' + (esBill ? 'Billetera' : 'Recargas') + '</h2>' +
+      return '<h2>' + (esBill ? 'Mi billetera' : 'Recargas') + '</h2>' +
         '<div class="saldo-card"><small>' + (esBill ? 'Ganancia de hoy' : 'Disponible') + '</small><div class="monto">' + dineroC(esBill ? ganancia : S.saldoC) + '</div>' +
         '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
         '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
