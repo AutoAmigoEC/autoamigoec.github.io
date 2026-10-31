@@ -605,7 +605,7 @@
     var menu = S.menuPeriodo ? '<div class="periodos">' + PERIODOS.map(function (x) { return '<button data-periodo="' + x[0] + '" class="' + (S.periodo === x[0] ? 'sel' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' : '';
     var tarjeta = '<div class="saldo-card"><button class="periodo-btn' + (S.menuPeriodo ? ' abierto' : '') + '" id="b-periodo">' + esc(r[2]) + flecha + '</button>' + menu +
       '<div class="monto" style="margin-top:8px">' + dineroC(ganancia) + '</div>' +
-      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>' + (esHoy ? 'Consumido hoy' : 'Comisión pagada') + '</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
+      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>' + 'Consumido' + '</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
       '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos</span></div></div></div>';
     var rango = S.periodo === 'pers' ? '<div class="rango"><div class="f"><label>Desde<input type="date" id="pers-desde" value="' + esc(S.persDesde) + '" max="' + fechaInput(Date.now()) + '"></label>' +
       '<label>Hasta<input type="date" id="pers-hasta" value="' + esc(S.persHasta) + '" max="' + fechaInput(Date.now()) + '"></label></div>' +
