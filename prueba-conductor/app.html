@@ -344,7 +344,7 @@
       </button>
       <button class="tarjeta ancha" data-ir="recargas">
         <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--rojo)"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
-        <div><b id="k-consumido">$0.00</b><small>Consumido hoy</small></div>
+        <div><b id="k-consumido">$0.00</b><small>Comisión pagada</small></div>
         <svg class="flecha" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
       </button>
     </div>
@@ -386,7 +386,7 @@
       </button>
       <button class="pastilla" data-ir="recargas">
         <span class="ic" style="background:#5A1A2A"><svg width="20" height="20" viewBox="0 0 24 24" fill="#F04438"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
-        <div><small>Consumido hoy</small><b id="v-consumido">$0.00</b></div>
+        <div><small>Comisión pagada</small><b id="v-consumido">$0.00</b></div>
         <svg class="fl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
       </button>
     </div>
@@ -605,7 +605,7 @@
     var menu = S.menuPeriodo ? '<div class="periodos">' + PERIODOS.map(function (x) { return '<button data-periodo="' + x[0] + '" class="' + (S.periodo === x[0] ? 'sel' : '') + '">' + x[1] + '</button>'; }).join('') + '</div>' : '';
     var tarjeta = '<div class="saldo-card"><button class="periodo-btn' + (S.menuPeriodo ? ' abierto' : '') + '" id="b-periodo">' + esc(r[2]) + flecha + '</button>' + menu +
       '<div class="monto" style="margin-top:8px">' + dineroC(ganancia) + '</div>' +
-      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>' + 'Consumido' + '</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
+      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>Comisión pagada</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
       '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos</span></div></div></div>';
     var rango = S.periodo === 'pers' ? '<div class="rango"><div class="f"><label>Desde<input type="date" id="pers-desde" value="' + esc(S.persDesde) + '" max="' + fechaInput(Date.now()) + '"></label>' +
       '<label>Hasta<input type="date" id="pers-hasta" value="' + esc(S.persHasta) + '" max="' + fechaInput(Date.now()) + '"></label></div>' +
@@ -668,7 +668,7 @@
       // Billetera: lo que el conductor ganó hoy, ya restada la comisión de AutoAmigo
       var esBill = p === 'billetera';
       var tarjeta = '<div class="saldo-card"><small>Disponible</small><div class="monto">' + dineroC(S.saldoC) + '</div>' +
-        '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>';
+        '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Comisión pagada</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>';
       if (esBill) return '<h2>Mi billetera</h2>' + billeteraHTML();
       return '<h2>Mis recargas</h2>' + tarjeta + bajo +
         '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
