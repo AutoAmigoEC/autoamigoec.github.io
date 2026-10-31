@@ -629,7 +629,7 @@
       var esH = i === desdeLunes;
       return '<div class="d' + (esH ? ' hoy' : '') + (v === null ? ' fut' : '') + '"><span class="v">' + (v ? '$' + Math.round(v / 100) : '') + '</span><div class="b" style="height:' + Math.max(3, Math.round((v || 0) / max * 92)) + '%"></div><span class="l">' + (esH ? 'Hoy' : LETRAS[i]) + '</span></div>';
     }).join('');
-    var semana = '<div class="bloque"><h3>Esta semana <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
+    var semana = '<div class="bloque"><h3>Últimos 7 días <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
     var filas = lista.slice(0, 60).map(function (h) {
       var d = new Date(h.t), hora = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
       return '<div class="gan"><span class="h">' + (esHoy ? hora : fechaCorta(h.t) + '<br><small style="font-weight:600;color:var(--gris)">' + hora + '</small>') + '</span><div class="t"><b>' + esc(h.cliente) + '</b><small>' + esc(h.o) + ' → ' + esc(h.d) + '</small></div>' +
