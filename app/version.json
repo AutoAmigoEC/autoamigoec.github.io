@@ -1,6 +1,6 @@
 {
-  "versionCode": 11,
-  "versionName": "1.0.11",
+  "versionCode": 12,
+  "versionName": "1.0.12",
   "url": "https://autoamigoec.github.io/app/descargas/AutoAmigo-Conductor.apk",
-  "notas": "Mi billetera con ganancias de días anteriores y km recorridos."
+  "notas": "Ahora puedes terminar la carrera aunque te quedes sin internet: todo se guarda y se envía al volver la señal."
 }
