@@ -1,6 +1,6 @@
 {
-  "versionCode": 12,
-  "versionName": "1.0.12",
+  "versionCode": 13,
+  "versionName": "1.0.13",
   "url": "https://autoamigoec.github.io/app/descargas/AutoAmigo-Conductor.apk",
-  "notas": "Ahora puedes terminar la carrera aunque te quedes sin internet: todo se guarda y se envía al volver la señal."
+  "notas": "Lo que haces sin internet se envía solo apenas vuelve la señal, aunque la app esté cerrada."
 }
