@@ -1138,7 +1138,7 @@
     NAV.falta = falta;
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
     while (NAV.paso < NAV.pasos.length - 1 && metrosEntre(pos, { lat: NAV.pasos[NAV.paso].loc[1], lng: NAV.pasos[NAV.paso].loc[0] }) < 20) NAV.paso++;
-    NAV.llego = falta < 30;
+    NAV.llego = falta < 50 || (S.carrera && NAV.obj === 'o' && S.carrera.llegue);
     try { yoMk.setRotation && yoMk.setRotation(NAV.rumbo); } catch (e) {}
     M.easeTo({ center: [pos.lng, pos.lat], bearing: NAV.rumbo, pitch: 55, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
@@ -1192,7 +1192,7 @@
     S.yo = cur;
   }
   // En la prueba el carro va más rápido que en la calle para ver todo el recorrido; "me salgo de la ruta" lo desvía unos segundos por otra calle
-  var VEL_PRUEBA = 30, desvio = 0, rumboDesvio = 0;
+  var VEL_PRUEBA = 45, desvio = 0, rumboDesvio = 0;
   function moverSim() {
     if (desvio > 0) {
       desvio--; var r = rumboDesvio * Math.PI / 180;
