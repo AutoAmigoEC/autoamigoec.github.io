@@ -16,7 +16,7 @@
 
   // Estado que llega de la app (D) y estado propio de la pantalla (U)
   var D = null;
-  var U = { pantalla: 'inicio', antesBandeja: 'inicio', menu: false, mini: false, codigo: '', msgRec: null, recargando: false, fin: null, confirmar: null, ocupadoBtn: false };
+  var U = { periodo: 'hoy', persDesde: '', persHasta: '', menuPeriodo: false, errRango: '', periodoMov: 'hoy', movDesde: '', movHasta: '', menuPeriodoMov: false, errRangoMov: '', pantalla: 'inicio', antesBandeja: 'inicio', menu: false, mini: false, codigo: '', msgRec: null, recargando: false, fin: null, confirmar: null, ocupadoBtn: false };
 
   function dineroC(c) { return '$' + ((c || 0) / 100).toFixed(2); }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -245,6 +245,106 @@
   $('#hoja').addEventListener('pointerup', soltarHoja, true);
   $('#hoja').addEventListener('pointercancel', soltarHoja, true);
 
+  // ---------- Historial (carreras finalizadas y recargas de los últimos 60 días) ----------
+  // La app nueva lo manda con AA.historial(); con la app anterior se usa solo lo de hoy.
+  var HIST = null;
+  function carrerasHist() {
+    if (HIST && HIST.carreras) return HIST.carreras;
+    var ahora = Date.now();
+    return (D.hechas || []).map(function (h) { return { t: h.t || ahora, cliente: h.cliente, o: h.o, d: h.d, cobradoC: h.cobradoC || 0, comC: h.comC || 0, metros: h.metros || 0 }; });
+  }
+  function movsHist() {
+    if (HIST && HIST.carreras) {
+      var l = HIST.carreras.filter(function (h) { return h.comC > 0; }).map(function (h) { return { tipo: 'menos', montoC: h.comC, texto: 'Comisión carrera' + (h.numero ? ' #' + h.numero : ''), det: h.o || '', t: h.t }; });
+      (HIST.recargas || []).forEach(function (r) { l.push({ tipo: 'mas', montoC: r.montoC, texto: 'Recarga', det: 'Recarga ' + (r.codigo || ''), t: r.t }); });
+      return l;
+    }
+    var ahora = Date.now();
+    return (D.movs || []).map(function (m) { return { tipo: m.tipo, montoC: m.montoC, texto: m.texto, det: m.det, t: m.t || ahora }; });
+  }
+  function inicioDia(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); }
+  function leerFecha(v) { var p = v.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getTime(); }
+  function fechaCorta(ms) { var d = new Date(ms); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function fechaInput(ms) { var d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function horaDe(ms) { var d = new Date(ms); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  // [desde, hasta, texto del botón, esHoy] para hoy / 7 / 30 / personalizado
+  function rangoDe(periodo, desde, hasta, textoHoy) {
+    var hoy0 = inicioDia(Date.now()), fin = hoy0 + 86400000 - 1;
+    if (periodo === '7') return [hoy0 - 6 * 86400000, fin, 'Últimos 7 días', false];
+    if (periodo === '30') return [hoy0 - 29 * 86400000, fin, 'Últimos 30 días', false];
+    if (periodo === 'pers' && desde && hasta) {
+      var a = leerFecha(desde), b = leerFecha(hasta) + 86400000 - 1;
+      return [a, b, 'Del ' + fechaCorta(a) + ' al ' + fechaCorta(b), false];
+    }
+    return [hoy0, fin, textoHoy, true];
+  }
+  var FLECHA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>';
+  function opciones(atributo, actual, textoHoy) {
+    return '<div class="periodos">' + [['hoy', textoHoy], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días'], ['pers', 'Personalizado']].map(function (x) {
+      return '<button ' + atributo + '="' + x[0] + '" class="' + (actual === x[0] ? 'sel' : '') + '">' + x[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function cuadroFechas(idDesde, idHasta, desde, hasta, idBoton, textoBoton, error) {
+    var max = fechaInput(Date.now());
+    return '<div class="rango' + (idDesde === 'mov-desde' ? ' mov-rango' : '') + '"><div class="f"><label>Desde<input type="date" id="' + idDesde + '" value="' + esc(desde) + '" max="' + max + '"></label>' +
+      '<label>Hasta<input type="date" id="' + idHasta + '" value="' + esc(hasta) + '" max="' + max + '"></label></div>' +
+      '<button class="btn-azul" id="' + idBoton + '">' + textoBoton + '</button>' + (error ? '<div class="err">' + esc(error) + '</div>' : '') + '</div>';
+  }
+
+  // Mis recargas: movimientos (recargas y comisiones) del período elegido
+  function movimientosHTML() {
+    var rm = rangoDe(U.periodoMov, U.movDesde, U.movHasta, 'Movimientos de hoy'), esHoy = rm[3];
+    var lista = movsHist().filter(function (m) { return m.t >= rm[0] && m.t <= rm[1]; }).sort(function (a, b) { return b.t - a.t; });
+    var filas = lista.slice(0, 80).map(function (m) {
+      return '<div class="mov ' + m.tipo + '"><span class="ic">' + (m.tipo === 'mas'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11zm2.2-.3h9.6l-1.1-3.1a.5.5 0 0 0-.5-.3H8.8a.5.5 0 0 0-.5.3z"/></svg>') +
+        '</span><div class="t"><b>' + esc(m.texto) + '</b><small>' + esc(m.det) + ' · ' + (esHoy ? horaDe(m.t) : fechaCorta(m.t) + ' ' + horaDe(m.t)) + '</small></div><div class="m">' + (m.tipo === 'mas' ? '+' : '−') + dineroC(m.montoC) + '</div></div>';
+    }).join('');
+    var cab = '<div class="movs-cab"><button class="periodo-mov' + (U.menuPeriodoMov ? ' abierto' : '') + '" id="b-periodo-mov">' + esc(rm[2]) + FLECHA + '</button>' +
+      '<span class="cuenta">' + lista.length + ' movimiento' + (lista.length === 1 ? '' : 's') + '</span>' +
+      (U.menuPeriodoMov ? opciones('data-periodo-mov', U.periodoMov, 'Movimientos de hoy') : '') + '</div>';
+    var fechas = U.periodoMov === 'pers' ? cuadroFechas('mov-desde', 'mov-hasta', U.movDesde, U.movHasta, 'b-rango-mov', 'Ver movimientos', U.errRangoMov) : '';
+    return '<div class="movs">' + cab + fechas + (filas || '<div class="vacio">' + (esHoy ? 'Todavía no tienes movimientos hoy.' : 'No hay movimientos en esas fechas.') + '</div>') + '</div>';
+  }
+
+  // Mi billetera: ganancia neta (cobrado menos la comisión de AutoAmigo) del período elegido
+  function billeteraHTML() {
+    var r = rangoDe(U.periodo, U.persDesde, U.persHasta, 'Ganancias de hoy'), esHoy = r[3];
+    var todas = carrerasHist();
+    var lista = todas.filter(function (h) { return h.t >= r[0] && h.t <= r[1]; }).sort(function (a, b) { return b.t - a.t; });
+    var cobrado = 0, com = 0, metros = 0;
+    lista.forEach(function (h) { cobrado += h.cobradoC; com += h.comC; metros += h.metros || 0; });
+    var ganancia = cobrado - com, n = lista.length;
+    var tarjeta = '<div class="saldo-card"><button class="periodo-btn' + (U.menuPeriodo ? ' abierto' : '') + '" id="b-periodo">' + esc(r[2]) + FLECHA + '</button>' +
+      (U.menuPeriodo ? opciones('data-periodo', U.periodo, 'Ganancias de hoy') : '') +
+      '<div class="monto" style="margin-top:8px">' + dineroC(ganancia) + '</div>' +
+      '<div class="sub tres"><div><b>' + dineroC(com) + '</b><span>Comisión pagada</span></div><div><b>' + n + '</b><span>' + (esHoy ? 'Carreras hoy' : 'Carreras') + '</span></div>' +
+      '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos</span></div></div></div>';
+    var fechas = U.periodo === 'pers' ? cuadroFechas('pers-desde', 'pers-hasta', U.persDesde, U.persHasta, 'b-rango', 'Ver ganancias', U.errRango) : '';
+    // Gráfico: la semana actual, de lunes a domingo
+    var hoy0 = inicioDia(Date.now()), dHoy = new Date().getDay(), desdeLunes = (dHoy + 6) % 7, lunes = hoy0 - desdeLunes * 86400000, vals = [];
+    for (var i = 0; i < 7; i++) {
+      var a = lunes + i * 86400000, b = a + 86400000;
+      vals.push(i > desdeLunes ? 0 : todas.reduce(function (t, h) { return h.t >= a && h.t < b ? t + h.cobradoC - h.comC : t; }, 0));
+    }
+    var max = Math.max.apply(null, vals.concat([1])), total = vals.reduce(function (x, y) { return x + y; }, 0);
+    var LETRAS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    var barras = vals.map(function (v, i) {
+      var esH = i === desdeLunes;
+      return '<div class="d' + (esH ? ' hoy' : '') + '"><span class="v">' + (v ? '$' + Math.round(v / 100) : '') + '</span><div class="b" style="height:' + Math.max(3, Math.round(v / max * 92)) + '%"></div><span class="l">' + (esH ? 'Hoy' : LETRAS[i]) + '</span></div>';
+    }).join('');
+    var semana = '<div class="bloque"><h3>Últimos 7 días <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
+    var filas = lista.slice(0, 60).map(function (h) {
+      return '<div class="gan"><span class="h">' + (esHoy ? horaDe(h.t) : fechaCorta(h.t) + '<br><small style="font-weight:600;color:var(--gris)">' + horaDe(h.t) + '</small>') + '</span><div class="t"><b>' + esc(h.cliente) + '</b><small>' + esc(h.o || '—') + ' → ' + esc(h.d || '—') + '</small></div>' +
+        '<div class="m"><b>+' + dineroC(h.cobradoC - h.comC) + '</b><small>cobró ' + dineroC(h.cobradoC) + ' · com. ' + dineroC(h.comC) + '</small></div></div>';
+    }).join('');
+    var carreras = '<div class="bloque"><h3>' + (esHoy ? 'Ganancias de hoy' : 'Ganancias por carrera') + ' <small>' + n + ' carrera' + (n === 1 ? '' : 's') + '</small></h3>' +
+      (filas || '<div class="vacio" style="padding:14px">' + (esHoy ? 'Cuando termines una carrera, aquí verás cuánto ganaste en cada una.' : 'No hay carreras en esas fechas.') + '</div>') + '</div>';
+    return tarjeta + fechas + semana + carreras;
+  }
+  function fechaInputHoy(desplazaDias) { var d = new Date(); d.setDate(d.getDate() + desplazaDias); return fechaInput(d.getTime()); }
+
   // ---------- Secciones ----------
   function seccionHTML(p) {
     if (p === 'bandeja') {
@@ -263,24 +363,19 @@
         return '<div class="item-b"><div class="fila"><b>#' + esc(h.numero) + ' · ' + esc(h.cliente) + '</b><b>' + dineroC(h.cobradoC) + '</b></div><div class="dirs" style="margin-bottom:0">' + esc(h.o || '—') + ' → ' + esc(h.d || '—') + '<br><small style="color:var(--gris)">' + esc(h.hora) + ' · comisión ' + dineroC(h.comC) + '</small></div></div>';
       }).join('') : '<div class="vacio">Hoy todavía no tienes carreras.</div>');
     }
-    if (p === 'billetera') {
+    if (p === 'recargas') {
       var bajo = D.saldoC < D.minimoC
         ? '<div class="bajo"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg>Sin saldo no te llegan carreras. Recarga para seguir trabajando.</div>' : '';
       var msg = U.msgRec ? '<div class="msg-rec ' + U.msgRec.c + '">' + esc(U.msgRec.t) + '</div>' : '';
-      var movs = (D.movs || []).map(function (m) {
-        return '<div class="mov ' + m.tipo + '"><span class="ic">' + (m.tipo === 'mas'
-          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
-          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11a2 2 0 0 1 1 1.7V17a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4.3A2 2 0 0 1 5 11zm2.2-.3h9.6l-1.1-3.1a.5.5 0 0 0-.5-.3H8.8a.5.5 0 0 0-.5.3z"/></svg>') +
-          '</span><div class="t"><b>' + esc(m.texto) + '</b><small>' + esc(m.det) + ' · ' + esc(m.hora) + '</small></div><div class="m">' + (m.tipo === 'mas' ? '+' : '−') + dineroC(m.montoC) + '</div></div>';
-      }).join('');
-      return '<h2>Mi billetera</h2>' +
+      return '<h2>Mis recargas</h2>' +
         '<div class="saldo-card"><small>Disponible</small><div class="monto">' + dineroC(D.saldoC) + '</div>' +
-        '<div class="sub"><div><b>' + dineroC(D.consumidoHoyC) + '</b><span>Consumido hoy</span></div><div><b>' + D.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
+        '<div class="sub"><div><b>' + dineroC(D.consumidoHoyC) + '</b><span>Comisión pagada</span></div><div><b>' + D.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
         '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
         '<input class="codigo" id="codigo" maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="Números" value="' + esc(U.codigo) + '">' +
         '<button class="btn-azul" id="b-recargar"' + (U.recargando ? ' disabled' : '') + '>' + (U.recargando ? 'Verificando…' : 'Recargar') + '</button>' + msg + '</div>' +
-        '<div class="movs"><h3>Movimientos de hoy</h3>' + (movs || '<div class="vacio">Todavía no tienes movimientos hoy.</div>') + '</div>';
+        movimientosHTML();
     }
+    if (p === 'billetera') return '<h2>Mi billetera</h2>' + billeteraHTML();
     if (p === 'perfil') {
       var pf = D.perfil || {};
       return '<h2>Mi perfil</h2><div class="item-b"><div class="fila" style="justify-content:flex-start;gap:12px"><div class="avatar" style="width:56px;height:56px;font-size:20px">' + esc(iniciales(pf.nombre)) + '</div>' +
@@ -462,6 +557,36 @@
     if (e.target.closest('#b-whatsapp')) { accion('whatsapp'); return; }
     if (e.target.closest('#b-llamar')) { accion('llamar'); return; }
     if (e.target.closest('#b-recargar')) { recargar(); return; }
+    // Período de Mi billetera
+    if (e.target.closest('#b-periodo')) { U.menuPeriodo = !U.menuPeriodo; render(); return; }
+    var per = e.target.closest('[data-periodo]');
+    if (per) {
+      U.periodo = per.getAttribute('data-periodo'); U.menuPeriodo = false; U.errRango = '';
+      if (U.periodo === 'pers' && !U.persDesde) { U.persHasta = fechaInputHoy(0); U.persDesde = fechaInputHoy(-14); }
+      render(); return;
+    }
+    if (e.target.closest('#b-rango')) {
+      var de = $('#pers-desde').value, ha = $('#pers-hasta').value;
+      if (!de || !ha) { U.errRango = 'Elige las dos fechas.'; render(); return; }
+      if (de > ha) { U.errRango = 'La fecha "Desde" debe ser antes que "Hasta".'; render(); return; }
+      U.persDesde = de; U.persHasta = ha; U.errRango = ''; render(); return;
+    }
+    // Período de los movimientos en Mis recargas
+    if (e.target.closest('#b-periodo-mov')) { U.menuPeriodoMov = !U.menuPeriodoMov; render(); setTimeout(function () { var m = $('.movs-cab .periodos'); if (m) m.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30); return; }
+    var pm = e.target.closest('[data-periodo-mov]');
+    if (pm) {
+      U.periodoMov = pm.getAttribute('data-periodo-mov'); U.menuPeriodoMov = false; U.errRangoMov = '';
+      if (U.periodoMov === 'pers' && !U.movDesde) { U.movHasta = fechaInputHoy(0); U.movDesde = fechaInputHoy(-14); }
+      render(); return;
+    }
+    if (e.target.closest('#b-rango-mov')) {
+      var md = $('#mov-desde').value, mh = $('#mov-hasta').value;
+      if (!md || !mh) { U.errRangoMov = 'Elige las dos fechas.'; render(); return; }
+      if (md > mh) { U.errRangoMov = 'La fecha "Desde" debe ser antes que "Hasta".'; render(); return; }
+      U.movDesde = md; U.movHasta = mh; U.errRangoMov = ''; render(); return;
+    }
+    if (U.menuPeriodo && !e.target.closest('.saldo-card .periodos')) { U.menuPeriodo = false; render(); }
+    if (U.menuPeriodoMov && !e.target.closest('.movs-cab .periodos')) { U.menuPeriodoMov = false; render(); }
     if (e.target.closest('#b-cancelar')) {
       confirmar('¿Estás seguro de cancelar la carrera?', 'La carrera de ' + ((D.carrera || {}).cliente || 'este cliente') + ' se le ofrecerá a otro conductor. Esta acción no se puede deshacer.',
         'Sí, cancelar carrera', 'No, seguir con la carrera', function () { accion('cancelar'); });
@@ -527,6 +652,10 @@
       if (!D) return;
       $('#cargando').hidden = true;
       if (D.oferta || D.carrera) { U.menu = false; if (U.pantalla !== 'inicio') U.pantalla = 'inicio'; }
+      render();
+    },
+    historial: function (json) {
+      try { HIST = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { return; }
       render();
     },
     aviso: function (t) { aviso(t); },

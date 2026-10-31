@@ -214,6 +214,55 @@
   .confirmar .b{display:grid;gap:10px}
   .confirmar .si{height:54px;border:0;border-radius:16px;background:var(--rojo);color:#fff;font-weight:700;font-size:16px}
   .confirmar .no{height:54px;border:0;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px}
+  /* ---------- Mi billetera ---------- */
+  .bloque{margin-top:14px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .bloque h3{margin:0 0 12px;font-size:17px;font-weight:800;color:var(--navy);display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .bloque h3 small{font-size:13px;font-weight:600;color:var(--gris)}
+  .resumen{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .resumen div{background:var(--suave);border-radius:14px;padding:11px 12px}
+  .resumen b{display:block;font-size:18px;font-weight:800}
+  .resumen span{display:block;color:#475467;font-size:12.5px;margin-top:2px}
+  .resumen .rojo b{color:var(--rojo)}
+  .semana-total{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--navy)}
+  .barras{display:flex;align-items:flex-end;gap:8px;height:130px;margin-top:12px}
+  .barras .d{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
+  .barras .v{font-size:10.5px;font-weight:700;color:#475467;white-space:nowrap}
+  .barras .b{width:100%;max-width:30px;border-radius:8px 8px 4px 4px;background:var(--navy);min-height:4px}
+  .barras .d.hoy .b{background:var(--navy)}
+  .barras .d.hoy .v{color:var(--navy)}
+  .barras .l{font-size:12px;font-weight:600;color:var(--gris)}
+  .barras .d.hoy .l{color:var(--navy);font-weight:800}
+  .gan{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linea)}
+  .gan:last-child{border-bottom:0;padding-bottom:0}
+  .gan .h{flex:none;width:44px;font-size:13px;font-weight:700;color:var(--navy)}
+  .gan .t{flex:1;min-width:0}.gan .t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gan .t small{display:block;color:var(--gris);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gan .m{text-align:right;flex:none}.gan .m b{display:block;color:#079455;font-size:16px;font-weight:800}
+  .gan .m small{display:block;color:var(--gris);font-size:11.5px}
+  /* Selector de período en la tarjeta de Mi billetera */
+  .saldo-card .sub.tres{grid-template-columns:1fr 1fr 1fr}
+  .periodo-btn{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:6px 12px 6px 14px;font-size:13.5px;font-weight:700}
+  .periodo-btn svg{transition:transform .2s}
+  .periodo-btn.abierto svg{transform:rotate(180deg)}
+  .saldo-card{overflow:visible}
+  .periodos{position:absolute;left:14px;top:52px;z-index:5;background:#fff;border-radius:16px;box-shadow:0 14px 34px rgba(10,15,60,.28);padding:6px;min-width:210px}
+  .periodos button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:none;padding:12px;border-radius:11px;font-size:15px;font-weight:600;color:var(--texto);text-align:left}
+  .periodos button.sel{background:#E6EEFF;color:var(--navy)}
+  .periodos button.sel::after{content:"";width:8px;height:14px;border:solid var(--navy);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-2px,-2px)}
+  .rango{margin-top:12px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .rango .f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .rango label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--navy)}
+  .rango input{height:48px;border:2px solid #D9DFEC;border-radius:14px;background:#F8FAFF;padding:0 10px;font:inherit;font-size:15px;color:var(--texto);outline:none;width:100%;min-width:0}
+  .rango input:focus{border-color:#1A5CE0;background:#fff}
+  .rango .btn-azul{margin-top:10px;height:48px;border-radius:14px}
+  .rango .err{margin-top:8px;color:#B42318;font-size:13px;font-weight:600}
+  .movs-cab{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 0 8px}
+  .periodo-mov{display:inline-flex;align-items:center;gap:6px;border:0;background:#E6EEFF;color:var(--navy);border-radius:999px;padding:8px 12px 8px 14px;font-size:14.5px;font-weight:800}
+  .periodo-mov svg{transition:transform .2s}
+  .periodo-mov.abierto svg{transform:rotate(180deg)}
+  .movs-cab .periodos{left:0;top:44px;margin-bottom:20px}
+  .movs-cab .cuenta{color:var(--gris);font-size:13px;font-weight:600}
+  .rango.mov-rango{margin:0 0 10px}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -317,13 +366,13 @@
         <div><b id="k-carreras">0</b><small>Carreras hoy</small></div>
         <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="#5B8CFF"><rect x="4" y="13" width="4" height="7" rx="1"/><rect x="10" y="9" width="4" height="11" rx="1"/><rect x="16" y="5" width="4" height="15" rx="1"/></svg></span>
       </button>
-      <button class="tarjeta" data-ir="billetera">
+      <button class="tarjeta" data-ir="recargas">
         <div><b id="k-saldo">$0.00</b><small>Saldo disponible</small></div>
         <span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="var(--navy)"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/><circle cx="16" cy="14" r="1.5" fill="#fff"/></svg></span>
       </button>
-      <button class="tarjeta ancha" data-ir="billetera">
+      <button class="tarjeta ancha" data-ir="recargas">
         <span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--rojo)"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
-        <div><b id="k-consumido">$0.00</b><small>Consumido hoy</small></div>
+        <div><b id="k-consumido">$0.00</b><small>Comisión pagada</small></div>
         <svg class="flecha" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
       </button>
     </div>
@@ -350,7 +399,7 @@
     <nav class="barra" id="barra">
       <button data-ir="inicio" class="sel"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg>Inicio</button>
       <button data-ir="carreras"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/></svg>Mis carreras</button>
-      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Billetera</button>
+      <button data-ir="recargas"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>Mis recargas</button>
       <button data-ir="bandeja"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-5l-3 4-3-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>Bandeja</button>
       <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Perfil</button>
     </nav>
@@ -360,14 +409,14 @@
 
     <!-- Viaje: saldo y consumido arriba -->
     <div class="arriba-v">
-      <button class="pastilla" data-ir="billetera">
+      <button class="pastilla" data-ir="recargas">
         <span class="ic" style="background:#1D3B8F"><svg width="22" height="22" viewBox="0 0 24 24" fill="#3B82F6"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/><circle cx="16" cy="14" r="1.5" fill="#1D3B8F"/></svg></span>
         <div><small>Saldo disponible</small><b id="v-saldo">$0.00</b></div>
         <svg class="fl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
       </button>
-      <button class="pastilla" data-ir="billetera">
+      <button class="pastilla" data-ir="recargas">
         <span class="ic" style="background:#5A1A2A"><svg width="20" height="20" viewBox="0 0 24 24" fill="#F04438"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16h1v2H4v-2h1zm2 1v5h6V5z"/><path d="M16 7l3 3v7a1.5 1.5 0 0 1-3 0v-3h-1v-2h1a2 2 0 0 1 2 2v3h0V10.8L15.6 8.4z"/></svg></span>
-        <div><small>Consumido hoy</small><b id="v-consumido">$0.00</b></div>
+        <div><small>Comisión pagada</small><b id="v-consumido">$0.00</b></div>
         <svg class="fl" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
       </button>
     </div>
@@ -382,8 +431,9 @@
       <div class="quien"><div class="avatar" style="width:42px;height:42px;font-size:15px" id="lat-ini"></div><div><b id="lat-nombre"></b><small id="lat-unidad"></small></div></div>
       <button data-ir="inicio"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg>Inicio</button>
       <button data-ir="carreras"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="17" rx="1"/></svg>Mis carreras</button>
-      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Mi billetera</button>
+      <button data-ir="recargas"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>Mis recargas</button>
       <button data-ir="bandeja"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-5l-3 4-3-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/></svg>Bandeja de carreras</button>
+      <button data-ir="billetera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17v3H6.5a.5.5 0 0 0 0 1H20v11a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5z"/></svg>Mi billetera</button>
       <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Mi perfil</button>
       <button data-ir="ayuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>Ayuda y soporte</button>
       <button class="salir" id="salir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>Cerrar sesión</button>
@@ -397,6 +447,6 @@
 </div>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="conductor.js?v=1"></script>
+<script src="conductor.js?v=2"></script>
 </body>
 </html>
