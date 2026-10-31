@@ -1025,7 +1025,7 @@
 
 
   // ---------- Navegación tipo GPS (como Waze / Google Maps) ----------
-  var NAV = { activo: false, obj: '', ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, rumbo: 0, ant: null, pedido: 0, llego: false };
+  var NAV = { margen: 45, activo: false, obj: '', ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, rumbo: 0, ant: null, pedido: 0, llego: false };
   var DIRS = { 'right': 'a la derecha', 'left': 'a la izquierda', 'slight right': 'ligeramente a la derecha', 'slight left': 'ligeramente a la izquierda', 'sharp right': 'cerrado a la derecha', 'sharp left': 'cerrado a la izquierda', 'straight': 'recto', 'uturn': 'en U' };
   var GIROS = { 'straight': 0, 'slight right': 35, 'right': 90, 'sharp right': 135, 'uturn': 180, 'sharp left': -135, 'left': -90, 'slight left': -35 };
   var ORD = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
@@ -1065,7 +1065,7 @@
     var recta = function () {
       if (pedido !== NAV.pedido) return;
       NAV.ruta = [[a.lng, a.lat], [b.lng, b.lat]]; NAV.total = metrosEntre(a, b); NAV.dur = NAV.total / 7;
-      NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; NAV.paso = 1; NAV.recalc = false; NAV.fuera = 0;
+      NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; NAV.paso = 1; NAV.recalc = false; NAV.fuera = 0; ponerMargen();
       ponerRuta(NAV.ruta); seguirNav();
     };
     fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true')
@@ -1076,10 +1076,17 @@
         var rt = j.routes[0];
         NAV.ruta = rt.geometry.coordinates; NAV.total = rt.distance; NAV.dur = rt.duration * 1.25;
         NAV.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
-        NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0;
+        NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; ponerMargen();
         ponerRuta(NAV.ruta); seguirNav();
       }).catch(recta);
   }
+  // La ruta empieza en la calle más cercana: si estás lejos de ella al empezar, no se cuenta como desvío
+  function cercaRuta(pos) {
+    var mejor = 1e9, idx = 0;
+    for (var i = 0; i < NAV.ruta.length; i++) { var d = metrosEntre(pos, { lat: NAV.ruta[i][1], lng: NAV.ruta[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
+    return { d: mejor, i: idx };
+  }
+  function ponerMargen() { NAV.margen = Math.max(45, cercaRuta(S.yo).d + 30); }
   function metaNav() { var c = S.carrera; return c ? (NAV.obj === 'o' ? c.o : c.d) : null; }
   function iniciarNav() {
     var c = S.carrera; if (!c) return;
@@ -1108,8 +1115,8 @@
     var mejor = 1e9, idx = 0;
     for (var i = 0; i < NAV.ruta.length; i++) { var d = metrosEntre(pos, { lat: NAV.ruta[i][1], lng: NAV.ruta[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
     if (!NAV.recalc) {
-      if (mejor > 45) { NAV.fuera++; if (NAV.fuera >= 2) { rutaNav(pos, metaNav()); return; } }
-      else NAV.fuera = 0;
+      if (mejor > NAV.margen) { NAV.fuera++; if (NAV.fuera >= 2) { rutaNav(pos, metaNav()); return; } }
+      else { NAV.fuera = 0; if (mejor < 45) NAV.margen = 45; }
     }
     if (NAV.ant && idx < NAV.ruta.length - 1 && metrosEntre(pos, { lat: NAV.ruta[idx + 1][1], lng: NAV.ruta[idx + 1][0] }) < 1e9 && NAV.rumbo === 0) NAV.rumbo = rumboEntre(pos, { lat: NAV.ruta[idx + 1][1], lng: NAV.ruta[idx + 1][0] });
     var resto = [[pos.lng, pos.lat]].concat(NAV.ruta.slice(idx + 1));
@@ -1154,9 +1161,9 @@
     var r = NAV.ruta; if (!r || r.length < 2) return;
     var pos = S.yo, mejor = 1e9, idx = 0;
     for (var i = 0; i < r.length; i++) { var d = metrosEntre(pos, { lat: r[i][1], lng: r[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
-    if (mejor > 45) return; // fuera de la ruta: espera el recálculo
+    if (mejor > NAV.margen) return; // fuera de la ruta: espera el recálculo
     var cur = { lat: pos.lat, lng: pos.lng };
-    for (var k = idx + 1; k < r.length && metros > 0; k++) {
+    for (var k = mejor > 5 ? idx : idx + 1; k < r.length && metros > 0; k++) {
       var sig = { lat: r[k][1], lng: r[k][0] }, d2 = metrosEntre(cur, sig);
       if (d2 <= metros) { cur = sig; metros -= d2; } else { var f = metros / d2; cur = { lat: cur.lat + (sig.lat - cur.lat) * f, lng: cur.lng + (sig.lng - cur.lng) * f }; metros = 0; }
     }
