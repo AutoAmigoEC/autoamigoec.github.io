@@ -454,6 +454,8 @@
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Al estar libre, la carrera sale sola en la pantalla (primero las de la bandeja, de la más cercana). Con estos botones puedes hacerla llegar al instante.</p>
+    <button class="prin" id="sim-escenario" style="background:#B42318">Escenario: acepto y me quedo sin internet</button>
+    <button id="sim-red">Quitar internet</button>
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
@@ -779,7 +781,7 @@
       '<div class="cliente"><div class="foto-c">' + iniciales(c.cliente) + '</div><div class="nom"><b>' + esc(c.cliente) + '</b>' +
       '<small>' + c.calif.toFixed(1) + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg><i></i>' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="#344054"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg> ' + c.viajes + ' viajes</small></div>' +
-      '<a class="circ" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></a>' +
+      '<a class="circ" id="b-wa" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></a>' +
       '<a class="circ" href="tel:' + esc(c.tel) + '" aria-label="Llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a></div>' +
       '<div class="datos"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min ' + (enCurso ? 'para llegar al destino' : (c.llegue ? '· ya llegaste' : 'para recoger')) + '</div></div>' +
       '<div class="valor"><b>' + dineroC(c.fijo || (enCurso ? Math.max(CFG.minimaC, c.mostradoC || CFG.arranqueC) : c.estC)) + '</b><small>' + (c.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>';
@@ -804,7 +806,7 @@
     renderBase();
     pintarNav();
     // Los botones del mapa van encima de la barra de minutos
-    if (S.carrera) { var arriba = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22 + 'px'; $('#b-centrar').style.bottom = arriba; $('#b-ruta').style.bottom = arriba; }
+    if (S.carrera) { var px = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22, cabe = $('#pantalla').clientHeight - px > 250; $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px'; $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = cabe ? '' : 'hidden'; } else { $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = ''; }
     if (NAV.activo && !NAV.recalc) seguirNav();
   }
   function renderBase() {
@@ -883,6 +885,7 @@
   }
   function cerrarOferta(msg) { if (S.oferta && S.oferta.deBandeja) S.oferta.deBandeja.rechazada = true; programarProxima(deBandeja() ? 2 : 25); S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
   function aceptar(o) {
+    if (RED.cortarAlAceptar) { RED.cortarAlAceptar = false; setTimeout(function () { ponerRed(true); }, 3000); }
     S.oferta = null;
     if (o.deBandeja) { var i = BANDEJA.indexOf(o.deBandeja); if (i >= 0) BANDEJA.splice(i, 1); delete o.deBandeja; }
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
@@ -911,13 +914,15 @@
     S.movs.push({ tipo: 'menos', montoC: com, texto: 'Comisión carrera', det: c.o.dir, t: Date.now() });
     S.hechas.push({ t: Date.now(), cliente: c.cliente, metros: c.metros || 0, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.carrera = null; puntosViaje(null);
-    S.fin = { c: c, total: total, estrellas: 0 };
+    S.fin = { c: c, total: total, estrellas: 0, sinInternet: RED.sin };
+    if (RED.sin) { RED.porSubir++; aviso('Sin internet: la carrera quedó guardada y se enviará al volver la señal.'); }
     render(); pintarFin();
   }
   function fechaInputHoy(desplazaDias) { var d = new Date(); d.setDate(d.getDate() + desplazaDias); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   // Recarga con código (en la prueba: PRUEBA10 = $10, PRUEBA20 = $20, PRUEBA50 = $50; cualquier otro no es válido)
   var CODIGOS = { '1111111111': { montoC: 1000, usado: true }, '2020202020': { montoC: 2000 }, '5050505050': { montoC: 5000 } };
   function recargar() {
+    if (RED.sin) { S.msgRec = { c: 'mal', t: 'Sin internet: no se puede verificar la recarga. Intenta cuando vuelva la señal.' }; render(); return; }
     var k = (S.codigo || '').replace(/\D/g, '');
     if (k.length !== 10) { S.msgRec = { c: 'mal', t: 'Escribe los 10 números completos.' }; render(); marcarError(); return; }
     var cod = CODIGOS[k];
@@ -968,6 +973,7 @@
       '<div class="c"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div></div>' +
       '<h2>¡Carrera completada!</h2>' +
       '<div class="total">' + dineroC(f.total) + '</div><div class="total-t">Total a cobrar' + (c.fijo ? ' · Pactada' : ' · Taxímetro') + '</div>' + nota +
+      (f.sinInternet ? '<div class="nota-min" style="background:#FEF3F2;color:#B42318">Sin internet: la carrera quedó guardada en tu teléfono y se enviará sola al volver la señal.</div>' : '') +
       '<div class="filas">' + filas.map(function (r) { return '<div class="fila"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join('') + '</div>' +
       '<div class="calif">Califica al cliente</div><div class="estrellas">' + est + '</div>' +
       '<div class="razon' + (f.estrellas && f.estrellas <= 3 ? ' abierta' : '') + '"><label for="razon">Razón</label>' +
@@ -996,7 +1002,7 @@
   var proxima = 0;
   function programarProxima(seg) { proxima = Date.now() + seg * 1000; }
   setInterval(function () {
-    if (S.estado !== 'conectado' || S.oferta || S.carrera || S.fin) { if (S.estado !== 'conectado') proxima = 0; return; }
+    if (RED.sin || S.estado !== 'conectado' || S.oferta || S.carrera || S.fin) { if (S.estado !== 'conectado') proxima = 0; return; }
     if (!proxima) { programarProxima(1); return; }
     if (Date.now() >= proxima) { proxima = 0; nuevaOferta(Math.random() < 0.3 ? 400 : 0, true); }
   }, 1000);
@@ -1066,6 +1072,7 @@
   function distTxt(m) { return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : (m < 50 ? Math.max(10, Math.round(m / 10) * 10) : Math.round(m / 50) * 50) + ' m'; }
   // Pide la ruta con las instrucciones paso a paso
   function rutaNav(a, b) {
+    if (RED.sin && NAV.ruta) { NAV.recalc = false; NAV.fuera = 0; NAV.margen = 1e9; if (!rutaNav.avisado) { rutaNav.avisado = true; aviso('Sin internet: no se puede recalcular la ruta. Sigue la que tienes o guíate por la dirección.'); } pintarNav(); return; }
     var pedido = ++NAV.pedido;
     NAV.recalc = true; pintarNav();
     var recta = function () {
@@ -1217,6 +1224,45 @@
     aviso('El carro dobló por otra calle…');
   });
 
+  // ---------- Simulación de "sin internet" ----------
+  var RED = { sin: false, porSubir: 0, cortarAlAceptar: false };
+  var avisoRed = document.createElement('div');
+  avisoRed.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:8px;z-index:95;background:#B42318;color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.3);white-space:nowrap;display:none';
+  $('#pantalla').appendChild(avisoRed);
+  function pintarRed() {
+    avisoRed.style.display = RED.sin ? 'block' : 'none';
+    if (RED.sin) avisoRed.textContent = (S.carrera ? 'Sin internet · la carrera sigue y se guarda' : 'Sin internet · no te llegarán carreras') + (RED.porSubir ? ' · ' + RED.porSubir + ' por enviar' : '');
+    $('#sim-red').textContent = RED.sin ? 'Volver a tener internet' : 'Quitar internet';
+    $('#sim-red').style.background = RED.sin ? '#12B76A' : ''; $('#sim-red').style.color = RED.sin ? '#fff' : '';
+  }
+  function ponerRed(sin) {
+    RED.sin = sin; rutaNav.avisado = false;
+    if (sin) aviso('Te quedaste sin internet.');
+    else {
+      if (NAV.activo) NAV.margen = 45;
+      aviso(RED.porSubir ? 'Volvió el internet: se enviaron ' + RED.porSubir + ' cambio' + (RED.porSubir > 1 ? 's' : '') + ' a la central.' : 'Volvió el internet.');
+      RED.porSubir = 0;
+    }
+    pintarRed();
+  }
+  $('#sim-red').addEventListener('click', function () { ponerRed(!RED.sin); });
+  $('#sim-escenario').addEventListener('click', function () {
+    if (RED.sin) ponerRed(false);
+    if (S.carrera) { aviso('Termina la carrera actual primero.'); return; }
+    if (S.estado !== 'conectado') ponerEstado('conectado', true);
+    RED.cortarAlAceptar = true; nuevaOferta(0);
+    aviso('Llegó una carrera: acéptala y a los 3 segundos te quedarás sin internet.');
+  });
+  // Lo que se guarda en el teléfono sin internet (se cuenta para mostrarlo)
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('#b-wa') && RED.sin) { e.preventDefault(); aviso('Sin internet: WhatsApp no funciona. Usa el botón de llamar.'); return; }
+    if (!RED.sin) return;
+    if (e.target.closest('#b-iniciar')) { RED.porSubir++; setTimeout(function () { aviso('Sin internet: el taxímetro igual cuenta. Se enviará al volver la señal.'); pintarRed(); }, 50); }
+    if (e.target.closest('#c-si') && S.carrera) { RED.porSubir++; setTimeout(pintarRed, 50); }
+    if (e.target.closest('#b-continuar') && S.fin && S.fin.estrellas) { RED.porSubir++; setTimeout(pintarRed, 50); }
+  }, true);
+  setInterval(pintarRed, 1000);
+
   // ---------- Eventos ----------
   function alternarMenu() { S.menu = !S.menu; $('#estados').hidden = true; $('#estado-btn').classList.remove('abierto'); render(); }
   $('#ham').addEventListener('click', alternarMenu);
@@ -1248,7 +1294,7 @@
     }
     var t = e.target.closest('[data-tomar]'); if (t) { tomarDeBandeja(Number(t.getAttribute('data-tomar'))); return; }
     if (e.target.closest('#b-rechazar')) { cerrarOferta('Rechazaste la carrera.'); return; }
-    if (e.target.closest('#b-aceptar')) { aceptar(S.oferta); return; }
+    if (e.target.closest('#b-aceptar')) { if (RED.sin) { aviso('Sin internet: no se puede aceptar la carrera. Otro conductor la tomará.'); return; } aceptar(S.oferta); return; }
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
     if (e.target.closest('#b-finalizar')) { finalizar(); return; }
     if (e.target.closest('#b-recargar')) { recargar(); return; }

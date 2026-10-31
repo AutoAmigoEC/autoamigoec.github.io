@@ -303,7 +303,7 @@
     if (NAV.activo && (!c || c.id !== NAV.idCarrera)) { salirNav(); return; }
     if (NAV.activo && NAV.obj === 'o' && c.estado === 'ejecucion') { NAV.obj = 'd'; NAV.llego = false; rutaNav(D.yo, metaNav()); return; } // pasó a ir al destino
     if (NAV.activo && !NAV.recalc) seguirNav(); else pintarNav();
-    if (c) { var arriba = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22 + 'px'; $('#b-centrar').style.bottom = arriba; $('#b-ruta').style.bottom = arriba; }
+    if (c) { var px = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22, cabe = $('#pantalla').clientHeight - px > 250; $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px'; $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = cabe ? '' : 'hidden'; } else { $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = ''; }
   }
 
   // ---------- Textos ----------
