@@ -214,6 +214,31 @@
   .confirmar .b{display:grid;gap:10px}
   .confirmar .si{height:54px;border:0;border-radius:16px;background:var(--rojo);color:#fff;font-weight:700;font-size:16px}
   .confirmar .no{height:54px;border:0;border-radius:16px;background:var(--navy);color:#fff;font-weight:700;font-size:16px}
+  /* ---------- Mi billetera ---------- */
+  .bloque{margin-top:14px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .bloque h3{margin:0 0 12px;font-size:17px;font-weight:800;color:var(--navy);display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .bloque h3 small{font-size:13px;font-weight:600;color:var(--gris)}
+  .resumen{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .resumen div{background:var(--suave);border-radius:14px;padding:11px 12px}
+  .resumen b{display:block;font-size:18px;font-weight:800}
+  .resumen span{display:block;color:#475467;font-size:12.5px;margin-top:2px}
+  .resumen .rojo b{color:var(--rojo)}
+  .semana-total{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--navy)}
+  .barras{display:flex;align-items:flex-end;gap:8px;height:130px;margin-top:12px}
+  .barras .d{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
+  .barras .v{font-size:10.5px;font-weight:700;color:#475467;white-space:nowrap}
+  .barras .b{width:100%;max-width:30px;border-radius:8px 8px 4px 4px;background:#C7CDEA;min-height:4px}
+  .barras .d.hoy .b{background:var(--navy)}
+  .barras .d.hoy .v{color:var(--navy)}
+  .barras .l{font-size:12px;font-weight:600;color:var(--gris)}
+  .barras .d.hoy .l{color:var(--navy);font-weight:800}
+  .gan{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linea)}
+  .gan:last-child{border-bottom:0;padding-bottom:0}
+  .gan .h{flex:none;width:44px;font-size:13px;font-weight:700;color:var(--navy)}
+  .gan .t{flex:1;min-width:0}.gan .t b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gan .t small{display:block;color:var(--gris);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gan .m{text-align:right;flex:none}.gan .m b{display:block;color:#079455;font-size:16px;font-weight:800}
+  .gan .m small{display:block;color:var(--gris);font-size:11.5px}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -400,6 +425,8 @@
   var CFG = { arranqueC: 50, kmC: 50, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30, minimaC: 250, comisionMinC: 50, comisionPct: 10, comisionDesdeC: 500 };
   var S = {
     nombre: 'Carlos', estado: 'desconectado', saldoC: 1000, consumidoC: 0, carrerasHoy: 0, hechas: [],
+    // Ganancia neta de los 6 días anteriores (solo para la prueba)
+    semanaAnt: [2850, 3420, 1980, 4110, 3600, 2240],
     yo: { lat: -2.1330, lng: -79.8745 }, carro: '#F4F5F7', pantalla: 'inicio', codigo: '', msgRec: null,
     movs: [{ tipo: 'mas', montoC: 1000, texto: 'Recarga', det: 'Recarga 1111111111', hora: '7:52' }],
     oferta: null, carrera: null, menu: false
@@ -520,6 +547,33 @@
     if (p !== 'inicio' && (S.carrera || S.oferta)) { /* durante la carrera se puede abrir y volver */ }
     render();
   }
+  // Mi billetera: resumen del día, ganancias de la semana y carreras de hoy (todo neto, sin la comisión)
+  var DIAS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+  function billeteraHTML(ganancia) {
+    var cobrado = 0, com = 0, metros = 0;
+    S.hechas.forEach(function (h) { cobrado += h.cobradoC; com += h.comC; metros += h.metros || 0; });
+    var n = S.hechas.length;
+    var resumen = '<div class="bloque"><h3>Resumen de hoy</h3><div class="resumen">' +
+      '<div><b>' + dineroC(cobrado) + '</b><span>Cobrado a pasajeros</span></div>' +
+      '<div class="rojo"><b>−' + dineroC(com) + '</b><span>Comisión AutoAmigo</span></div>' +
+      '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos con pasajero</span></div>' +
+      '<div><b>' + dineroC(n ? Math.round(ganancia / n) : 0) + '</b><span>Ganancia por carrera</span></div></div></div>';
+    // Últimos 7 días, el último es hoy
+    var vals = S.semanaAnt.concat([ganancia]), hoy = new Date().getDay();
+    var max = Math.max.apply(null, vals.concat([1])), total = vals.reduce(function (a, b) { return a + b; }, 0);
+    var barras = vals.map(function (v, i) {
+      var dia = DIAS[(hoy - (6 - i) + 7) % 7], esHoy = i === 6;
+      return '<div class="d' + (esHoy ? ' hoy' : '') + '"><span class="v">' + (v ? '$' + Math.round(v / 100) : '') + '</span><div class="b" style="height:' + Math.max(3, Math.round(v / max * 92)) + '%"></div><span class="l">' + (esHoy ? 'Hoy' : dia) + '</span></div>';
+    }).join('');
+    var semana = '<div class="bloque"><h3>Últimos 7 días <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
+    var lista = S.hechas.slice().reverse().map(function (h) {
+      return '<div class="gan"><span class="h">' + esc(h.hora) + '</span><div class="t"><b>' + esc(h.cliente) + '</b><small>' + esc(h.o) + ' → ' + esc(h.d) + '</small></div>' +
+        '<div class="m"><b>+' + dineroC(h.cobradoC - h.comC) + '</b><small>cobró ' + dineroC(h.cobradoC) + ' · com. ' + dineroC(h.comC) + '</small></div></div>';
+    }).join('');
+    var carreras = '<div class="bloque"><h3>Ganancias de hoy <small>' + n + ' carrera' + (n === 1 ? '' : 's') + '</small></h3>' + (lista || '<div class="vacio" style="padding:14px">Cuando termines una carrera, aquí verás cuánto ganaste en cada una.</div>') + '</div>';
+    return resumen + semana + carreras;
+  }
+
   function seccionHTML(p) {
     if (p === 'bandeja') {
       var lista = BANDEJA.map(function (c, i) { return { c: c, i: i, km: distKm(S.yo, c.o) }; }).sort(function (a, b) { return a.km - b.km; });
@@ -550,9 +604,10 @@
       // Billetera: lo que el conductor ganó hoy, ya restada la comisión de AutoAmigo
       var ganancia = S.hechas.reduce(function (t, h) { return t + (h.cobradoC - h.comC); }, 0);
       var esBill = p === 'billetera';
-      return '<h2>' + (esBill ? 'Mi billetera' : 'Mis recargas') + '</h2>' +
-        '<div class="saldo-card"><small>' + (esBill ? 'Ganancia de hoy' : 'Disponible') + '</small><div class="monto">' + dineroC(esBill ? ganancia : S.saldoC) + '</div>' +
-        '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>' + bajo +
+      var tarjeta = '<div class="saldo-card"><small>' + (esBill ? 'Ganancia de hoy' : 'Disponible') + '</small><div class="monto">' + dineroC(esBill ? ganancia : S.saldoC) + '</div>' +
+        '<div class="sub"><div><b>' + dineroC(S.consumidoC) + '</b><span>Consumido hoy</span></div><div><b>' + S.carrerasHoy + '</b><span>Carreras hoy</span></div></div></div>';
+      if (esBill) return '<h2>Mi billetera</h2>' + tarjeta + billeteraHTML(ganancia);
+      return '<h2>Mis recargas</h2>' + tarjeta + bajo +
         '<div class="recargar"><h3>Recargar</h3><p>Escribe los 10 números de recarga que te dio la central de AutoAmigo.</p>' +
         '<input class="codigo" id="codigo" maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="Números" value="' + esc(S.codigo) + '">' +
         '<button class="btn-azul" id="b-recargar">Recargar</button>' + msg + '</div>' +
@@ -717,7 +772,7 @@
     S.saldoC -= com; S.consumidoC += com; S.carrerasHoy++;
     var d = new Date();
     S.movs.push({ tipo: 'menos', montoC: com, texto: 'Comisión carrera', det: c.o.dir, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
-    S.hechas.push({ cliente: c.cliente, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
+    S.hechas.push({ cliente: c.cliente, metros: c.metros || 0, o: c.o.dir, d: c.d.dir, cobradoC: total, comC: com, hora: d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') });
     S.carrera = null; puntosViaje(null);
     S.fin = { c: c, total: total, estrellas: 0 };
     render(); pintarFin();
