@@ -606,7 +606,20 @@
     if (D.carrera && render.enfoque !== D.carrera.id + D.carrera.estado) { render.enfoque = D.carrera.id + D.carrera.estado; setTimeout(verRuta, 80); }
     if (!D.carrera) render.enfoque = '';
     alEstadoNav();
+    pintarRed();
   }
+
+  // ---------- Aviso "Sin internet" (arriba, en todas las pantallas) ----------
+  var avisoRed = document.createElement('div');
+  avisoRed.id = 'sin-internet';
+  avisoRed.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:8px;z-index:95;background:#B42318;color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.3);white-space:nowrap;display:none';
+  $('#pantalla').appendChild(avisoRed);
+  function pintarRed() {
+    var sin = (D && D.sinInternet) || navigator.onLine === false;
+    avisoRed.style.display = sin ? 'block' : 'none';
+    if (sin) avisoRed.textContent = (D && D.carrera) ? 'Sin internet · la carrera sigue y se guarda' : 'Sin internet · no te llegarán carreras';
+  }
+  window.addEventListener('online', pintarRed); window.addEventListener('offline', pintarRed);
 
   // ---------- Carrera completada ----------
   var ESTRELLA = '<svg viewBox="0 0 24 24"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>';
@@ -630,6 +643,7 @@
       '<div class="c"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div></div>' +
       '<h2>¡Carrera completada!</h2>' +
       '<div class="total">' + dineroC(f.totalC) + '</div><div class="total-t">Total a cobrar' + (f.fijo ? ' · Pactada' : ' · Taxímetro') + '</div>' + nota +
+      (f.sinInternet ? '<div class="nota-min" style="background:#FEF3F2;color:#B42318">Sin internet: la carrera quedó guardada en tu teléfono y se enviará sola al volver la señal.</div>' : '') +
       '<div class="filas">' + filas.map(function (r) { return '<div class="fila"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join('') + '</div>' +
       '<div class="calif">Califica al cliente</div><div class="estrellas">' + est + '</div>' +
       '<div class="razon' + (f.estrellas && f.estrellas <= 3 ? ' abierta' : '') + '"><label for="razon">Razón</label>' +

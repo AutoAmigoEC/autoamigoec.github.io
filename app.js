@@ -532,6 +532,9 @@
       } else {
         extra = '<div class="meta">' + esc(c.conductorNombre || nombreCond(c.conductor)) + ' ' + esc(c.unidad ? '· U' + c.unidad : '') +
           (c.manual ? ' · asignada por la central' : '') + '</div>';
+        // El conductor perdió internet en plena carrera: la carrera sigue, pero no se ve en vivo
+        var ec = S.estados[c.conductor];
+        if (!ec || ec.online === false || t - (Number(ec.t) || 0) > 3 * 60000) extra += '<span class="etiqueta-cancel">Sin señal · en carrera · última vez ' + (ec && ec.t ? hora(ec.t) : '—') + '</span>';
         if (c.estado === 'ejecucion' && c.taximetro && !c.precioFijo) {
           extra += '<div class="meta">' + ((Number(c.taximetro.metros) || 0) / 1000).toFixed(1) + ' km · ' +
             Math.floor((Number(c.taximetro.esperaSeg) || 0) / 60) + ' min detenido</div>';
