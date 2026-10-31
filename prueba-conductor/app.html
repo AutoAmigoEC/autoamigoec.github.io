@@ -227,7 +227,8 @@
   .barras{display:flex;align-items:flex-end;gap:8px;height:130px;margin-top:12px}
   .barras .d{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%}
   .barras .v{font-size:10.5px;font-weight:700;color:#475467;white-space:nowrap}
-  .barras .b{width:100%;max-width:30px;border-radius:8px 8px 4px 4px;background:#C7CDEA;min-height:4px}
+  .barras .b{width:100%;max-width:30px;border-radius:8px 8px 4px 4px;background:var(--navy);min-height:4px}
+  .barras .d.fut .b{min-height:0}
   .barras .d.hoy .b{background:var(--navy)}
   .barras .d.hoy .v{color:var(--navy)}
   .barras .l{font-size:12px;font-weight:600;color:var(--gris)}
@@ -616,18 +617,20 @@
       '<div class="rojo"><b>−' + dineroC(com) + '</b><span>Comisión AutoAmigo</span></div>' +
       '<div><b>' + (metros / 1000).toFixed(1) + ' km</b><span>Recorridos con pasajero</span></div>' +
       '<div><b>' + dineroC(n ? Math.round(ganancia / n) : 0) + '</b><span>Ganancia por carrera</span></div></div></div>';
-    // Gráfico: siempre los últimos 7 días, el último es hoy
-    var hoy0 = inicioDia(Date.now()), vals = [];
-    for (var i = 6; i >= 0; i--) {
-      var a = hoy0 - i * 86400000, b = a + 86400000;
-      vals.push(todas().reduce(function (t, h) { return h.t >= a && h.t < b ? t + h.cobradoC - h.comC : t; }, 0));
+    // Gráfico: la semana actual, de lunes a domingo
+    var hoy0 = inicioDia(Date.now()), dHoy = new Date().getDay(), desdeLunes = (dHoy + 6) % 7, lunes = hoy0 - desdeLunes * 86400000, vals = [];
+    for (var i = 0; i < 7; i++) {
+      var a = lunes + i * 86400000, b = a + 86400000;
+      vals.push(i > desdeLunes ? null : todas().reduce(function (t, h) { return h.t >= a && h.t < b ? t + h.cobradoC - h.comC : t; }, 0));
     }
-    var max = Math.max.apply(null, vals.concat([1])), total = vals.reduce(function (x, y) { return x + y; }, 0), dHoy = new Date().getDay();
+    var max = Math.max.apply(null, vals.map(function (v) { return v || 0; }).concat([1]));
+    var total = vals.reduce(function (x, y) { return x + (y || 0); }, 0);
+    var LETRAS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
     var barras = vals.map(function (v, i) {
-      var esH = i === 6;
-      return '<div class="d' + (esH ? ' hoy' : '') + '"><span class="v">' + (v ? '$' + Math.round(v / 100) : '') + '</span><div class="b" style="height:' + Math.max(3, Math.round(v / max * 92)) + '%"></div><span class="l">' + (esH ? 'Hoy' : DIAS[(dHoy - (6 - i) + 7) % 7]) + '</span></div>';
+      var esH = i === desdeLunes;
+      return '<div class="d' + (esH ? ' hoy' : '') + (v === null ? ' fut' : '') + '"><span class="v">' + (v ? '$' + Math.round(v / 100) : '') + '</span><div class="b" style="height:' + (v === null ? 0 : Math.max(3, Math.round(v / max * 92))) + '%"></div><span class="l">' + (esH ? 'Hoy' : LETRAS[i]) + '</span></div>';
     }).join('');
-    var semana = '<div class="bloque"><h3>Últimos 7 días <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
+    var semana = '<div class="bloque"><h3>Esta semana <small>ganancia neta</small></h3><div class="semana-total">' + dineroC(total) + '</div><div class="barras">' + barras + '</div></div>';
     var filas = lista.slice(0, 60).map(function (h) {
       var d = new Date(h.t), hora = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
       return '<div class="gan"><span class="h">' + (esHoy ? hora : fechaCorta(h.t) + '<br><small style="font-weight:600;color:var(--gris)">' + hora + '</small>') + '</span><div class="t"><b>' + esc(h.cliente) + '</b><small>' + esc(h.o) + ' → ' + esc(h.d) + '</small></div>' +
