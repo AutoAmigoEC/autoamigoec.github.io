@@ -580,7 +580,7 @@
   }
   // Mi billetera: período elegido (hoy, 7 días, 30 días o personalizado), todo neto sin la comisión
   var DIAS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-  var PERIODOS = [['hoy', 'Ganancia de hoy'], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días'], ['pers', 'Personalizado']];
+  var PERIODOS = [['hoy', 'Ganancias de hoy'], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días'], ['pers', 'Personalizado']];
   function inicioDia(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); }
   function leerFecha(v) { var p = v.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getTime(); }
   function fechaCorta(ms) { var d = new Date(ms); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
@@ -594,7 +594,7 @@
       var a = leerFecha(S.persDesde), b = leerFecha(S.persHasta) + 86400000 - 1;
       return [a, b, 'Del ' + fechaCorta(a) + ' al ' + fechaCorta(b)];
     }
-    return [hoy0, fin, 'Ganancia de hoy'];
+    return [hoy0, fin, 'Ganancias de hoy'];
   }
   function billeteraHTML() {
     var r = rangoPeriodo(), lista = todas().filter(function (h) { return h.t >= r[0] && h.t <= r[1]; }).sort(function (a, b) { return b.t - a.t; });
