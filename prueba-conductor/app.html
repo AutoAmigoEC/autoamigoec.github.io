@@ -277,7 +277,9 @@
   .nav-top.recalc{background:#B54708}
   .nav-top.llego{background:#079455}
   .nav-pie{display:none;position:absolute;left:12px;right:12px;z-index:7;background:#fff;border-radius:18px;padding:10px 10px 10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);align-items:center;gap:10px}
-  .navegando .nav-pie{display:flex}
+  .navegando .nav-pie,.viaje.con-carrera .nav-pie{display:flex}
+  .nav-pie .iniciar{background:#12B76A;color:#fff;display:flex;align-items:center;gap:6px}
+  .navegando .nav-pie .iniciar,.con-carrera .nav-pie #nav-salir{display:none}
   .nav-pie .eta{flex:1}
   .nav-pie .eta b{font-size:20px;font-weight:800;color:#079455}
   .nav-pie .eta small{display:block;color:var(--gris);font-size:13px;font-weight:600}
@@ -420,9 +422,8 @@
       </button>
     </div>
     <button class="ham ham-v" id="ham-v" aria-label="Menú"><span></span></button>
-    <button class="btn-nav" id="b-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Iniciar</button>
     <div class="nav-top" id="nav-top"><div class="ic" id="nav-ic"></div><div style="min-width:0;flex:1"><div class="dist" id="nav-dist"></div><div class="txt" id="nav-txt"></div><div class="calle" id="nav-calle"></div></div></div>
-    <div class="nav-pie" id="nav-pie"><div class="eta"><b id="nav-min"></b><small id="nav-info"></small></div><button id="nav-salir">Salir</button></div>
+    <div class="nav-pie" id="nav-pie"><div class="eta"><b id="nav-min"></b><small id="nav-info"></small></div><button id="b-nav" class="iniciar"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Iniciar</button><button id="nav-salir">Salir</button></div>
 
     <!-- Hoja blanca de la carrera -->
     <div class="hoja" id="hoja"></div>
@@ -799,6 +800,8 @@
   function render() {
     renderBase();
     pintarNav();
+    // Los botones del mapa van encima de la barra de minutos
+    if (S.carrera) { var arriba = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22 + 'px'; $('#b-centrar').style.bottom = arriba; $('#b-ruta').style.bottom = arriba; }
     if (NAV.activo && !NAV.recalc) seguirNav();
   }
   function renderBase() {
@@ -1135,7 +1138,17 @@
     p.classList.toggle('navegando', NAV.activo);
     p.classList.toggle('con-carrera', !!S.carrera && !NAV.activo);
     yoEl.classList.toggle('flecha', NAV.activo);
-    if (!NAV.activo) return;
+    if (!NAV.activo) {
+      // Antes de iniciar: minutos, km y hora de llegada, con el botón Iniciar a la derecha
+      var c = S.carrera;
+      if (c) {
+        var meta = c.estado === 'ejecucion' ? c.d : c.o, km = distKm(S.yo, meta), mn = minutos(km), lg = new Date(Date.now() + mn * 60000);
+        $('#nav-min').textContent = mn + ' min';
+        $('#nav-info').textContent = km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (c.estado === 'ejecucion' ? 'al destino' : 'a la recogida');
+        $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+      }
+      return;
+    }
     var top = $('#nav-top');
     top.classList.toggle('recalc', NAV.recalc); top.classList.toggle('llego', !NAV.recalc && NAV.llego);
     if (NAV.recalc) { $('#nav-ic').innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'; $('#nav-dist').textContent = ''; $('#nav-txt').textContent = 'Recalculando ruta…'; $('#nav-calle').textContent = ''; }
