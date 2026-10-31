@@ -65,7 +65,7 @@
   // ---------- Mapa ----------
   var M = MapaAA.crear('mapa', [-2.17, -79.9224], 13);
   function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
-  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div>';
+  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
   var yoMk = null, primeraVez = true;
   function pinV(color) {
     var el = document.createElement('div');
@@ -115,6 +115,7 @@
       }).catch(function () {});
   }
   function verRuta() {
+    if (NAV.activo) return;
     var c = D && (D.carrera || D.oferta); if (!c) return;
     var b = new maplibregl.LngLatBounds(), n = 0;
     [D.yo, c.o, c.d].forEach(function (p) { if (tieneCoord(p)) { b.extend([p.lng, p.lat]); n++; } });
@@ -132,15 +133,177 @@
       else yoMk.setLngLat([yo.lng, yo.lat]);
       if (primeraVez) { primeraVez = false; M.jumpTo({ center: [yo.lng, yo.lat], zoom: 15 }); }
     }
-    yoEl.className = 'yo ' + (D && (D.estado === 'conectado' || D.carrera) ? '' : 'gris');
+    yoEl.className = 'yo ' + (D && (D.estado === 'conectado' || D.carrera) ? '' : 'gris') + (NAV.activo ? ' flecha' : '');
     var c = D && (D.carrera || D.oferta);
     mkO = marcador(mkO, c && c.o, '#E5252A');
     mkD = marcador(mkD, c && c.d, '#1570EF');
+    if (NAV.activo) return; // la navegación dibuja su propia ruta
     if (!c) { trazar(null, null, ''); return; }
     // Oferta: recogida → destino. Aceptada: yo → recogida. En ejecución: yo → destino.
     if (D.oferta) trazar(c.o, tieneCoord(c.d) ? c.d : null, 'o' + c.id);
     else if (c.estado === 'aceptada') trazar(yo, c.o, 'a' + c.id);
     else trazar(yo, c.d, 'e' + c.id);
+  }
+
+
+  // ---------- Navegación tipo GPS (como Waze / Google Maps) ----------
+  var NAV = { sigue: true, margen: 45, activo: false, obj: '', ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0, idCarrera: '' };
+  var DIRS = { 'right': 'a la derecha', 'left': 'a la izquierda', 'slight right': 'ligeramente a la derecha', 'slight left': 'ligeramente a la izquierda', 'sharp right': 'cerrado a la derecha', 'sharp left': 'cerrado a la izquierda', 'straight': 'recto', 'uturn': 'en U' };
+  var GIROS = { 'straight': 0, 'slight right': 35, 'right': 90, 'sharp right': 135, 'uturn': 180, 'sharp left': -135, 'left': -90, 'slight left': -35 };
+  var ORD = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
+  function metrosEntre(a, b) { return distKm(a, b) / 1.3 * 1000; }
+  function rumboEntre(a, b) {
+    var r = Math.PI / 180, y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
+    var x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lng - a.lng) * r);
+    return (Math.atan2(y, x) / r + 360) % 360;
+  }
+  function textoPaso(p) {
+    var m = p.mod || '', d = DIRS[m] || '';
+    switch (p.tipo) {
+      case 'depart': return 'Avanza' + (p.nombre ? ' por ' + p.nombre : '');
+      case 'arrive': return NAV.obj === 'o' ? 'Llegas a la recogida' : 'Llegas al destino';
+      case 'roundabout': case 'rotary': case 'roundabout turn': case 'exit roundabout': case 'exit rotary':
+        return 'En la redondela, toma la ' + (ORD[p.salida] || '') + ' salida';
+      case 'continue': case 'new name': return m && m !== 'straight' ? 'Continúa ' + d : 'Continúa recto';
+      case 'merge': return 'Incorpórate ' + d;
+      case 'on ramp': return 'Toma la rampa ' + d;
+      case 'off ramp': return 'Toma la salida ' + d;
+      case 'fork': return 'En la bifurcación, mantente ' + d;
+      case 'end of road': return 'Al final de la calle, gira ' + d;
+      default: return m === 'uturn' ? 'Da la vuelta en U' : (m === 'straight' ? 'Sigue recto' : 'Gira ' + d);
+    }
+  }
+  function iconoPaso(p) {
+    if (p.tipo === 'arrive') return '<svg width="30" height="30" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="#fff"/><circle cx="20" cy="19" r="6.5" fill="#090145"/></svg>';
+    if (/roundabout|rotary/.test(p.tipo)) return '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="10" r="5"/><path d="M12 15v7M17 10h4"/></svg>';
+    var g = GIROS[p.mod] || 0;
+    return '<svg width="30" height="30" viewBox="0 0 24 24" style="transform:rotate(' + g + 'deg)" fill="#fff"><path d="M12 2 6 9h4v13h4V9h4z"/></svg>';
+  }
+  function distTxt(m) { return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : (m < 50 ? Math.max(10, Math.round(m / 10) * 10) : Math.round(m / 50) * 50) + ' m'; }
+  function proyectar(pos, r) {
+    var mejor = { d: 1e9, i: 0, pt: { lat: r[0][1], lng: r[0][0] } }, kx = Math.cos(pos.lat * Math.PI / 180) * 111320, ky = 110540;
+    for (var i = 0; i < r.length - 1; i++) {
+      var ax = (r[i][0] - pos.lng) * kx, ay = (r[i][1] - pos.lat) * ky, bx = (r[i + 1][0] - pos.lng) * kx, by = (r[i + 1][1] - pos.lat) * ky;
+      var dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+      var px = ax + t * dx, py = ay + t * dy, d = Math.sqrt(px * px + py * py);
+      if (d < mejor.d) mejor = { d: d, i: i };
+    }
+    return mejor;
+  }
+  function metaNav() { var c = D && D.carrera; return c ? (NAV.obj === 'o' ? c.o : c.d) : null; }
+  function rutaNav(a, b) {
+    if (!tieneCoord(a) || !tieneCoord(b)) { NAV.recalc = false; NAV.ruta = null; pintarNav(); return; }
+    var pedido = ++NAV.pedido;
+    NAV.recalc = true; pintarNav();
+    var listoRuta = function () { NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; NAV.margen = Math.max(45, proyectar(D.yo, NAV.ruta).d + 30); ponerRuta(NAV.ruta); seguirNav(); };
+    var recta = function () {
+      if (pedido !== NAV.pedido) return;
+      NAV.ruta = [[a.lng, a.lat], [b.lng, b.lat]]; NAV.total = metrosEntre(a, b); NAV.dur = NAV.total / 7;
+      NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }];
+      listoRuta();
+    };
+    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (pedido !== NAV.pedido) return;
+        if (!j.routes || !j.routes[0]) { recta(); return; }
+        var rt = j.routes[0];
+        NAV.ruta = rt.geometry.coordinates; NAV.total = rt.distance; NAV.dur = rt.duration * 1.25;
+        NAV.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
+        listoRuta();
+      }).catch(recta);
+  }
+  function iniciarNav() {
+    var c = D && D.carrera; if (!c) return;
+    if (!tieneCoord(D.yo)) { aviso('Todavía no hay señal GPS.'); return; }
+    NAV.activo = true; NAV.sigue = true; NAV.llego = false; NAV.obj = c.estado === 'ejecucion' ? 'd' : 'o'; NAV.ant = null; NAV.idCarrera = c.id;
+    if (!tieneCoord(metaNav())) { NAV.activo = false; aviso('Esta carrera no tiene el destino en el mapa.'); return; }
+    try { yoMk && yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
+    rutaNav(D.yo, metaNav());
+    render();
+  }
+  function salirNav() {
+    if (!NAV.activo) return;
+    NAV.activo = false; NAV.pedido++; R.clave = '';
+    try { yoMk && yoMk.setRotation && yoMk.setRotation(0); } catch (e) {}
+    M.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+    render(); setTimeout(verRuta, 650);
+  }
+  // Cada ubicación nueva: avanza las instrucciones, recorta la ruta y recalcula si te sales
+  function seguirNav() {
+    if (!NAV.activo || !NAV.ruta || !D || !tieneCoord(D.yo)) { pintarNav(); return; }
+    var pos = D.yo;
+    if (NAV.ant && metrosEntre(NAV.ant, pos) > 3) NAV.rumbo = rumboEntre(NAV.ant, pos);
+    var movio = !NAV.ant || metrosEntre(NAV.ant, pos) > 0.5;
+    NAV.ant = { lat: pos.lat, lng: pos.lng };
+    var pr = proyectar(pos, NAV.ruta);
+    if (!NAV.recalc && movio) {
+      if (pr.d > NAV.margen) { NAV.fuera++; if (NAV.fuera >= 2) { rutaNav(pos, metaNav()); return; } }
+      else { NAV.fuera = 0; if (pr.d < 45) NAV.margen = 45; }
+    }
+    if (NAV.rumbo === 0 && pr.i < NAV.ruta.length - 1) NAV.rumbo = rumboEntre(pos, { lat: NAV.ruta[pr.i + 1][1], lng: NAV.ruta[pr.i + 1][0] });
+    var resto = [[pos.lng, pos.lat]].concat(NAV.ruta.slice(pr.i + 1));
+    ponerRuta(resto);
+    var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
+    NAV.falta = falta;
+    while (NAV.paso < NAV.pasos.length - 1 && metrosEntre(pos, { lat: NAV.pasos[NAV.paso].loc[1], lng: NAV.pasos[NAV.paso].loc[0] }) < 20) NAV.paso++;
+    NAV.llego = falta < 50;
+    try { yoMk && yoMk.setRotation && yoMk.setRotation(NAV.rumbo); } catch (e) {}
+    if (NAV.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: NAV.rumbo, pitch: 55, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
+    pintarNav();
+  }
+  function pintarNav() {
+    var p = $('#pantalla'), c = D && D.carrera;
+    p.classList.toggle('navegando', NAV.activo);
+    p.classList.toggle('con-carrera', !!c && !NAV.activo);
+    yoEl.classList.toggle('flecha', NAV.activo);
+    var bc = $('#nav-centrar');
+    if (!NAV.activo) {
+      bc.hidden = true;
+      if (c) { // Antes de iniciar: minutos, km y hora de llegada, con Iniciar a la derecha
+        var km = kmMin(D.yo, c.estado === 'ejecucion' ? c.d : c.o);
+        if (km) {
+          var lg = new Date(Date.now() + km.min * 60000);
+          $('#nav-min').textContent = km.min + ' min';
+          $('#nav-info').textContent = km.km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (c.estado === 'ejecucion' ? 'al destino' : 'a la recogida');
+        } else { $('#nav-min').textContent = '—'; $('#nav-info').textContent = c.estado === 'ejecucion' ? 'Destino: pregunta al pasajero' : 'Sin GPS'; }
+        $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+      }
+      return;
+    }
+    var top = $('#nav-top');
+    top.classList.toggle('recalc', NAV.recalc); top.classList.toggle('llego', !NAV.recalc && NAV.llego);
+    if (NAV.recalc) { $('#nav-ic').innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'; $('#nav-dist').textContent = ''; $('#nav-txt').textContent = 'Recalculando ruta…'; $('#nav-calle').textContent = ''; }
+    else if (NAV.llego) { $('#nav-ic').innerHTML = iconoPaso({ tipo: 'arrive' }); $('#nav-dist').textContent = ''; $('#nav-txt').textContent = NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'; $('#nav-calle').textContent = (metaNav() || {}).dir || ''; }
+    else {
+      var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' };
+      var dm = ps.loc && tieneCoord(D.yo) ? metrosEntre(D.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : NAV.falta;
+      $('#nav-ic').innerHTML = iconoPaso(ps);
+      $('#nav-dist').textContent = distTxt(dm);
+      $('#nav-txt').textContent = textoPaso(ps);
+      $('#nav-calle').textContent = ps.tipo === 'arrive' ? ((metaNav() || {}).dir || '') : (ps.nombre ? 'por ' + ps.nombre : '');
+    }
+    var falta = NAV.falta || 0, min = Math.max(1, Math.round(NAV.total ? NAV.dur * falta / NAV.total / 60 : falta / 7 / 60));
+    var llegada = new Date(Date.now() + min * 60000);
+    $('#nav-min').textContent = min + ' min';
+    $('#nav-info').textContent = distTxt(falta) + ' · llegada ' + llegada.getHours() + ':' + String(llegada.getMinutes()).padStart(2, '0') + ' · ' + (NAV.obj === 'o' ? 'a la recogida' : 'al destino');
+    $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+    bc.hidden = NAV.sigue;
+    bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
+  }
+  // Si mueves o acercas el mapa con los dedos, deja de seguirte hasta que toques "Centrar"
+  function dejarDeSeguir(e) { if (NAV.activo && e && e.originalEvent && NAV.sigue) { NAV.sigue = false; pintarNav(); } }
+  ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
+  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); });
+  $('#b-nav').addEventListener('click', iniciarNav);
+  $('#nav-salir').addEventListener('click', salirNav);
+  // Con cada estado nuevo de la app
+  function alEstadoNav() {
+    var c = D && D.carrera;
+    if (NAV.activo && (!c || c.id !== NAV.idCarrera)) { salirNav(); return; }
+    if (NAV.activo && NAV.obj === 'o' && c.estado === 'ejecucion') { NAV.obj = 'd'; NAV.llego = false; rutaNav(D.yo, metaNav()); return; } // pasó a ir al destino
+    if (NAV.activo && !NAV.recalc) seguirNav(); else pintarNav();
+    if (c) { var arriba = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22 + 'px'; $('#b-centrar').style.bottom = arriba; $('#b-ruta').style.bottom = arriba; }
   }
 
   // ---------- Textos ----------
@@ -232,7 +395,7 @@
     var html = D.oferta ? hojaOferta(D.oferta) : (D.carrera ? hojaCarrera(D.carrera) : '');
     // No se cambia la hoja mientras el dedo está encima (así no se pierde el toque en un botón)
     if ((forzar || html !== ultimaHoja) && (!tocando || !html)) { $('#hoja').innerHTML = html; ultimaHoja = html; }
-    $('#hoja').classList.toggle('mini', U.mini && !D.oferta);
+    $('#hoja').classList.toggle('mini', (U.mini || NAV.activo) && !D.oferta);
     pintarRueda();
   }
   function pintarRueda() {
@@ -442,6 +605,7 @@
     }
     if (D.carrera && render.enfoque !== D.carrera.id + D.carrera.estado) { render.enfoque = D.carrera.id + D.carrera.estado; setTimeout(verRuta, 80); }
     if (!D.carrera) render.enfoque = '';
+    alEstadoNav();
   }
 
   // ---------- Carrera completada ----------

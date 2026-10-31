@@ -263,6 +263,33 @@
   .movs-cab .periodos{left:0;top:44px;margin-bottom:20px}
   .movs-cab .cuenta{color:var(--gris);font-size:13px;font-weight:600}
   .rango.mov-rango{margin:0 0 10px}
+  /* ---------- Navegación (GPS) ---------- */
+  .btn-nav{display:none;position:absolute;left:50%;transform:translateX(-50%);top:124px;z-index:7;height:46px;padding:0 20px 0 16px;border:0;border-radius:999px;background:#12B76A;color:#fff;font:inherit;font-weight:800;font-size:16px;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+  .viaje.con-carrera .btn-nav{display:flex}
+  .navegando .btn-nav,.navegando .arriba-v,.navegando .ham-v,.navegando #b-ruta{display:none!important}
+  .nav-top{display:none;position:absolute;left:12px;right:12px;top:50px;z-index:8;background:var(--navy);color:#fff;border-radius:20px;padding:12px 14px;box-shadow:0 10px 26px rgba(0,0,0,.35);align-items:center;gap:12px}
+  .navegando .nav-top{display:flex}
+  .nav-top .ic{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex:none}
+  .nav-top .ic svg{transition:transform .3s}
+  .nav-top .dist{font-size:24px;font-weight:800;line-height:1}
+  .nav-top .txt{font-size:15px;font-weight:600;margin-top:3px;line-height:1.25}
+  .nav-top .calle{font-size:13px;color:#C9CDE6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-top.recalc{background:#B54708}
+  .nav-top.llego{background:#079455}
+  .nav-pie{display:none;position:absolute;left:12px;right:12px;z-index:7;background:#fff;border-radius:18px;padding:10px 10px 10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);align-items:center;gap:10px}
+  .navegando .nav-pie,.viaje.con-carrera .nav-pie{display:flex}
+  .nav-pie .iniciar{background:#12B76A;color:#fff;display:flex;align-items:center;gap:6px}
+  .navegando .nav-pie .iniciar,.con-carrera .nav-pie #nav-salir{display:none}
+  .nav-pie .eta{flex:1}
+  .nav-pie .eta b{font-size:20px;font-weight:800;color:#079455}
+  .nav-pie .eta small{display:block;color:var(--gris);font-size:13px;font-weight:600}
+  .nav-pie button{height:44px;padding:0 16px;border:0;border-radius:14px;background:#FDECEC;color:#B42318;font:inherit;font-weight:800;font-size:15px}
+  .nav-centrar{position:absolute;left:12px;z-index:7;height:44px;padding:0 16px 0 12px;border:0;border-radius:999px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+  .nav-centrar[hidden]{display:none}
+  .yo.flecha{width:46px;height:46px}
+  .yo.flecha .halo,.yo.flecha .punto{display:none}
+  .yo .nav-ic{display:none}
+  .yo.flecha .nav-ic{display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -420,6 +447,9 @@
       </button>
     </div>
     <button class="ham ham-v" id="ham-v" aria-label="Menú"><span></span></button>
+    <div class="nav-top" id="nav-top"><div class="ic" id="nav-ic"></div><div style="min-width:0;flex:1"><div class="dist" id="nav-dist"></div><div class="txt" id="nav-txt"></div><div class="calle" id="nav-calle"></div></div></div>
+    <button class="nav-centrar" id="nav-centrar" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Centrar</button>
+    <div class="nav-pie" id="nav-pie"><div class="eta"><b id="nav-min"></b><small id="nav-info"></small></div><button id="b-nav" class="iniciar"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Iniciar</button><button id="nav-salir">Salir</button></div>
 
     <!-- Hoja blanca de la carrera -->
     <div class="hoja" id="hoja"></div>
@@ -446,6 +476,6 @@
 </div>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="conductor.js?v=2"></script>
+<script src="conductor.js?v=3"></script>
 </body>
 </html>
