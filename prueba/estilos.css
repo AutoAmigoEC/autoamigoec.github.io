@@ -4,7 +4,7 @@
   --linea:#E4E7EC; --fondo:#F5F6F8; --blanco:#FFFFFF;
   --libre:#12B76A; --libre-tx:#067647; --libre-bg:#DCFAE6;
   --aceptada:#2E90FA; --aceptada-tx:#1849A9; --aceptada-bg:#D1E9FF;
-  --ejecucion:#0A1446; --ejecucion-tx:#0A1446; --ejecucion-bg:#E4E7F2;
+  --ejecucion:#1730A0; --ejecucion-tx:#1730A0; --ejecucion-bg:#E3E8FA;
   --peligro:#D92D20; --peligro-tx:#B42318; --peligro-bg:#FEE4E2;
   --fuera:#98A2B3; --fuera-tx:#475467; --fuera-bg:#F2F4F7;
   --pendiente:#7F56D9; --pendiente-tx:#53389E; --pendiente-bg:#F4EBFF;
@@ -273,7 +273,7 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .etiqueta-prog{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#026AA2;background:#E0F2FE;border-radius:999px;padding:2px 9px}
 /* El cuadro de la carrera toma el color del carro en el mapa según la fase */
 .carrera.aceptada{border:2px solid #1E6FE8}
-.carrera.ejecucion{border:2px solid #0A1446}
+.carrera.ejecucion{border:2px solid #1730A0}
 
 /* Avisos al cliente por WhatsApp */
 .btn.btn-wa{background:#25D366;border-color:#25D366;color:#fff}
