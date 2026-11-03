@@ -418,6 +418,7 @@
       var e = S.estados[uid];
       if (!e || typeof e.lat !== 'number') return;
       var est = estadoDe(uid);
+      if (S.filtroMapa && S.filtroMapa !== est) return;
       vistos[uid] = true;
       var cd = S.conductores[uid];
       var html = MapaAA.pinSVG(MapaAA.colores[est] || MapaAA.colores.fuera, etiquetaPin(uid));
@@ -443,7 +444,7 @@
         m.__html = html;
       }
       if (m.__popup !== popup) { m.getPopup().setHTML(popup); m.__popup = popup; }
-      if (est !== 'fuera') puntos.push([e.lat, e.lng]);
+      if (est !== 'fuera' || S.filtroMapa === 'fuera') puntos.push([e.lat, e.lng]);
     });
     Object.keys(marcadores).forEach(function (uid) {
       if (!vistos[uid]) { marcadores[uid].remove(); delete marcadores[uid]; }
@@ -454,6 +455,7 @@
       var c = S.carreras[id];
       if (c.estado !== 'pendiente' || !c.origen || typeof c.origen.lat !== 'number') return;
       if (Despacho.esProgramada(c, t)) return;
+      if (S.filtroMapa && S.filtroMapa !== 'pendiente') return;
       vistasC[id] = true;
       var mc = marcadoresCarrera[id];
       if (!mc) {
@@ -481,6 +483,19 @@
       if (!vistasC[id]) { marcadoresCarrera[id].remove(); delete marcadoresCarrera[id]; }
     });
 
+    // Aviso sobre el mapa mientras hay un filtro
+    var av = $('#filtro-mapa');
+    if (!av) { av = document.createElement('div'); av.id = 'filtro-mapa'; av.className = 'filtro-mapa'; $('#vista-mapa .mapa-caja').appendChild(av); }
+    av.hidden = !S.filtroMapa;
+    if (S.filtroMapa) {
+      var nVis = S.filtroMapa === 'pendiente' ? Object.keys(vistasC).length : Object.keys(vistos).length;
+      var htmlAv = '<i class="punto ' + S.filtroMapa + '"></i>Mostrando solo: <strong>' + esc(FILTRABLES[S.filtroMapa]) + '</strong> (' + nVis + ')<button type="button" data-filtro-mapa="">Ver todos</button>';
+      if (av.__h !== htmlAv) { av.innerHTML = htmlAv; av.__h = htmlAv; }
+    }
+    if (S.encuadrarFiltro) {
+      S.encuadrarFiltro = false;
+      if (puntos.length) MapaAA.encuadrar(mapa, puntos, 15); else if (S.filtroMapa) toast('No hay ' + FILTRABLES[S.filtroMapa].toLowerCase() + ' en este momento.');
+    }
     if (!mapaCentrado && puntos.length) {
       mapaCentrado = true;
       MapaAA.encuadrar(mapa, puntos, 15);
@@ -507,7 +522,14 @@
     });
     return n;
   }
+  // Filtro del mapa: al tocar una tarjeta de arriba solo se ven esos en el mapa; tocarla otra vez (o "Ver todos") lo quita
+  var FILTRABLES = { libre: 'Libres', aceptada: 'Aceptada · yendo a recoger', ejecucion: 'En ejecución', sinsaldo: 'Conectados sin recarga', fuera: 'Fuera de servicio', pendiente: 'Carreras esperando' };
   function kpi(clase, texto, valor, extra) {
+    if (!extra && FILTRABLES[clase] && $('#kpis') && texto === FILTRABLES[clase]) {
+      var on = S.filtroMapa === clase;
+      extra = ' data-filtro-mapa="' + clase + '" role="button" tabindex="0" aria-pressed="' + on + '" title="' + (on ? 'Ver todos en el mapa' : 'Ver solo estos en el mapa') + '" style="cursor:pointer"' +
+        (S.filtroMapa ? (on ? ' data-on="1"' : ' data-off="1"') : '');
+    }
     return '<div class="kpi"' + (extra || '') + '><div class="eti"><i class="punto ' + clase + '"></i>' + esc(texto) +
       '</div><div class="num">' + valor + '</div></div>';
   }
@@ -748,10 +770,19 @@
   // ------------------------------------------------------------------
   //  Acciones (delegación de eventos)
   // ------------------------------------------------------------------
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && S.filtroMapa && !document.querySelector('dialog[open]')) { S.filtroMapa = null; renderKpis(); renderMapa(); }
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.hasAttribute && ev.target.hasAttribute('data-filtro-mapa') && ev.target.classList.contains('kpi')) { ev.preventDefault(); ev.target.click(); }
+  });
   document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('button, a, [data-ir-programadas]');
+    var b = ev.target.closest('button, a, [data-ir-programadas], [data-filtro-mapa]');
     if (!b) return;
     if (b.getAttribute('data-accion') === 'nueva-carrera') { abrirNuevaCarrera(null); return; }
+    if (b.hasAttribute('data-filtro-mapa')) {
+      var fm = b.getAttribute('data-filtro-mapa');
+      S.filtroMapa = fm && S.filtroMapa !== fm ? fm : null; S.encuadrarFiltro = true;
+      renderKpis(); renderMapa(); return;
+    }
     if (accionCliente(b)) return;
     var id;
     if ((id = b.getAttribute('data-aviso'))) {

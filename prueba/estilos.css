@@ -277,3 +277,11 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .btn.btn-wa{background:#25D366;border-color:#25D366;color:#fff}
 .btn.btn-wa:hover{background:#1EBE5A}
 .carrera.finalizada{border:2px dashed #25D366;background:#F3FCF6}
+
+/* Filtro del mapa desde las tarjetas de arriba */
+.kpi[data-filtro-mapa]{transition:border-color .15s,box-shadow .15s,opacity .15s}
+.kpi[data-filtro-mapa]:hover{border-color:#B9C0D4}
+.kpi[data-on]{border:2px solid var(--azul,#090145);box-shadow:0 4px 14px rgba(9,1,69,.15)}
+.kpi[data-off]{opacity:.5}
+.filtro-mapa{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:500;background:#fff;border-radius:999px;padding:7px 8px 7px 14px;display:flex;align-items:center;gap:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(16,24,40,.2);white-space:nowrap}
+.filtro-mapa button{border:0;border-radius:999px;background:#090145;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:6px 12px;cursor:pointer}
