@@ -147,12 +147,17 @@
     }
     return l.join('\n');
   }
+  // En computadora se abre SIEMPRE la misma pestaña de WhatsApp Web (no una nueva cada vez); en el celular, la app
+  var ES_CELULAR = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '');
+  function enlaceWA(wa, texto) {
+    return ES_CELULAR ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(texto)
+      : 'https://web.whatsapp.com/send?phone=' + wa + '&text=' + encodeURIComponent(texto);
+  }
   function botonAviso(id, c, tipo) {
     var wa = telefonoWhatsapp(c.telefono);
     if (!wa) return '';
     var hecho = c.avisos && typeof c.avisos[tipo] === 'number' ? c.avisos[tipo] : 0;
-    return '<a class="btn btn-chico ' + (hecho ? '' : 'btn-wa') + '" data-aviso="' + id + '" data-tipo="' + tipo + '" target="_blank" rel="noopener" href="https://wa.me/' + wa + '?text=' +
-      encodeURIComponent(mensajeAviso(c, tipo)) + '">' + (hecho ? '✓ Enviado ' + hora(hecho) + ' · reenviar' : (tipo === 'fin' ? 'Enviar total por WhatsApp' : 'Enviar datos por WhatsApp')) + '</a>';
+    return '<a class="btn btn-chico ' + (hecho ? '' : 'btn-wa') + '" data-aviso="' + id + '" data-tipo="' + tipo + '" target="aa-whatsapp" href="' + enlaceWA(wa, mensajeAviso(c, tipo)) + '">' + (hecho ? '✓ Enviado ' + hora(hecho) + ' · reenviar' : (tipo === 'fin' ? 'Enviar total por WhatsApp' : 'Enviar datos por WhatsApp')) + '</a>';
   }
   // Teléfono del cliente: al tocarlo muestra Llamar y WhatsApp
   var telAbiertos = {};
