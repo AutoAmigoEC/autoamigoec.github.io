@@ -330,3 +330,14 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .bloqueadas-turnos{background:#F9FAFB;border:1px solid var(--linea);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--gris-1)}
 .turno .cara-ok.mal{background:#FFFAEB;color:#93370D}
 .fotos-turno figure.ancha{width:190px}.fotos-turno figure.ancha .foto-t{width:190px;height:124px}
+
+/* Solicitudes */
+.sol-h{margin:14px 0 0;font-size:18px}
+.sol-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 18px;background:#F9FAFB;border-radius:12px;padding:12px 14px}
+.sol-datos div{display:flex;flex-direction:column;font-size:14px}.sol-datos span{font-size:12px;color:var(--gris-2)}.sol-datos b{font-weight:600}
+.pill.porvencer{color:#B54708;background:#FFFAEB}
+.aprobar-sol{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;background:#F0FDF5;border:1px solid #ABEFC6;border-radius:12px;padding:12px}
+.aprobar-sol label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.aprobar-sol input{height:42px;border:1px solid #D0D5DD;border-radius:10px;padding:0 12px;font:inherit;width:140px}
+.creado{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:#ECFDF3;border:1px solid #ABEFC6;border-radius:14px;padding:14px 16px}
+.creado div{flex:1 1 300px}.creado p{margin:4px 0 0;font-size:14px}.creado code{background:#fff;border-radius:6px;padding:2px 7px;font-weight:700}

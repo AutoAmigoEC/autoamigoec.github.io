@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=20261103180000">
+<link rel="stylesheet" href="estilos.css?v=20261103190000">
 </head>
 <body>
 
@@ -43,6 +43,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
     <button class="menu-item" data-vista="conductores">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="solicitudes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8" r="4"/><path d="M3 21c0-4 3-6.5 7-6.5 1.4 0 2.7.3 3.8.8M18 14v6M15 17h6"/></svg>Solicitudes<span class="badge-menu" id="badge-sol" hidden>0</span></button>
     <button class="menu-item" data-vista="turnos">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Turnos<span class="badge-menu" id="badge-turnos" hidden>0</span></button>
     <button class="menu-item" data-vista="clientes">
@@ -114,6 +116,18 @@
         <button class="chip" data-filtro="todas">Todas</button>
       </div>
       <div class="tabla-caja"><table class="tabla" id="tabla-carreras"></table></div>
+    </section>
+
+    <!-- ---------- SOLICITUDES (conductores nuevos, fotos de perfil y documentos) ---------- -->
+    <section id="vista-solicitudes" class="vista" hidden>
+      <header class="cabecera"><div><h1>Solicitudes</h1><p class="muted">Conductores que quieren ser parte de AutoAmigo, fotos de perfil y documentos.</p></div></header>
+      <h2 class="sol-h">Conductores nuevos</h2>
+      <div id="sol-lista" class="lista-turnos"></div>
+      <h2 class="sol-h">Fotos de perfil por revisar</h2>
+      <p class="muted" style="margin:0">La revisión automática aprueba sola las que cumplen (fondo claro, camisa manga larga sin estampado y misma cara de la cédula y la licencia) y rechaza sola las que no. Aquí solo llegan las dudosas.</p>
+      <div id="sol-perfiles" class="lista-turnos"></div>
+      <h2 class="sol-h">Documentos</h2>
+      <div id="sol-docs" class="lista-turnos"></div>
     </section>
 
     <!-- ---------- TURNOS (verificación al empezar el turno) ---------- -->
@@ -507,5 +521,6 @@
 <script src="despacho.js?v=20261030190000"></script>
 <script src="app.js?v=20261103180000"></script>
 <script src="turnos.js?v=20261103180000"></script>
+<script src="solicitudes.js?v=20261103190000"></script>
 </body>
 </html>

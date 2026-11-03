@@ -202,11 +202,11 @@
     if (d.pendiente) return ['pend', 'En revisión'];
     var n = diasHasta(d.vence);
     if (n < 0) return ['mal', 'Vencida'];
-    if (n <= 30) return ['aviso', 'Vence en ' + n + ' día' + (n === 1 ? '' : 's')];
+    if (n <= 30) return ['pronto', 'Vence en ' + n + ' día' + (n === 1 ? '' : 's')];
     return ['ok', 'Vigente'];
   }
   function alertasDocs() {
-    return DOCS.filter(function (x) { var e = estadoDoc(PERFIL.docs[x[0]])[0]; return e === 'mal' || e === 'aviso'; });
+    return DOCS.filter(function (x) { var e = estadoDoc(PERFIL.docs[x[0]])[0]; return e === 'mal' || e === 'pronto'; });
   }
   function fila(et, v, editable, k) {
     if (P.editar === k) return '<div class="pf-fila edit"><span>' + et + '</span><input id="pf-edit" value="' + esc(v) + '" type="' + (k === 'correo' ? 'email' : 'tel') + '"><button data-p="guardar" data-k="' + k + '">Guardar</button></div>';
@@ -221,7 +221,7 @@
       (al.length ? '<div class="pf-alerta">' + al.map(function (x) { var e = estadoDoc(p.docs[x[0]]); return '<div><b>' + x[1] + ': ' + e[1].toLowerCase() + '</b> (' + fecha(p.docs[x[0]].vence) + '). <button data-p="doc" data-k="' + x[0] + '">Actualizar</button></div>'; }).join('') + '</div>' : '') +
       '<div class="pf-cab"><div class="pf-foto">' + (foto ? '<img src="' + foto + '">' : '<span>' + p.nombre.split(' ').map(function (s) { return s[0]; }).slice(0, 2).join('') + '</span>') + '</div>' +
       '<div><b class="pf-nombre">' + esc(p.nombre) + '</b><small>Unidad ' + esc(p.unidad) + ' · Conductor desde ' + new Date(p.desde).toLocaleDateString('es-EC', { month: 'long', year: 'numeric' }) + '</small>' +
-      (estPf ? '<span class="pf-chip ' + estPf[0] + '">' + esc(estPf[1]) + '</span>' : '<span class="pf-chip aviso">Falta tu foto de perfil</span>') + '</div></div>' +
+      (estPf ? '<span class="pf-chip ' + estPf[0] + '">' + esc(estPf[1]) + '</span>' : '<span class="pf-chip pronto">Falta tu foto de perfil</span>') + '</div></div>' +
       (pf.estado !== 'aprobada' && pf.estado !== 'pendiente' ? '<button class="pf-btn" data-p="foto">📷 ' + (pf.estado === 'rechazada' ? 'Tomar otra foto de perfil' : 'Tomar mi foto de perfil') + '</button>' : '') +
       '<div class="pf-stats"><div><b>' + n.toLocaleString('es-EC') + '</b><small>Carreras desde que te uniste</small></div><div><b>4.8 ★</b><small>Calificación (' + Math.round(n * 0.7) + ' calificaciones)</small></div></div>' +
       '<h3 class="pf-h">Datos personales</h3><div class="pf-caja">' + fila('Nombre', p.nombre) + fila('Cédula', p.cedula) + fila('Nacimiento', fecha(p.nacimiento)) + fila('Sector', p.sector) +
@@ -231,7 +231,7 @@
       '<h3 class="pf-h">Documentos</h3><div class="pf-caja">' + DOCS.map(function (x) {
         var d = p.docs[x[0]], e = estadoDoc(d);
         return '<div class="pf-doc"><img src="' + d.foto + '"><div><b>' + x[1] + '</b><small>Vence: ' + fecha(d.vence) + '</small><span class="pf-chip ' + e[0] + '">' + e[1] + '</span></div>' +
-          ((e[0] === 'mal' || e[0] === 'aviso') && !d.pendiente ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '<i>🔒</i>') + '</div>';
+          ((e[0] === 'mal' || e[0] === 'pronto') && !d.pendiente ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '<i>🔒</i>') + '</div>';
       }).join('') + '</div>' +
       '<p class="pf-nota">Tus datos y fotos no se pueden cambiar. Solo puedes cambiar tu teléfono y tu correo. Si un documento vence, actualízalo aquí.</p>';
   }

@@ -18,6 +18,7 @@
 
   var FA = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
   var UMBRAL = 0.5;          // distancia máxima entre caras para decir "es la misma persona"
+  var UMBRAL_CEDULA = 0.62;  // con la foto de la cédula se acepta un poco más de diferencia
   var D = null;
   var V = { paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, prev: null, stream: null, frente: null, video: null, fallos: 0, aprobadoLocal: 0, envio: null, error: '' };
   var SLOTS = ['Asientos de adelante', 'Asientos de atrás', 'Piso'];
@@ -173,7 +174,7 @@
         '<div class="vlista"><div><b>1. Tu cara</b><p>Confirmamos que eres el mismo de tu cédula.</p></div><div><b>2. Tu camisa</b><p>Con camisa y sin gorra.</p></div><div><b>3. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
         '<button class="vbtn" data-v="ir" data-a="cara">Empezar</button></div>';
     } else if (p === 'caraOk') {
-      h = cabecera('Tu cara', 0, 3) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">Eres ' + esc((D && D.perfil && D.perfil.nombre) || 'tú') + '</h2><p class="centro">Tu cara coincide con la de tu registro.</p>' +
+      h = cabecera('Tu cara', 0, 3) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">Eres ' + esc((D && D.perfil && D.perfil.nombre) || 'tú') + '</h2><p class="centro">Tu cara coincide con la de tu cédula y tu registro.</p>' +
         '<button class="vbtn" data-v="sig" data-de="cara">Siguiente</button></div>';
     } else if (p === 'noCoincide') {
       h = cabecera('Tu cara', 0, 3) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu registro</h2>' +
@@ -282,10 +283,13 @@
             img.src = V.fotos.cedula;
             return;
           }
-          var ref = (D && D.turno && D.turno.descriptor) || [];
+          // Se compara SOLO con la cara registrada de este conductor: la foto en vivo de su registro (estricto)
+          // y la cara de SU cédula (más tolerante, porque la foto de la cédula suele ser vieja)
+          var ref = (D && D.turno && D.turno.descriptor) || [], refC = (D && D.turno && D.turno.descCedula) || [];
           var d = ref.length === 128 ? distancia(r.descriptor, ref) : 9;
+          var dc = refC.length === 128 ? distancia(r.descriptor, refC) : 0;
           V.cara = Math.round(d * 1000) / 1000;
-          if (d <= UMBRAL) { V.fallos = 0; ir('caraOk'); }
+          if (d <= UMBRAL && dc <= UMBRAL_CEDULA) { V.fallos = 0; ir('caraOk'); }
           else { V.fallos++; ir('noCoincide'); }
         });
       }).catch(function () { V.guiando = false; V.error = 'No se pudo cargar el verificador de cara. Revisa tu internet e intenta otra vez.'; pintar(); });

@@ -539,6 +539,7 @@
         movimientosHTML();
     }
     if (p === 'billetera') return '<h2>Mi billetera</h2>' + billeteraHTML();
+    if (p === 'perfil' && window.AAPerfil && D.ficha !== undefined) return AAPerfil.html(D) + (D.version ? '<p style="text-align:center;color:var(--gris);font-size:12.5px;margin-top:14px">Versión ' + esc(D.version) + '</p>' : '');
     if (p === 'perfil') {
       var pf = D.perfil || {};
       return '<h2>Mi perfil</h2><div class="item-b"><div class="fila" style="justify-content:flex-start;gap:12px"><div class="avatar" style="width:56px;height:56px;font-size:20px">' + esc(iniciales(pf.nombre)) + '</div>' +
@@ -833,6 +834,7 @@
       if (!D) return;
       $('#cargando').hidden = true;
       if (window.AATurno) AATurno.estado(D);
+      if (window.AAPerfil) AAPerfil.estado(D);
       if (D.oferta || D.carrera) { U.menu = false; if (U.pantalla !== 'inicio') U.pantalla = 'inicio'; }
       render();
     },
@@ -849,6 +851,7 @@
     // Botón "atrás" del teléfono: true si la página lo usó
     atras: function () {
       if (window.AATurno && AATurno.atras()) return true;
+      if (window.AAPerfil && AAPerfil.atras()) return true;
       if (!$('#confirmar').hidden) { $('#confirmar').hidden = true; U.confirmar = null; return true; }
       if (U.menu) { alternarMenu(); return true; }
       if (U.fin) return true;
@@ -858,8 +861,14 @@
     cargando: function (t) { $('#cargando-txt').textContent = t; },
     // Verificación del turno (turno.js)
     abrirTurno: function () { if (window.AATurno) AATurno.abrir(); },
-    turnoRespuesta: function (json) { if (window.AATurno) AATurno.respuesta(json); }
+    turnoRespuesta: function (json) { if (window.AATurno) AATurno.respuesta(json); },
+    // Mi perfil (perfil.js)
+    fichaFotos: function (json) { if (window.AAPerfil) AAPerfil.fotos(json); },
+    fotoPerfil: function (url) { if (window.AAPerfil) AAPerfil.fotoPerfil(url); },
+    perfilRespuesta: function (tipo, json) { if (window.AAPerfil) AAPerfil.respuesta(tipo, json); }
   };
+  window.AARender = function () { ultimaSec = ''; render(); };
+  window.AAIr = function (p) { irA(p); };
 
   // Cada segundo: la cuenta regresiva de la oferta corre sola entre un estado y otro
   setInterval(function () {
