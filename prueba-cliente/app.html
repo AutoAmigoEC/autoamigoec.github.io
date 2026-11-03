@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#090145">
+<title>AutoAmigo · App del cliente (prueba)</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--azul:#090145;--azul2:#0A0F3C;--rojo:#DE0B13;--texto:#101326;--gris:#6B7085;--linea:#E6E8F0;--fondo:#F4F5FA;--verde:#12B76A}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#E9EAF2;font-family:Inter,system-ui,sans-serif;color:var(--texto)}
+  [hidden]{display:none!important}
+  button{font:inherit;color:inherit;cursor:pointer}
+  .envoltura{min-height:100%;display:flex;align-items:center;justify-content:center;gap:28px;padding:18px;flex-wrap:wrap}
+  .tel{position:relative;width:390px;height:800px;border-radius:44px;background:#000;padding:10px;box-shadow:0 30px 70px rgba(9,1,69,.25)}
+  #pantalla{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#fff}
+  @media (max-width:520px){
+    .envoltura{padding:0;display:block}
+    .tel{width:100%;height:100dvh;border-radius:0;padding:0;box-shadow:none}
+    #pantalla{border-radius:0}
+    .controles{display:none}
+    .controles.abierto{display:block;position:fixed;inset:70px 10px auto 10px;z-index:200;max-height:70vh;overflow:auto}
+    #b-prueba{display:flex!important}
+  }
+  #mapa{position:absolute;inset:0}
+  .maplibregl-ctrl-top-left,.maplibregl-ctrl-bottom-left{display:none}
+
+  /* Barra superior */
+  .arriba{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;gap:10px;align-items:center;z-index:20;pointer-events:none}
+  .arriba>*{pointer-events:auto}
+  .redondo{width:46px;height:46px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 14px rgba(9,1,69,.18);display:grid;place-items:center;flex:none}
+  .aviso-top{flex:1;background:var(--azul);color:#fff;border-radius:16px;padding:10px 14px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(9,1,69,.3);text-align:center}
+
+  /* Hoja inferior */
+  .hoja{position:absolute;left:0;right:0;bottom:0;z-index:30;background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -10px 30px rgba(9,1,69,.12);padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:78%;overflow:auto}
+  .asa{width:44px;height:5px;border-radius:3px;background:#D6D9E4;margin:0 auto 12px}
+  h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .sub{color:var(--gris);font-size:14px;margin:0 0 14px;line-height:1.4}
+  .buscar{display:flex;align-items:center;gap:12px;background:var(--fondo);border-radius:16px;padding:16px;font-size:18px;font-weight:700;border:none;width:100%;text-align:left}
+  .buscar .ic{width:12px;height:12px;background:var(--azul);flex:none}
+  .lugar{display:flex;align-items:center;gap:14px;padding:12px 2px;border:none;background:none;width:100%;text-align:left;border-bottom:1px solid var(--linea)}
+  .lugar:last-child{border-bottom:none}
+  .lugar .circ{width:40px;height:40px;border-radius:50%;background:var(--fondo);display:grid;place-items:center;flex:none}
+  .lugar b{display:block;font-size:15.5px}
+  .lugar small{display:block;color:var(--gris);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+  .btn{width:100%;border:none;border-radius:16px;padding:16px;font-weight:800;font-size:17px;background:var(--azul);color:#fff}
+  .btn:disabled{opacity:.45}
+  .btn.sec{background:var(--fondo);color:var(--texto)}
+  .btn.peligro{background:#fff;color:var(--rojo);border:1.5px solid #F4C7C5}
+  .fila{display:flex;gap:10px}
+  .fila>*{flex:1}
+
+  /* Pantalla de búsqueda */
+  .busqueda{position:absolute;inset:0;z-index:60;background:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+  .busqueda .cab{display:flex;align-items:center;gap:8px;padding:12px 14px 6px}
+  .busqueda .cab b{font-size:18px}
+  .campos{margin:6px 14px 8px;background:var(--fondo);border-radius:16px;padding:6px 12px;display:grid;grid-template-columns:18px 1fr;column-gap:10px;align-items:center}
+  .campos .p{width:10px;height:10px;border-radius:50%;background:var(--rojo);justify-self:center}
+  .campos .c{width:10px;height:10px;background:var(--azul);justify-self:center}
+  .campos input{border:none;background:none;font:inherit;font-size:16px;padding:12px 2px;outline:none;width:100%;color:var(--texto)}
+  .campos input:first-of-type{border-bottom:1px solid var(--linea)}
+  .resultados{flex:1;overflow:auto;padding:0 16px 20px}
+  .fijar{display:flex;align-items:center;gap:10px;margin:2px 16px 4px;padding:12px 0;border:none;background:none;font-weight:700;color:var(--azul);font-size:15px}
+
+  /* Confirmar */
+  .opcion{display:flex;align-items:center;gap:14px;border:2px solid var(--azul);border-radius:18px;padding:12px 14px;margin-bottom:12px}
+  .opcion .carro{width:64px;flex:none}
+  .opcion .tx{flex:1;min-width:0}
+  .opcion .tx b{font-size:17px}
+  .opcion .tx small{display:block;color:var(--gris);font-size:13px;margin-top:2px}
+  .opcion .precio{text-align:right;font-weight:800;font-size:19px}
+  .opcion .precio small{display:block;font-weight:500;color:var(--gris);font-size:11.5px}
+  .dato{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--linea)}
+  .dato .p{width:10px;height:10px;border-radius:50%;background:var(--rojo);flex:none}
+  .dato .c{width:10px;height:10px;background:var(--azul);flex:none}
+  .dato .t{flex:1;min-width:0;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dato button{border:none;background:none;color:var(--azul);font-weight:700;font-size:13.5px}
+  .entrada{width:100%;border:1.5px solid var(--linea);border-radius:14px;padding:13px 14px;font:inherit;font-size:15px;margin-bottom:10px;outline:none}
+  .entrada:focus{border-color:var(--azul)}
+  .pago{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14.5px;padding:4px 2px 14px}
+
+  /* Buscando */
+  .pulso{position:relative;width:22px;height:22px}
+  .pulso::before,.pulso::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--rojo);opacity:.35;animation:pulso 1.8s ease-out infinite}
+  .pulso::after{animation-delay:.9s}
+  .pulso i{position:absolute;inset:5px;border-radius:50%;background:var(--rojo);border:2px solid #fff}
+  @keyframes pulso{from{transform:scale(1);opacity:.45}to{transform:scale(7);opacity:0}}
+  .barra{height:4px;border-radius:2px;background:var(--fondo);overflow:hidden;margin:6px 0 16px}
+  .barra i{display:block;height:100%;width:35%;background:var(--azul);border-radius:2px;animation:barra 1.4s ease-in-out infinite}
+  @keyframes barra{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+
+  /* Conductor */
+  .eta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .eta h2{margin:0}
+  .eta span{background:var(--azul);color:#fff;border-radius:10px;padding:6px 10px;font-weight:800;font-size:15px;white-space:nowrap}
+  .cond{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
+  .av{width:56px;height:56px;border-radius:50%;background:linear-gradient(140deg,#1B1470,#090145);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;flex:none}
+  .cond .tx{flex:1;min-width:0}
+  .cond .tx b{font-size:16.5px}
+  .cond .tx small{display:block;color:var(--gris);font-size:13px;margin-top:3px}
+  .placa{text-align:right}
+  .placa b{display:block;font-size:19px;letter-spacing:.04em;background:var(--fondo);border-radius:8px;padding:4px 8px}
+  .placa small{color:var(--gris);font-size:12px}
+  .acciones{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+  .accion{border:none;background:var(--fondo);border-radius:16px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:700}
+  .taxim{display:flex;justify-content:space-between;align-items:center;background:var(--azul);color:#fff;border-radius:18px;padding:14px 16px;margin-bottom:12px}
+  .taxim small{display:block;opacity:.75;font-size:12px;font-weight:600;letter-spacing:.06em}
+  .taxim b{font-size:28px}
+
+  /* Fin */
+  .total{text-align:center;padding:6px 0 10px}
+  .total b{display:block;font-size:42px;font-weight:800;letter-spacing:-.02em}
+  .estrellas{display:flex;justify-content:center;gap:8px;margin:6px 0 12px}
+  .estrellas button{border:none;background:none;padding:0}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px}
+  .chip{border:1.5px solid var(--linea);background:#fff;border-radius:999px;padding:8px 12px;font-size:13.5px;font-weight:600}
+  .chip.on{border-color:var(--azul);background:var(--azul);color:#fff}
+
+  /* Menú lateral */
+  .velo{position:absolute;inset:0;background:rgba(9,1,69,.35);z-index:80}
+  .menu{position:absolute;top:0;bottom:0;left:0;width:82%;background:#fff;z-index:90;padding:calc(26px + env(safe-area-inset-top,0px)) 0 20px;display:flex;flex-direction:column}
+  .menu .yo{display:flex;align-items:center;gap:14px;padding:0 22px 20px;border-bottom:1px solid var(--linea)}
+  .menu .item{display:flex;align-items:center;gap:14px;padding:16px 22px;border:none;background:none;width:100%;text-align:left;font-size:16px;font-weight:600}
+  .menu .item:active{background:var(--fondo)}
+  .pagina{position:absolute;inset:0;z-index:70;background:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+  .pagina .cab{display:flex;align-items:center;gap:10px;padding:14px}
+  .pagina .cab b{font-size:19px}
+  .pagina .cuerpo{flex:1;overflow:auto;padding:0 18px 24px}
+  .viaje{border:1px solid var(--linea);border-radius:16px;padding:12px 14px;margin-bottom:10px}
+  .viaje .l1{display:flex;justify-content:space-between;font-weight:800}
+  .viaje small{display:block;color:var(--gris);font-size:13px;margin-top:4px;line-height:1.4}
+
+  /* Ingreso */
+  .ingreso{position:absolute;inset:0;z-index:100;background:var(--azul);color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:30px 24px calc(30px + env(safe-area-inset-bottom,0px))}
+  .ingreso .logo{font-size:40px;font-weight:800;letter-spacing:-.02em;margin-bottom:auto;padding-top:60px}
+  .ingreso .logo span{color:var(--rojo)}
+  .ingreso p{opacity:.8;margin:0 0 22px;line-height:1.45}
+  .ingreso label{font-size:13px;font-weight:700;opacity:.8}
+  .ingreso input{width:100%;border:none;border-radius:14px;padding:15px;font:inherit;font-size:16px;margin:6px 0 14px}
+  .ingreso .btn{background:var(--rojo)}
+
+  /* Modal */
+  .modal{position:absolute;inset:0;z-index:150;background:rgba(9,1,69,.45);display:flex;align-items:flex-end}
+  .modal .caja{background:#fff;width:100%;border-radius:24px 24px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));z-index:160;background:#101326;color:#fff;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;max-width:88%;text-align:center}
+
+  /* Marcadores */
+  .pin-centro{position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);z-index:15;pointer-events:none}
+  .yo-mk{width:18px;height:18px;border-radius:50%;background:#1570EF;border:3px solid #fff;box-shadow:0 0 0 7px rgba(21,112,239,.18)}
+  .carro-mk{width:44px;height:44px;transition:transform .3s linear}
+
+  /* Controles de la prueba */
+  .controles{width:300px;background:#fff;border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(9,1,69,.1)}
+  .controles h3{margin:0 0 4px;font-size:16px}
+  .controles p{margin:0 0 12px;color:var(--gris);font-size:13px;line-height:1.4}
+  .controles button{width:100%;border:none;border-radius:12px;padding:11px;margin-bottom:8px;font-weight:700;background:var(--fondo)}
+  .controles button.prin{background:var(--azul);color:#fff}
+  #b-prueba{display:none;position:fixed;right:12px;top:calc(16px + env(safe-area-inset-top,0px));z-index:190;border:none;border-radius:999px;background:#FFB020;color:#101326;font-weight:800;padding:10px 14px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<div class="envoltura">
+  <div class="tel"><div id="pantalla">
+    <div id="mapa"></div>
+    <svg class="pin-centro" id="pin-centro" hidden width="44" height="56" viewBox="0 0 44 56"><path d="M22 54C22 54 4 33 4 20a18 18 0 1 1 36 0c0 13-18 34-18 34z" fill="#090145" stroke="#fff" stroke-width="2.5"/><circle cx="22" cy="20" r="7" fill="#fff"/></svg>
+
+    <div class="arriba">
+      <button class="redondo" id="b-menu" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div class="aviso-top" id="aviso-top" hidden></div>
+    </div>
+
+    <div class="hoja" id="hoja"></div>
+
+    <!-- Búsqueda de destino -->
+    <div class="busqueda" id="busqueda" hidden>
+      <div class="cab"><button class="redondo" id="b-cerrar-busq" aria-label="Volver" style="box-shadow:none;background:var(--fondo)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101326" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><b>¿A dónde vas?</b></div>
+      <div class="campos">
+        <span class="p"></span><input id="in-origen" placeholder="Punto de recogida" autocomplete="off">
+        <span class="c"></span><input id="in-destino" placeholder="¿A dónde vas?" autocomplete="off">
+      </div>
+      <button class="fijar" id="b-fijar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#090145"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg> Fijar en el mapa</button>
+      <div class="resultados" id="resultados"></div>
+    </div>
+
+    <div class="velo" id="velo" hidden></div>
+    <nav class="menu" id="menu" hidden>
+      <div class="yo"><div class="av" id="menu-av">AR</div><div><b id="menu-nombre" style="font-size:17px">Cliente</b><div style="color:var(--gris);font-size:13px;margin-top:2px" id="menu-tel"></div></div></div>
+      <button class="item" data-pag="viajes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mis viajes</button>
+      <button class="item" data-pag="perfil"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Mi perfil</button>
+      <button class="item" data-pag="ayuda"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.5"/></svg>Ayuda</button>
+      <div style="flex:1"></div>
+      <button class="item" id="b-salir" style="color:var(--rojo)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DE0B13" stroke-width="2"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>Cerrar sesión</button>
+    </nav>
+    <div class="pagina" id="pagina" hidden><div class="cab"><button class="redondo" id="b-cerrar-pag" aria-label="Volver" style="box-shadow:none;background:var(--fondo)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101326" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><b id="pag-tit"></b></div><div class="cuerpo" id="pag-cuerpo"></div></div>
+
+    <div class="ingreso" id="ingreso" hidden>
+      <div class="logo">Auto<span>Amigo</span></div>
+      <h2 style="color:#fff;font-size:26px">Tu unidad, en minutos.</h2>
+      <p>Ingresa tus datos para pedir tu primera carrera.</p>
+      <label for="ing-nombre">Nombre y apellido</label><input id="ing-nombre" placeholder="Ej. Ana Ruiz" autocomplete="name">
+      <label for="ing-tel">Número de celular</label><input id="ing-tel" placeholder="Ej. 0991234567" inputmode="tel" autocomplete="tel">
+      <button class="btn" id="b-ingresar">Continuar</button>
+    </div>
+
+    <div class="modal" id="modal" hidden><div class="caja" id="modal-caja"></div></div>
+    <div class="toast" id="toast" hidden></div>
+  </div></div>
+
+  <aside class="controles" id="controles">
+    <h3>Controles de la prueba</h3>
+    <p>Esto no sale en la app. Sirve para adelantar lo que haría el conductor. La búsqueda de lugares, la ruta y el precio son reales (mismo cálculo del panel).</p>
+    <button class="prin" data-sim="acepta">Un conductor acepta ya</button>
+    <button data-sim="llego">El conductor llegó</button>
+    <button data-sim="inicia">Inicia el viaje</button>
+    <button data-sim="fin">Termina el viaje</button>
+    <button data-sim="reiniciar">Empezar de nuevo (borrar mis datos)</button>
+  </aside>
+</div>
+<button id="b-prueba">Prueba</button>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="../mapas.js?v=202610301400"></script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function dinero(c) { return '$' + (c / 100).toFixed(2); }
+  function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function leer(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
+
+  // Mismas tarifas y fórmula del panel (Configuración)
+  var CFG = { arranqueC: 50, kmC: 50, minimaC: 250, esperaC: 5, esperaCadaSeg: 30 };
+  function tarifaEstimadaC(km) { return Math.max(CFG.minimaC, CFG.arranqueC + Math.floor(km * 10) * Math.round(CFG.kmC / 10)); }
+  var CENTRO = [-2.1700, -79.9224];
+
+  var S = {
+    fase: 'inicio', perfil: leer('aac_perfil', null), viajes: leer('aac_viajes', null),
+    yo: { lat: -2.10442, lng: -79.86173, nombre: 'Isla Mocolí, Samborondón' },
+    recogida: null, destino: null, ruta: null, km: 0, min: 0, precioC: 0, ref: '', nota: '',
+    cond: null, fijando: null, tick: null
+  };
+  if (!S.viajes) S.viajes = [
+    { t: Date.now() - 2 * 86400000, o: 'Isla Mocolí, Samborondón', d: 'C.C. Mall del Sol', totalC: 640, cond: 'Luis Peña · U12' },
+    { t: Date.now() - 6 * 86400000, o: 'Aeropuerto José Joaquín de Olmedo', d: 'Isla Mocolí, Samborondón', totalC: 735, cond: 'Rosa Vélez · U26' }
+  ];
+  var RECIENTES = [
+    { nombre: 'C.C. Mall del Sol', det: 'Av. Juan Tanca Marengo, Guayaquil', lat: -2.15504, lng: -79.89269 },
+    { nombre: 'Aeropuerto José Joaquín de Olmedo', det: 'Av. de las Américas, Guayaquil', lat: -2.15793, lng: -79.8833 },
+    { nombre: 'Plaza Lagos', det: 'Vía a Samborondón km 6.5', lat: -2.09811, lng: -79.87463 },
+    { nombre: 'Urbanización TerraNostra', det: 'Vía a la Costa, Guayaquil', lat: -2.18844, lng: -80.00257 }
+  ];
+  var CONDUCTORES = [
+    { nombre: 'Carlos Mendoza', u: '08', placa: 'GBS-4512', carro: 'Hyundai Accent', color: 'Blanco', calif: '4.9' },
+    { nombre: 'Rosa Vélez', u: '26', placa: 'GSL-7781', carro: 'Chevrolet Aveo', color: 'Plateado', calif: '4.8' },
+    { nombre: 'Luis Peña', u: '12', placa: 'GSA-5521', carro: 'Kia Rio', color: 'Blanco', calif: '4.9' }
+  ];
+
+  // ---------- Mapa ----------
+  var M = MapaAA.crear('mapa', [S.yo.lat, S.yo.lng], 15.2);
+  function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
+  function marcador(html, cls, anchor) { var el = document.createElement('div'); if (cls) el.className = cls; el.innerHTML = html || ''; return { el: el, mk: new maplibregl.Marker({ element: el, anchor: anchor || 'center' }) }; }
+  var yo = marcador('', 'yo-mk'); yo.mk.setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
+  var PIN_O = '<svg width="34" height="44" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="#DE0B13" stroke="#fff" stroke-width="2.5"/><circle cx="20" cy="19" r="6" fill="#fff"/></svg>';
+  var PIN_D = '<svg width="34" height="44" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="#090145" stroke="#fff" stroke-width="2.5"/><rect x="14" y="13" width="12" height="12" fill="#fff"/></svg>';
+  var CARRO = '<svg class="carro-mk" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#fff" stroke="#E6E8F0"/><rect x="15" y="8" width="14" height="28" rx="5" fill="#090145"/><rect x="17" y="12" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="17" y="27" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="15.5" y="8.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="25.5" y="8.5" width="3" height="2" rx="1" fill="#FFE9A8"/></svg>';
+  var mO = marcador(PIN_O, '', 'bottom'), mD = marcador(PIN_D, '', 'bottom'), mC = marcador(CARRO, '');
+  var enMapa = { o: false, d: false, c: false };
+  function mostrar(cual, p) {
+    var m = cual === 'o' ? mO : cual === 'd' ? mD : mC;
+    if (!p) { if (enMapa[cual]) { m.mk.remove(); enMapa[cual] = false; } return; }
+    m.mk.setLngLat([p.lng, p.lat]); if (!enMapa[cual]) { m.mk.addTo(M); enMapa[cual] = true; }
+  }
+  function linea(coords, id, color, ancho) {
+    listo(function () {
+      var datos = { type: 'FeatureCollection', features: coords ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }] : [] };
+      if (M.getSource(id)) { M.getSource(id).setData(datos); return; }
+      M.addSource(id, { type: 'geojson', data: datos });
+      M.addLayer({ id: id, type: 'line', source: id, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': color, 'line-width': ancho } });
+    });
+  }
+  function encuadrar(puntos) {
+    if (!puntos.length) return;
+    var hoja = $('#hoja').offsetHeight || 300;
+    if (puntos.length === 1) { M.easeTo({ center: [puntos[0].lng, puntos[0].lat], zoom: 15.5, padding: { top: 80, bottom: hoja, left: 20, right: 20 }, duration: 600 }); return; }
+    var b = new maplibregl.LngLatBounds(); puntos.forEach(function (p) { b.extend([p.lng, p.lat]); });
+    M.fitBounds(b, { padding: { top: 90, bottom: hoja + 30, left: 50, right: 50 }, maxZoom: 15.5, duration: 600 });
+  }
+
+  // ---------- Servicios (los mismos del panel) ----------
+  function buscarLugares(q) {
+    var vb = [CENTRO[1] - 0.4, CENTRO[0] + 0.4, CENTRO[1] + 0.4, CENTRO[0] - 0.4].join(',');
+    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=7&accept-language=es&countrycodes=ec&viewbox=' + vb + '&q=' + encodeURIComponent(q))
+      .then(function (r) { return r.json(); }).then(function (res) {
+        return res.map(function (x) { var p = x.display_name.split(','); return { nombre: p[0].trim(), det: p.slice(1, 4).join(',').trim(), lat: +x.lat, lng: +x.lon }; });
+      });
+  }
+  function nombreDe(lat, lng) {
+    return fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=17&accept-language=es&lat=' + lat + '&lon=' + lng)
+      .then(function (r) { return r.json(); }).then(function (j) {
+        var a = j.address || {}, p = [a.road, a.neighbourhood || a.suburb || a.residential, a.city || a.town || a.village].filter(Boolean);
+        return p.slice(0, 2).join(', ') || (j.display_name || '').split(',').slice(0, 2).join(',') || 'Punto en el mapa';
+      }).catch(function () { return 'Punto en el mapa'; });
+  }
+  function calcularRuta(a, b) {
+    return fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson')
+      .then(function (r) { return r.json(); }).then(function (j) {
+        var r = j.routes && j.routes[0]; if (!r) throw new Error('sin ruta');
+        return { coords: r.geometry.coordinates, km: r.distance / 1000, min: Math.max(1, Math.round(r.duration / 60)) };
+      });
+  }
+
+  // ---------- Avisos ----------
+  function toast(t) { var e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { e.hidden = true; }, 2800); }
+  function avisoTop(t) { var e = $('#aviso-top'); e.hidden = !t; if (t) e.textContent = t; }
+  function modal(html) { $('#modal-caja').innerHTML = html; $('#modal').hidden = false; }
+  function cerrarModal() { $('#modal').hidden = true; }
+
+  // ---------- Pantallas ----------
+  function iniciales(n) { return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (x) { return x[0].toUpperCase(); }).join('') || 'AA'; }
+  function saludo() { var h = new Date().getHours(); return h >= 5 && h < 12 ? 'Buenos días' : h < 19 && h >= 12 ? 'Buenas tardes' : 'Buenas noches'; }
+  function render() {
+    var h = '<div class="asa"></div>', f = S.fase;
+    $('#pin-centro').hidden = !S.fijando;
+    if (S.fijando) {
+      h += '<h2>' + (S.fijando === 'destino' ? 'Fija tu destino' : 'Fija el punto de recogida') + '</h2><p class="sub">Mueve el mapa hasta que el pin quede en el lugar exacto.</p>' +
+        '<button class="btn" id="b-confirmar-fijar">Confirmar ' + (S.fijando === 'destino' ? 'destino' : 'recogida') + '</button>';
+    } else if (f === 'inicio') {
+      var n = S.perfil ? S.perfil.nombre.split(' ')[0] : '';
+      h += '<h2>' + saludo() + (n ? ', ' + esc(n) : '') + '</h2><p class="sub">¿A dónde te llevamos hoy?</p>' +
+        '<button class="buscar" id="b-buscar"><span class="ic"></span>¿A dónde vas?</button><div style="height:6px"></div>' +
+        RECIENTES.slice(0, 3).map(function (r, i) {
+          return '<button class="lugar" data-rec="' + i + '"><span class="circ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><b>' + esc(r.nombre) + '</b><small>' + esc(r.det) + '</small></span></button>';
+        }).join('');
+    } else if (f === 'confirmar') {
+      h += '<div class="opcion"><svg class="carro" viewBox="0 0 64 40"><rect x="4" y="14" width="56" height="16" rx="7" fill="#090145"/><path d="M14 15l7-9h22l7 9z" fill="#090145"/><path d="M20 14l5-6h14l5 6z" fill="#9DB4FF"/><circle cx="17" cy="31" r="6" fill="#101326"/><circle cx="47" cy="31" r="6" fill="#101326"/><circle cx="17" cy="31" r="2.5" fill="#C9CEDB"/><circle cx="47" cy="31" r="2.5" fill="#C9CEDB"/><rect x="54" y="19" width="5" height="3" rx="1.5" fill="#FFE9A8"/></svg>' +
+        '<div class="tx"><b>AutoAmigo</b><small>' + (S.ruta ? S.km.toFixed(1) + ' km · ' + S.min + ' min de viaje' : 'Calculando ruta…') + '</small></div>' +
+        '<div class="precio">' + (S.ruta ? dinero(S.precioC) : '—') + '<small>aprox. · taxímetro</small></div></div>' +
+        '<div class="dato"><span class="p"></span><span class="t">' + esc(S.recogida ? S.recogida.nombre : '') + '</span><button data-cambiar="recogida">Cambiar</button></div>' +
+        '<div class="dato" style="margin-bottom:10px"><span class="c"></span><span class="t">' + esc(S.destino ? S.destino.nombre : '') + '</span><button data-cambiar="destino">Cambiar</button></div>' +
+        '<input class="entrada" id="in-ref" placeholder="Referencia: ej. casa blanca, garita 2…" value="' + esc(S.ref) + '">' +
+        '<input class="entrada" id="in-nota" placeholder="Nota para el conductor (opcional)" value="' + esc(S.nota) + '">' +
+        '<div class="pago"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12B76A" stroke-width="2"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg>Pago en efectivo</div>' +
+        '<button class="btn" id="b-pedir"' + (S.ruta ? '' : ' disabled') + '>Pedir AutoAmigo</button>';
+    } else if (f === 'buscando') {
+      h += '<h2>Buscando tu unidad…</h2><p class="sub">Estamos ofreciendo tu carrera a la unidad más cercana.</p><div class="barra"><i></i></div>' +
+        '<div class="dato"><span class="p"></span><span class="t">' + esc(S.recogida.nombre) + '</span></div><div class="dato" style="margin-bottom:12px"><span class="c"></span><span class="t">' + esc(S.destino.nombre) + '</span></div>' +
+        '<button class="btn peligro" id="b-cancelar">Cancelar carrera</button>';
+    } else if (f === 'encamino' || f === 'llego' || f === 'viaje') {
+      var c = S.cond;
+      if (f === 'viaje') {
+        h += '<div class="taxim"><div><small>TAXÍMETRO</small><b>' + dinero(S.taxC) + '</b></div><div style="text-align:right"><small>LLEGADA</small><b style="font-size:20px">' + S.etaTxt + '</b></div></div>';
+      } else {
+        h += '<div class="eta"><h2>' + (f === 'llego' ? 'Tu AutoAmigo llegó' : 'Tu AutoAmigo está en camino') + '</h2><span>' + (f === 'llego' ? 'Afuera' : S.etaTxt) + '</span></div>';
+      }
+      h += '<div class="cond"><div class="av">' + iniciales(c.nombre) + '</div><div class="tx"><b>' + esc(c.nombre) + '</b><small>★ ' + c.calif + ' · Unidad ' + c.u + '</small><small>' + esc(c.carro) + ' · ' + esc(c.color) + '</small></div>' +
+        '<div class="placa"><b>' + esc(c.placa) + '</b><small>placa</small></div></div>' +
+        '<div class="acciones">' +
+        '<button class="accion" data-acc="llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="#090145"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>Llamar</button>' +
+        '<button class="accion" data-acc="mensaje"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2.2" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/></svg>Mensaje</button>' +
+        '<button class="accion" data-acc="compartir"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></svg>Compartir</button></div>' +
+        '<div class="dato"><span class="p"></span><span class="t">' + esc(S.recogida.nombre) + (S.ref ? ' · ' + esc(S.ref) : '') + '</span></div><div class="dato" style="margin-bottom:12px"><span class="c"></span><span class="t">' + esc(S.destino.nombre) + '</span></div>' +
+        (f === 'viaje' ? '' : '<button class="btn peligro" id="b-cancelar">Cancelar carrera</button>');
+    } else if (f === 'fin') {
+      h += '<div class="total"><span class="sub" style="margin:0">Total de tu carrera</span><b>' + dinero(S.totalC) + '</b><span class="sub">Paga en efectivo a ' + esc(S.cond.nombre.split(' ')[0]) + '</span></div>' +
+        '<p style="text-align:center;font-weight:700;margin:6px 0 0">¿Cómo estuvo tu viaje?</p><div class="estrellas">' +
+        [1, 2, 3, 4, 5].map(function (n) { return '<button data-est="' + n + '" aria-label="' + n + ' estrellas"><svg width="40" height="40" viewBox="0 0 24 24" fill="' + (n <= (S.est || 0) ? '#FFB020' : '#E6E8F0') + '"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></button>'; }).join('') + '</div>' +
+        (S.est ? '<div class="chips">' + (S.est >= 4 ? ['Muy amable', 'Buena conducción', 'Carro limpio', 'Puntual'] : ['Llegó tarde', 'Mala conducción', 'Carro sucio', 'Trato descortés']).map(function (t) { return '<button class="chip' + (S.tags && S.tags[t] ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' : '') +
+        '<button class="btn" id="b-terminar"' + (S.est ? '' : ' disabled') + '>Enviar calificación</button>';
+    }
+    $('#hoja').innerHTML = h;
+  }
+
+  // ---------- Flujo ----------
+  function irInicio() {
+    pararSim(); S.fase = 'inicio'; S.destino = null; S.ruta = null; S.ref = ''; S.nota = ''; S.cond = null; S.est = 0; S.tags = {};
+    S.recogida = { lat: S.yo.lat, lng: S.yo.lng, nombre: S.yo.nombre };
+    mostrar('o', null); mostrar('d', null); mostrar('c', null); linea(null, 'r-viaje', '#090145', 5); linea(null, 'r-cond', '#12B76A', 4);
+    avisoTop(''); render(); encuadrar([S.yo]);
+  }
+  function abrirBusqueda(cual) {
+    $('#busqueda').hidden = false;
+    $('#in-origen').value = S.recogida ? S.recogida.nombre : '';
+    $('#in-destino').value = S.destino ? S.destino.nombre : '';
+    var foco = cual === 'recogida' ? '#in-origen' : '#in-destino';
+    S.buscando = cual === 'recogida' ? 'recogida' : 'destino';
+    pintarResultados(null);
+    setTimeout(function () { $(foco).focus(); $(foco).select(); }, 50);
+  }
+  function pintarResultados(lista, cargando) {
+    var r = $('#resultados');
+    if (cargando) { r.innerHTML = '<p class="sub" style="padding:14px 4px">Buscando…</p>'; return; }
+    if (!lista) lista = RECIENTES.map(function (x) { return Object.assign({ rec: true }, x); });
+    if (!lista.length) { r.innerHTML = '<p class="sub" style="padding:14px 4px">No encontramos ese lugar. Prueba con otro nombre o usa "Fijar en el mapa".</p>'; return; }
+    S.lista = lista;
+    r.innerHTML = lista.map(function (x, i) {
+      return '<button class="lugar" data-res="' + i + '"><span class="circ">' + (x.rec ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#090145" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="#090145"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>') +
+        '</span><span><b>' + esc(x.nombre) + '</b><small>' + esc(x.det || '') + '</small></span></button>';
+    }).join('');
+  }
+  var tBusq = null;
+  function alEscribir(e) {
+    S.buscando = e.target.id === 'in-origen' ? 'recogida' : 'destino';
+    var q = e.target.value.trim(); clearTimeout(tBusq);
+    if (q.length < 3) { pintarResultados(null); return; }
+    pintarResultados(null, true);
+    tBusq = setTimeout(function () { buscarLugares(q).then(function (r) { pintarResultados(r); }).catch(function () { pintarResultados([]); }); }, 650);
+  }
+  function elegirLugar(p) {
+    if (S.buscando === 'recogida') { S.recogida = p; $('#in-origen').value = p.nombre; if (!S.destino) { $('#in-destino').focus(); pintarResultados(null); S.buscando = 'destino'; return; } }
+    else S.destino = p;
+    $('#busqueda').hidden = true; irConfirmar();
+  }
+  function irConfirmar() {
+    S.fase = 'confirmar'; S.ruta = null; render();
+    mostrar('o', S.recogida); mostrar('d', S.destino); mostrar('c', null);
+    linea([[S.recogida.lng, S.recogida.lat], [S.destino.lng, S.destino.lat]], 'r-viaje', '#090145', 5);
+    encuadrar([S.recogida, S.destino]);
+    calcularRuta(S.recogida, S.destino).then(function (r) {
+      S.ruta = r; S.km = r.km; S.min = r.min; S.precioC = tarifaEstimadaC(r.km);
+      linea(r.coords, 'r-viaje', '#090145', 5); if (S.fase === 'confirmar') render();
+    }).catch(function () {
+      S.ruta = { coords: null }; S.km = 0; S.min = 0; S.precioC = CFG.minimaC; toast('No se pudo calcular la ruta. El valor lo marcará el taxímetro.'); if (S.fase === 'confirmar') render();
+    });
+  }
+  function fijar(cual) {
+    S.fijando = cual; $('#busqueda').hidden = true;
+    var p = cual === 'destino' ? (S.destino || S.recogida || S.yo) : (S.recogida || S.yo);
+    M.easeTo({ center: [p.lng, p.lat], zoom: 16, duration: 400 }); render();
+  }
+  function confirmarFijar() {
+    var c = M.getCenter(), cual = S.fijando; S.fijando = null;
+    var p = { lat: c.lat, lng: c.lng, nombre: 'Buscando dirección…' };
+    if (cual === 'destino') S.destino = p; else S.recogida = p;
+    nombreDe(c.lat, c.lng).then(function (n) { p.nombre = n; render(); });
+    if (S.recogida && S.destino) irConfirmar(); else { render(); abrirBusqueda('destino'); }
+  }
+
+  // ---------- Simulación del conductor ----------
+  function pararSim() { if (S.anim) cancelAnimationFrame(S.anim); S.anim = null; clearTimeout(S.tAcepta); clearInterval(S.tick); }
+  function animarEnRuta(coords, seg, alAvanzar, alTerminar) {
+    var largo = [0]; for (var i = 1; i < coords.length; i++) largo.push(largo[i - 1] + Math.hypot(coords[i][0] - coords[i - 1][0], coords[i][1] - coords[i - 1][1]));
+    var total = largo[largo.length - 1] || 1, t0 = performance.now();
+    function paso(t) {
+      var k = Math.min(1, (t - t0) / (seg * 1000)), d = k * total, j = 1;
+      while (j < largo.length - 1 && largo[j] < d) j++;
+      var a = coords[j - 1], b = coords[j], f = (d - largo[j - 1]) / ((largo[j] - largo[j - 1]) || 1);
+      var p = { lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f };
+      mostrar('c', p); mC.el.firstChild.style.transform = 'rotate(' + (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI) + 'deg)';
+      alAvanzar && alAvanzar(k, coords.slice(j - 1).map(function (x, n) { return n === 0 ? [p.lng, p.lat] : x; }));
+      if (k < 1) S.anim = requestAnimationFrame(paso); else { S.anim = null; alTerminar && alTerminar(); }
+    }
+    S.anim = requestAnimationFrame(paso);
+  }
+  function pedir() {
+    S.ref = ($('#in-ref') || {}).value || ''; S.nota = ($('#in-nota') || {}).value || '';
+    S.fase = 'buscando'; render(); avisoTop('');
+    S.tAcepta = setTimeout(aceptar, 6000);
+  }
+  function aceptar() {
+    if (S.fase !== 'buscando') return;
+    pararSim();
+    S.cond = CONDUCTORES[Math.floor(Math.random() * CONDUCTORES.length)];
+    var ang = Math.random() * Math.PI * 2, ini = { lat: S.recogida.lat + Math.sin(ang) * 0.014, lng: S.recogida.lng + Math.cos(ang) * 0.014 };
+    S.fase = 'encamino'; S.etaTxt = '…'; render(); avisoTop('Unidad ' + S.cond.u + ' aceptó tu carrera');
+    setTimeout(function () { if (S.fase === 'encamino') avisoTop(''); }, 3500);
+    calcularRuta(ini, S.recogida).catch(function () { return { coords: [[ini.lng, ini.lat], [S.recogida.lng, S.recogida.lat]], min: 4 }; }).then(function (r) {
+      if (S.fase !== 'encamino') return;
+      var mins = Math.max(2, r.min || 4); S.etaTxt = mins + ' min'; render();
+      encuadrar([ini, S.recogida]);
+      animarEnRuta(r.coords, 28, function (k, resto) {
+        linea(resto, 'r-cond', '#12B76A', 4);
+        var m = Math.max(1, Math.ceil(mins * (1 - k))); if (S.etaTxt !== m + ' min') { S.etaTxt = m + ' min'; var e = $('.eta span'); if (e) e.textContent = S.etaTxt; }
+      }, llego);
+    });
+  }
+  function llego() {
+    if (S.fase !== 'encamino') return; pararSim();
+    mostrar('c', S.recogida); linea(null, 'r-cond', '#12B76A', 4);
+    S.fase = 'llego'; render(); avisoTop('Tu AutoAmigo te espera afuera');
+    if (navigator.vibrate) try { navigator.vibrate([200, 100, 200]); } catch (e) {}
+  }
+  function iniciar() {
+    if (S.fase !== 'llego' && S.fase !== 'encamino') return; pararSim(); avisoTop('');
+    S.fase = 'viaje'; S.taxC = CFG.arranqueC; S.etaTxt = S.min + ' min'; render();
+    var coords = S.ruta && S.ruta.coords ? S.ruta.coords : [[S.recogida.lng, S.recogida.lat], [S.destino.lng, S.destino.lat]];
+    encuadrar([S.recogida, S.destino]);
+    var finalC = S.finalC = S.precioC + 5 * (2 + Math.floor(Math.random() * 6));    // un poco de espera/tráfico
+    animarEnRuta(coords, 30, function (k) {
+      var c = Math.round((CFG.arranqueC + (finalC - CFG.arranqueC) * k) / 5) * 5, m = Math.max(1, Math.ceil(S.min * (1 - k))) + ' min';
+      if (c !== S.taxC || m !== S.etaTxt) { S.taxC = c; S.etaTxt = m; var t = $('.taxim'); if (t) t.querySelector('b').textContent = dinero(c), t.querySelectorAll('b')[1].textContent = m; }
+    }, function () { terminar(Math.max(CFG.minimaC, finalC)); });
+  }
+  function terminar(totalC) {
+    if (S.fase !== 'viaje' && S.fase !== 'llego' && S.fase !== 'encamino') return; pararSim();
+    S.totalC = totalC || Math.max(CFG.minimaC, S.precioC); S.fase = 'fin'; S.est = 0; S.tags = {};
+    mostrar('c', S.destino); avisoTop('Llegaste a tu destino'); render();
+    S.viajes.unshift({ t: Date.now(), o: S.recogida.nombre, d: S.destino.nombre, totalC: S.totalC, cond: S.cond.nombre + ' · U' + S.cond.u }); guardar('aac_viajes', S.viajes);
+  }
+  function cancelar() {
+    modal('<h2>¿Cancelar la carrera?</h2><p class="sub">' + (S.fase === 'buscando' ? 'Aún no hay una unidad asignada.' : 'La unidad ' + S.cond.u + ' ya va en camino hacia ti.') + '</p>' +
+      '<div class="fila"><button class="btn sec" id="m-no">No, seguir</button><button class="btn" style="background:var(--rojo)" id="m-si">Sí, cancelar</button></div>');
+  }
+
+  // ---------- Páginas del menú ----------
+  function abrirPagina(p) {
+    $('#menu').hidden = true; $('#velo').hidden = true;
+    var tit = { viajes: 'Mis viajes', perfil: 'Mi perfil', ayuda: 'Ayuda' }[p], h = '';
+    if (p === 'viajes') h = S.viajes.length ? S.viajes.map(function (v) {
+      var d = new Date(v.t);
+      return '<div class="viaje"><div class="l1"><span>' + d.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) + '</span><span>' + dinero(v.totalC) + '</span></div>' +
+        '<small>' + esc(v.o) + ' → ' + esc(v.d) + '</small><small>' + esc(v.cond) + '</small></div>';
+    }).join('') : '<p class="sub">Aún no tienes viajes.</p>';
+    if (p === 'perfil') h = '<div style="display:flex;align-items:center;gap:14px;margin:8px 0 20px"><div class="av">' + iniciales(S.perfil.nombre) + '</div><div><b style="font-size:18px">' + esc(S.perfil.nombre) + '</b><div class="sub" style="margin:2px 0 0">' + esc(S.perfil.tel) + '</div></div></div>' +
+      '<label class="sub" for="p-nombre" style="margin:0">Nombre</label><input class="entrada" id="p-nombre" value="' + esc(S.perfil.nombre) + '">' +
+      '<label class="sub" for="p-tel" style="margin:0">Celular</label><input class="entrada" id="p-tel" value="' + esc(S.perfil.tel) + '" inputmode="tel">' +
+      '<button class="btn" id="b-guardar-perfil">Guardar</button>';
+    if (p === 'ayuda') h = '<p class="sub">¿Tuviste un problema con una carrera, olvidaste algo en la unidad o necesitas ayuda?</p>' +
+      '<button class="btn" data-acc="central" style="margin-bottom:10px">Llamar a la central</button><button class="btn sec" data-acc="central-wa">Escribir por WhatsApp</button>' +
+      '<p class="sub" style="margin-top:18px"><b>Tarifa:</b> taxímetro con arranque de $0.50, $0.05 cada 100 metros ($0.50 por km) y $0.05 cada 30 segundos de espera. Carrera mínima: $2.50. Pago en efectivo.</p>';
+    $('#pag-tit').textContent = tit; $('#pag-cuerpo').innerHTML = h; $('#pagina').hidden = false;
+  }
+  function pintarMenu() {
+    if (!S.perfil) return;
+    $('#menu-av').textContent = iniciales(S.perfil.nombre); $('#menu-nombre').textContent = S.perfil.nombre; $('#menu-tel').textContent = S.perfil.tel;
+  }
+
+  // ---------- Eventos ----------
+  document.addEventListener('click', function (e) {
+    var t = e.target, b;
+    if (t.closest('#b-menu')) { pintarMenu(); $('#menu').hidden = false; $('#velo').hidden = false; return; }
+    if (t.closest('#velo')) { $('#menu').hidden = true; $('#velo').hidden = true; return; }
+    if ((b = t.closest('[data-pag]'))) { abrirPagina(b.dataset.pag); return; }
+    if (t.closest('#b-cerrar-pag')) { $('#pagina').hidden = true; return; }
+    if (t.closest('#b-salir')) { $('#menu').hidden = true; $('#velo').hidden = true; S.perfil = null; guardar('aac_perfil', null); $('#ingreso').hidden = false; return; }
+    if (t.closest('#b-guardar-perfil')) { S.perfil = { nombre: $('#p-nombre').value.trim() || S.perfil.nombre, tel: $('#p-tel').value.trim() || S.perfil.tel }; guardar('aac_perfil', S.perfil); toast('Datos guardados.'); $('#pagina').hidden = true; render(); return; }
+    if (t.closest('#b-buscar')) { abrirBusqueda('destino'); return; }
+    if ((b = t.closest('[data-rec]'))) { S.destino = RECIENTES[+b.dataset.rec]; irConfirmar(); return; }
+    if (t.closest('#b-cerrar-busq')) { $('#busqueda').hidden = true; if (S.fase !== 'confirmar') render(); return; }
+    if ((b = t.closest('[data-res]'))) { elegirLugar(S.lista[+b.dataset.res]); return; }
+    if (t.closest('#b-fijar')) { fijar(S.buscando === 'recogida' ? 'recogida' : 'destino'); return; }
+    if (t.closest('#b-confirmar-fijar')) { confirmarFijar(); return; }
+    if ((b = t.closest('[data-cambiar]'))) { S.ref = ($('#in-ref') || {}).value || S.ref; S.nota = ($('#in-nota') || {}).value || S.nota; abrirBusqueda(b.dataset.cambiar); return; }
+    if (t.closest('#b-pedir')) { pedir(); return; }
+    if (t.closest('#b-cancelar')) { cancelar(); return; }
+    if (t.closest('#m-no')) { cerrarModal(); return; }
+    if (t.closest('#m-si')) { cerrarModal(); irInicio(); toast('Carrera cancelada.'); return; }
+    if ((b = t.closest('[data-acc]'))) {
+      var a = b.dataset.acc;
+      if (a === 'llamar') toast('Llamando a ' + S.cond.nombre.split(' ')[0] + '… (en la app real abre el teléfono)');
+      if (a === 'mensaje') toast('En la app real se abre el chat con el conductor.');
+      if (a === 'compartir') toast('En la app real compartes un enlace para que tu familia vea tu viaje en vivo.');
+      if (a === 'central') toast('En la app real llama a la central.');
+      if (a === 'central-wa') toast('En la app real abre WhatsApp con la central.');
+      return;
+    }
+    if ((b = t.closest('[data-est]'))) { S.est = +b.dataset.est; S.tags = {}; render(); return; }
+    if ((b = t.closest('[data-tag]'))) { S.tags[b.dataset.tag] = !S.tags[b.dataset.tag]; render(); return; }
+    if (t.closest('#b-terminar')) { toast('¡Gracias por viajar con AutoAmigo!'); irInicio(); return; }
+    if (t.closest('#b-ingresar')) {
+      var n = $('#ing-nombre').value.trim(), tel = $('#ing-tel').value.replace(/\D/g, '');
+      if (n.length < 3) { toast('Escribe tu nombre y apellido.'); return; }
+      if (!/^09\d{8}$/.test(tel)) { toast('Escribe tu celular de 10 dígitos (empieza con 09).'); return; }
+      S.perfil = { nombre: n, tel: tel }; guardar('aac_perfil', S.perfil); $('#ingreso').hidden = true; irInicio(); return;
+    }
+    if ((b = t.closest('[data-sim]'))) {
+      var s = b.dataset.sim; $('#controles').classList.remove('abierto');
+      if (s === 'acepta') { if (S.fase === 'buscando') aceptar(); else toast('Primero pide una carrera.'); }
+      if (s === 'llego') { if (S.fase === 'encamino') llego(); else toast('Funciona cuando la unidad va en camino.'); }
+      if (s === 'inicia') { if (S.fase === 'llego' || S.fase === 'encamino') iniciar(); else toast('Funciona cuando la unidad llegó.'); }
+      if (s === 'fin') { if (S.fase === 'viaje') terminar(Math.max(CFG.minimaC, S.finalC || S.precioC)); else toast('Funciona durante el viaje.'); }
+      if (s === 'reiniciar') { guardar('aac_perfil', null); guardar('aac_viajes', null); location.reload(); }
+      return;
+    }
+    if (t.closest('#b-prueba')) { $('#controles').classList.toggle('abierto'); return; }
+  });
+  $('#in-origen').addEventListener('input', alEscribir);
+  $('#in-destino').addEventListener('input', alEscribir);
+  $('#in-origen').addEventListener('focus', function () { S.buscando = 'recogida'; });
+  $('#in-destino').addEventListener('focus', function () { S.buscando = 'destino'; });
+
+  // ---------- Arranque ----------
+  if (!S.perfil) $('#ingreso').hidden = false;
+  irInicio();
+  // Ubicación real del celular (si el cliente lo permite); si no, la de prueba
+  if (navigator.geolocation) navigator.geolocation.getCurrentPosition(function (p) {
+    var lat = p.coords.latitude, lng = p.coords.longitude;
+    if (Math.abs(lat - CENTRO[0]) > 0.6 || Math.abs(lng - CENTRO[1]) > 0.6) return;   // fuera de Guayaquil: se queda la de prueba
+    S.yo = { lat: lat, lng: lng, nombre: 'Tu ubicación' }; yo.mk.setLngLat([lng, lat]);
+    nombreDe(lat, lng).then(function (n) { S.yo.nombre = n; if (S.fase === 'inicio') { S.recogida = { lat: lat, lng: lng, nombre: n }; } });
+    if (S.fase === 'inicio') { S.recogida = { lat: lat, lng: lng, nombre: 'Tu ubicación' }; encuadrar([S.yo]); }
+  }, function () {}, { enableHighAccuracy: true, timeout: 8000 });
+})();
+</script>
+</body>
+</html>
