@@ -80,7 +80,42 @@
         : '<div class="acciones"><button class="btn btn-primario" data-aprobar-turno="' + p.id + '">✓ Aprobar turno</button><button class="btn btn-peligro" data-rechazar-turno="' + p.id + '">Rechazar</button></div>') +
       '</article>';
   }
+  // ---- Detector propio: aprende de las decisiones de Gemini y de la central; cuando iguala a Gemini, se deja Gemini ----
+  var DET = { fase: 1 };
+  var CLASES = [['Camisa', 612], ['Camiseta', 141], ['Sin camisa', 38], ['Con gorra', 77], ['Carro limpio', 1840], ['Carro sucio', 96]];
+  var META = 300;
+  function detectorHTML() {
+    var f = DET.fase;
+    var pasos = ['Gemini decide y el detector aprende', 'El detector practica sin decidir', 'Se deja Gemini'];
+    var linea = '<ol class="det-fases">' + pasos.map(function (t, i) { return '<li class="' + (i + 1 < f ? 'hecha' : i + 1 === f ? 'actual' : '') + '"><b>' + (i + 1) + '</b>' + t + '</li>'; }).join('') + '</ol>';
+    var cuerpo;
+    if (f === 1) {
+      var total = CLASES.reduce(function (t, c) { return t + c[1]; }, 0);
+      cuerpo = '<p>Ya tiene <b>' + total.toLocaleString('es-EC') + ' fotos</b> para aprender. Necesita al menos ' + META + ' de cada tipo. Faltan sobre todo fotos de <b>sin camisa</b> y <b>con gorra</b> (salen poco, y eso es bueno).</p>' +
+        '<div class="det-barras">' + CLASES.map(function (c) { var pct = Math.min(100, Math.round(c[1] / META * 100)); return '<div><span>' + c[0] + '</span><i><em style="width:' + pct + '%" class="' + (pct >= 100 ? 'ok' : '') + '"></em></i><small>' + c[1] + (c[1] >= META ? ' ✓' : ' / ' + META) + '</small></div>'; }).join('') + '</div>' +
+        '<p class="muted">Cálculo: listo para la fase 2 en unas 5 semanas.</p>';
+    } else if (f === 2) {
+      cuerpo = '<div class="det-nota"><b>96%</b><span>coincidió con Gemini esta semana<br><small>Meta: 97% durante 2 semanas seguidas</small></span></div>' +
+        '<p>De 312 turnos, se equivocó en 12: <b>8 camisetas tipo polo</b>, 3 fotos oscuras y 1 carro. <b>No aprobó a nadie sin camisa.</b></p>' +
+        '<div class="det-barras">' + [['Carro', 99], ['Sin camisa', 100], ['Gorra', 97], ['Camisa / camiseta', 92]].map(function (c) { return '<div><span>' + c[0] + '</span><i><em style="width:' + c[1] + '%" class="' + (c[1] >= 97 ? 'ok' : '') + '"></em></i><small>' + c[1] + '%</small></div>'; }).join('') + '</div>' +
+        '<p class="muted">El carro ya está listo. Camisa contra camiseta todavía necesita más práctica.</p>';
+    } else {
+      cuerpo = '<div class="det-nota ok"><b>98%</b><span>coincidió con Gemini 2 semanas seguidas<br><small>Sin aprobar a nadie sin camisa</small></span></div>' +
+        '<p><b>Listo para dejar Gemini.</b> Desde el cambio, todo se revisa dentro del teléfono: $0 y ninguna foto sale a otra empresa. Lo dudoso te sigue llegando aquí.</p>' +
+        '<button class="btn btn-primario" data-det-cambiar="1">Usar el detector propio</button>';
+    }
+    return '<section class="detector"><div class="det-cab"><h2>Detector propio</h2><span class="det-solo">PRUEBA · ver fase: ' +
+      [1, 2, 3].map(function (n) { return '<button data-det-fase="' + n + '" class="' + (n === f ? 'on' : '') + '">' + n + '</button>'; }).join('') + '</span></div>' + linea + cuerpo + '</section>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-det-fase],[data-det-cambiar]'); if (!b) return;
+    if (b.hasAttribute('data-det-fase')) DET.fase = +b.getAttribute('data-det-fase');
+    else toastT('Listo: desde ahora revisa el detector propio. Gemini queda apagado.');
+    pintar();
+  });
+
   function pintar() {
+    var det = $('#detector-turnos'); if (det) det.innerHTML = detectorHTML();
     var n = T.pendientes.length;
     var bad = $('#badge-turnos'); if (bad) { bad.textContent = n; bad.hidden = !n; }
     var sub = $('#turnos-sub'); if (sub) sub.textContent = n ? n + ' conductor' + (n > 1 ? 'es esperan' : ' espera') + ' para poder conectarse.' : 'No hay turnos por revisar.';
@@ -89,7 +124,7 @@
     var hechos = $('#turnos-hechos');
     if (hechos) hechos.innerHTML = T.hechos.length ? '<table class="tabla"><thead><tr><th>Conductor</th><th>Resultado</th><th>Revisó</th><th>Hora</th></tr></thead><tbody>' +
       T.hechos.slice().reverse().map(function (h) {
-        return '<tr><td>' + esc(h.nombre) + ' · U' + esc(h.unidad) + '</td><td>' + (h.aprobado ? '<span class="pill libre">Aprobado</span>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>') + '</td><td>' + (h.por === 'ia' ? 'Automático' : 'Central') + '</td><td>' + hora(h.a) + '</td></tr>';
+        return '<tr><td>' + esc(h.nombre) + ' · U' + esc(h.unidad) + '</td><td>' + (h.aprobado ? '<span class="pill libre">Aprobado</span>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>') + '</td><td>' + (h.por === 'ia' ? 'Gemini' : 'Central') + '</td><td>' + hora(h.a) + '</td></tr>';
       }).join('') + '</tbody></table>' : '';
     // Aviso arriba en cualquier vista
     var av = $('#aviso-turnos');

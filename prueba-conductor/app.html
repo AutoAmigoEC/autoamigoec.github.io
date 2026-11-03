@@ -369,7 +369,11 @@
   .verif .soloprueba small{font-weight:800;color:#93370D;font-size:12px}
   .verif .soloprueba button{height:40px;border-radius:10px;border:1px solid #E4E7EC;background:#fff;font:inherit;font-weight:700;cursor:pointer}
   .verif .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .verif .resumen img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#E4E7EC}
+  .verif .resumen figure{margin:0;font-size:11.5px;color:var(--gris);font-weight:600;text-align:center}
+  .verif .resumen img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#E4E7EC;display:block;margin-bottom:3px}
+  .verif .resumen .queda img{opacity:.45}
+  .verif .resumen .sin-cara img{clip-path:inset(60% 0 0 0 round 0 0 12px 12px);background:repeating-linear-gradient(45deg,#E4E7EC 0 6px,#F2F4F7 6px 12px)}
+  .verif .resumen .sin-cara{background:repeating-linear-gradient(45deg,#E4E7EC 0 6px,#F2F4F7 6px 12px) no-repeat top/100% 60%;border-radius:12px}
   .verif .vlista{border:1px solid #E4E7EC;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
   .verif .vlista b{font-size:15.5px}.verif .vlista p{font-size:13.5px;margin-top:2px}
   .turno-ok{display:inline-flex;align-items:center;gap:6px;background:#DCFAE6;color:#067647;font-weight:700;font-size:12.5px;border-radius:999px;padding:4px 10px;margin-top:6px}
@@ -1428,7 +1432,8 @@
   // ---------- Verificación al empezar el turno (una vez al día) ----------
   // 1) selfie en vivo con parpadeo y giro: se compara con la foto de su cédula (en la app lo hace el teléfono, gratis)
   // 2) foto del pecho (camisa, sin gorra)  3) 3 fotos del carro
-  // Las fotos 2 y 3 las revisa una IA: si está claramente bien aprueba sola, si está claramente mal rechaza sola
+  // Las fotos 2 y 3 las revisa Gemini (gratis; a la foto de la camisa se le recorta la cara en el teléfono).
+  // A la vez se guardan para entrenar un detector propio que luego reemplaza a Gemini. Gemini: si está claramente bien aprueba sola, si está claramente mal rechaza sola
   // (sin camisa, con gorra, carro sucio) y solo los casos dudosos (p. ej. camiseta en vez de camisa) van a la central.
   // Hasta que aprueben no puede ponerse en Libre.
   var V = { simIA: 'bien', porIA: false, aprobado: false, aprobadoA: 0, paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, motivo: '', simFalla: false, stream: null, video: null, guiando: false };
@@ -1551,9 +1556,11 @@
         (listas ? '<button class="vbtn" data-v="sig" data-de="carro">Siguiente</button>' : '<button class="vbtn" data-v="foto-carro">Tomar foto</button>') + '</div>';
       if (listas) frente = null;
     } else if (p === 'enviar') {
-      var todas = [V.fotos.selfie, V.fotos.pecho].concat(V.fotos.carro);
-      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno.</p>' +
-        '<div class="resumen">' + todas.map(function (f) { return '<img src="' + f + '">'; }).join('') + '</div>' +
+      // La cara nunca sale del teléfono: el selfie se queda aquí y a la foto de la camisa se le recorta la cara
+      var fig = function (src, txt, cls) { return '<figure class="' + (cls || '') + '"><img src="' + src + '"><figcaption>' + txt + '</figcaption></figure>'; };
+      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno. Tu cara no se envía: se queda en tu teléfono.</p>' +
+        '<div class="resumen">' + fig(V.fotos.selfie, 'No se envía', 'queda') + fig(V.fotos.pecho, 'Sin la cara', 'sin-cara') +
+        V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
         '<div class="soloprueba"><small>SOLO EN LA PRUEBA · elige qué ve la revisión automática</small><div class="reglas">' +
         [['bien', 'Todo bien'], ['sincamisa', 'Sin camisa'], ['gorra', 'Con gorra'], ['carro', 'Carro sucio'], ['duda', 'Dudoso: camiseta']].map(function (o) {
           return '<button data-v="simia" data-o="' + o[0] + '" style="height:36px;padding:0 12px;border-radius:999px;' + (V.simIA === o[0] ? 'background:var(--navy);color:#fff;border-color:var(--navy)' : '') + '">' + o[1] + '</button>';
@@ -1561,7 +1568,7 @@
         '<button class="vbtn" data-v="enviar">Enviar</button></div>';
     } else if (p === 'revisando') {
       h = cabecera('Revisando', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Revisando tus fotos…</h2>' +
-        '<p class="centro">Toma unos segundos.</p></div>';
+        '<p class="centro">Toma unos segundos. Tu cara no se envía.</p></div>';
     } else if (p === 'espera') {
       h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Tu turno lo está revisando la central</h2>' +
         '<p class="centro">La revisión automática no pudo decidir, así que tus fotos pasaron a la central. Te avisaremos apenas lo aprueben.</p>' +
