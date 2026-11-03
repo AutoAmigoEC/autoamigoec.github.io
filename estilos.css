@@ -172,7 +172,7 @@ label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;
 .alerta .acciones{display:flex;gap:8px;flex-wrap:wrap}
 .saldo-ok{color:var(--libre-tx);font-weight:700}
 .saldo-bajo{color:var(--sinsaldo);font-weight:700}
-.taxi{font-weight:700;color:var(--ejecucion-tx)}
+.taxi{font-weight:700;color:#1A5CE0}   /* mismo azul del taxímetro de la app del conductor */
 .dos-columnas{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
 .dos-columnas>.tarjeta{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px}
 .lista-paquetes{display:flex;flex-direction:column;gap:8px}
@@ -272,3 +272,15 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .etiqueta-cancel{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#B42318;background:#FDECEC;border-radius:999px;padding:2px 9px}
 .etiqueta-prog{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#026AA2;background:#E0F2FE;border-radius:999px;padding:2px 9px}
 .carrera.ejecucion{border:2px solid var(--ejecucion);background:#FAF8FF}
+
+/* Avisos al cliente por WhatsApp */
+.btn.btn-wa{background:var(--navy);border-color:var(--navy);color:#fff;text-decoration:none}
+.btn.btn-wa:hover{background:var(--navy-2);border-color:var(--navy-2)}
+.carrera.finalizada{border:2px dashed #25D366;background:#F3FCF6}
+
+/* Filtro del mapa desde las tarjetas de arriba */
+.kpi[data-filtro-mapa]{transition:border-color .15s,box-shadow .15s,opacity .15s}
+.kpi[data-filtro-mapa]:hover{border-color:#B9C0D4}
+.kpi[data-on]{border-color:var(--azul,#090145);box-shadow:inset 0 0 0 1px var(--azul,#090145),0 4px 14px rgba(9,1,69,.15)}   /* mismo tamaño: el mapa no se mueve */
+.filtro-mapa{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:500;background:#fff;border-radius:999px;padding:7px 8px 7px 14px;display:flex;align-items:center;gap:8px;font-size:13.5px;box-shadow:0 4px 14px rgba(16,24,40,.2);white-space:nowrap}
+.filtro-mapa button{border:0;border-radius:999px;background:#090145;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:6px 12px;cursor:pointer}
