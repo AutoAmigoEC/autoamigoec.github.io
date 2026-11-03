@@ -612,11 +612,13 @@
   // ---------- Aviso "Sin internet" (arriba, en todas las pantallas) ----------
   var avisoRed = document.createElement('div');
   avisoRed.id = 'sin-internet';
+  (function () { var st = document.createElement('style'); st.textContent = 'body.sin-red .btn-cancelar{display:none!important}'; document.head.appendChild(st); })();
   avisoRed.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:8px;z-index:95;background:#B42318;color:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.3);white-space:nowrap;display:none';
   $('#pantalla').appendChild(avisoRed);
   function pintarRed() {
     var sin = (D && D.sinInternet) || navigator.onLine === false;
-    avisoRed.style.display = sin ? 'block' : 'none';
+    avisoRed.style.display = 'none';
+    document.body.classList.toggle('sin-red', !!sin);
     if (sin) avisoRed.textContent = (D && D.carrera) ? 'Sin internet · la carrera sigue y se guarda' : 'Sin internet · no te llegarán carreras';
   }
   window.addEventListener('online', pintarRed); window.addEventListener('offline', pintarRed);
@@ -766,6 +768,7 @@
     if (U.menuPeriodo && !e.target.closest('.saldo-card .periodos')) { U.menuPeriodo = false; render(); }
     if (U.menuPeriodoMov && !e.target.closest('.movs-cab .periodos')) { U.menuPeriodoMov = false; render(); }
     if (e.target.closest('#b-cancelar')) {
+      if ((D && D.sinInternet) || navigator.onLine === false) { aviso('Sin internet no se puede cancelar la carrera. Llama a la central.'); return; }
       confirmar('¿Estás seguro de cancelar la carrera?', 'La carrera de ' + ((D.carrera || {}).cliente || 'este cliente') + ' se le ofrecerá a otro conductor. Esta acción no se puede deshacer.',
         'Sí, cancelar carrera', 'No, seguir con la carrera', function () { accion('cancelar'); });
       return;
