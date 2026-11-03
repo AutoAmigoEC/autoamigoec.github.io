@@ -377,6 +377,52 @@
   .verif .vlista{border:1px solid #E4E7EC;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
   .verif .vlista b{font-size:15.5px}.verif .vlista p{font-size:13.5px;margin-top:2px}
   .turno-ok{display:inline-flex;align-items:center;gap:6px;background:#DCFAE6;color:#067647;font-weight:700;font-size:12.5px;border-radius:999px;padding:4px 10px;margin-top:6px}
+  /* ---------- Inicio de sesión y Crear usuario ---------- */
+  .registro{z-index:57}
+  .acceso{flex:1;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;gap:18px;overflow:auto}
+  .acceso .logo{width:92px;height:92px;border-radius:24px;background:#fff;padding:8px}
+  .acceso .tarj{background:#fff;border-radius:24px;padding:22px 18px;width:100%;display:flex;flex-direction:column;gap:12px}
+  .acceso h2{margin:0;font-family:Manrope,sans-serif;font-size:22px;color:var(--texto)}
+  .acceso p{margin:0;color:var(--gris);font-size:14px}
+  .acceso label,.registro .campo{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:700;color:#344054}
+  .acceso input,.registro .campo input{height:52px;border:1px solid #D0D5DD;border-radius:14px;padding:0 14px;font:inherit;font-size:16px;font-weight:500;color:var(--texto);background:#fff;width:100%}
+  .registro .campo.mal input{border-color:var(--rojo);background:#FFF5F5}
+  .registro .campo small{color:var(--rojo);font-weight:600;font-size:12.5px}
+  .acceso .crear{width:100%;border:2px solid rgba(255,255,255,.35);background:transparent;color:#C9CDE6;border-radius:18px;padding:14px;font:inherit;font-size:13.5px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+  .acceso .crear b{color:#fff;font-size:16.5px}
+  .registro .grupo-r{margin:10px 0 -2px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris)}
+  .lista-fotos{display:flex;flex-direction:column;gap:10px}
+  .fila-foto{display:flex;align-items:center;gap:12px;border:2px dashed #B9C0D4;border-radius:16px;background:#F8F9FC;padding:10px;text-align:left;font:inherit;cursor:pointer;position:relative}
+  .fila-foto.hecha{border:2px solid var(--verde);background:#F0FDF5}
+  .fila-foto img,.fila-foto .ic{width:58px;height:58px;border-radius:12px;object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;background:#EEF0F4;font-size:24px}
+  .fila-foto b{display:block;font-size:15px}.fila-foto small{color:var(--gris);font-size:12.5px;line-height:1.35}
+  .fila-foto i{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--verde);color:#fff;font-style:normal;display:flex;align-items:center;justify-content:center;flex:none}
+  .doc-alerta{display:block;margin-top:6px;border:1px solid #FEDF89;background:#FFFAEB;color:#B54708;border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;text-align:left}
+  .doc-alerta.mal{border-color:#FECDCA;background:#FEF3F2;color:#B42318}
+  /* ---------- Mi perfil ---------- */
+  .pf-alerta{background:#FEF3F2;border:1px solid #FECDCA;color:#B42318;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:14px;margin-bottom:14px}
+  .pf-alerta button,.pf-doc button,.pf-fila button{border:0;background:var(--navy);color:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+  .pf-cab{display:flex;align-items:center;gap:14px;background:#fff;border-radius:20px;padding:14px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .pf-foto{width:84px;height:84px;border-radius:50%;overflow:hidden;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;flex:none}
+  .pf-foto img{width:100%;height:100%;object-fit:cover}
+  .pf-nombre{display:block;font-size:17px;line-height:1.25}.pf-cab small{display:block;color:var(--gris);font-size:13px;margin:3px 0 6px}
+  .pf-chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+  .pf-chip.ok{background:#DCFAE6;color:#067647}.pf-chip.aviso{background:#FFFAEB;color:#B54708}.pf-chip.mal{background:#FEE4E2;color:#B42318}.pf-chip.pend{background:#EFF4FF;color:#1849A9}
+  .pf-btn{margin-top:10px;width:100%;height:52px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
+  .pf-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .pf-stats div{background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .pf-stats b{display:block;font-size:26px;font-weight:800;color:var(--navy)}.pf-stats small{color:var(--gris);font-size:12.5px}
+  .pf-h{margin:18px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris)}
+  .pf-caja{background:#fff;border-radius:18px;padding:4px 14px;box-shadow:0 4px 14px rgba(16,24,40,.06)}
+  .pf-fila{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F2F4F7;font-size:14.5px}
+  .pf-fila:last-child{border-bottom:0}
+  .pf-fila span{color:var(--gris);width:92px;flex:none}.pf-fila b{flex:1;font-weight:600;min-width:0;overflow-wrap:anywhere}.pf-fila i{font-style:normal;opacity:.5}
+  .pf-fila.edit input{flex:1;min-width:0;height:40px;border:1px solid #D0D5DD;border-radius:10px;padding:0 10px;font:inherit}
+  .pf-docfoto{padding:10px 0}.pf-docfoto img{width:100%;max-height:160px;object-fit:cover;border-radius:14px;display:block}.pf-docfoto small{color:var(--gris)}
+  .pf-doc{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F2F4F7}.pf-doc:last-child{border-bottom:0}
+  .pf-doc img{width:72px;height:52px;border-radius:8px;object-fit:cover;flex:none}
+  .pf-doc div{flex:1}.pf-doc b{display:block;font-size:14.5px}.pf-doc small{display:block;color:var(--gris);font-size:12.5px;margin:2px 0 4px}.pf-doc i{font-style:normal;opacity:.5}
+  .pf-nota{color:var(--gris);font-size:12.5px;margin:12px 2px 0;line-height:1.45}
   .aviso{position:absolute;left:18px;right:18px;bottom:96px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:60;text-align:center}
   /* ---------- Controles de la prueba ---------- */
   .controles{width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:10px;align-self:center}
@@ -504,6 +550,8 @@
     <div class="fin" id="fin" hidden></div>
     <div class="confirmar" id="confirmar" hidden><div class="caja"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg></div><h3>¿Estás seguro de cancelar la carrera?</h3><p id="confirmar-txt"></p><div class="b"><button class="no" id="c-no">No, seguir con la carrera</button><button class="si" id="c-si">Sí, cancelar carrera</button></div></div></div>
     <div class="verif" id="verif" hidden></div>
+    <div class="verif" id="pfoto" hidden></div>
+    <div class="verif registro" id="registro" hidden></div>
     <div class="aviso" id="aviso" hidden></div>
   </div></div>
 
@@ -804,6 +852,7 @@
         '<button class="btn-azul" id="b-recargar">Recargar</button>' + msg + '</div>' +
         '<div class="movs">' + cabMovs + rangoMov + (movs || '<div class="vacio">' + (esHoyMov ? 'Todavía no tienes movimientos hoy.' : 'No hay movimientos en esas fechas.') + '</div>') + '</div>';
     }
+    if (p === 'perfil' && window.PerfilSim) return PerfilSim.html();
     var t = { perfil: 'Mi perfil', ayuda: 'Ayuda y soporte' }[p] || '';
     return '<h2>' + t + '</h2><div class="vacio">Esta pantalla la diseñamos con tus próximas imágenes.</div>';
   }
@@ -1524,10 +1573,10 @@
         '<button class="vbtn" data-v="cara-ir"' + (V.guiando ? ' disabled' : '') + '>' + (V.guiando ? 'Verificando…' : 'Empezar') + '</button></div>';
     } else if (p === 'compara') {
       h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Comparando con tu cédula…</h2>' +
-        '<div class="compara"><figure><img src="' + PH.cedula + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div></div>';
+        '<div class="compara"><figure><img src="' + ((window.PerfilSim && PerfilSim.cedula()) || PH.cedula) + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div></div>';
     } else if (p === 'cara-ok') {
       h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">Eres Carlos Ruiz</h2><p class="centro">Tu cara coincide con la de tu cédula.</p>' +
-        '<div class="compara"><figure><img src="' + PH.cedula + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div>' +
+        '<div class="compara"><figure><img src="' + ((window.PerfilSim && PerfilSim.cedula()) || PH.cedula) + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div>' +
         '<button class="vbtn" data-v="sig" data-de="cara">Siguiente</button></div>';
     } else if (p === 'nocoincide') {
       h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu cédula</h2>' +
@@ -1674,8 +1723,10 @@
 
   $('#carro').innerHTML = carroSVG(S.carro);
   saludo(); setInterval(saludo, 30000);
+  window.__SIM = { render: render, aviso: aviso, todas: todas, irA: irA };
   render();
 })();
 </script>
+<script src="registro.js?v=1"></script>
 </body>
 </html>
