@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=20261103160000">
+<link rel="stylesheet" href="estilos.css?v=20261103180000">
 </head>
 <body>
 
@@ -43,6 +43,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
     <button class="menu-item" data-vista="conductores">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="turnos">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Turnos<span class="badge-menu" id="badge-turnos" hidden>0</span></button>
     <button class="menu-item" data-vista="clientes">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></svg>Clientes</button>
     <button class="menu-item" data-vista="reportes">
@@ -63,6 +65,7 @@
   <main class="contenido">
     <!-- Alertas de saldo bajo (aparecen arriba en cualquier vista) -->
     <div id="alertas" class="alertas" aria-live="assertive"></div>
+    <div id="aviso-turnos" class="alerta alerta-turnos" hidden></div>
 
     <!-- ---------- MAPA ---------- -->
     <section id="vista-mapa" class="vista">
@@ -112,6 +115,21 @@
       </div>
       <div class="tabla-caja"><table class="tabla" id="tabla-carreras"></table></div>
     </section>
+
+    <!-- ---------- TURNOS (verificación al empezar el turno) ---------- -->
+    <section id="vista-turnos" class="vista" hidden>
+      <header class="cabecera">
+        <div><h1>Turnos por revisar</h1><p class="muted" id="turnos-sub"></p></div>
+      </header>
+      <div id="turnos-estado"></div>
+      <p class="muted" style="margin:0">La revisión automática (Gemini, gratis) aprueba sola lo que está bien y rechaza sola lo que está claramente mal (con gorra o carro sucio). Las fotos sin camisa o que no sirven se bloquean y se eliminan sin que nadie las vea. Aquí solo llegan los registros nuevos de identidad y los casos dudosos. Aplasta una foto para verla grande.</p>
+      <div id="bloqueadas-turnos" class="bloqueadas-turnos" hidden></div>
+      <div id="lista-turnos" class="lista-turnos"></div>
+      <div id="detector-turnos"></div>
+      <h2 style="margin:8px 0 0;font-size:17px">Revisados hoy</h2>
+      <div class="tabla-caja" id="turnos-hechos"></div>
+    </section>
+    <div id="foto-grande" class="foto-grande" hidden></div>
 
     <!-- ---------- CLIENTES ---------- -->
     <section id="vista-clientes" class="vista" hidden>
@@ -272,6 +290,14 @@
         <label>Avisarme si toma una carrera sin destino con saldo menor a ($)
           <input type="number" id="cfg-saldo-alerta" step="0.05" min="0" required></label>
         <div class="fila-botones"><button class="btn btn-primario" type="submit">Guardar configuración</button></div>
+      </form>
+      <form id="form-turno" class="tarjeta form-grid">
+        <h2>Verificación del turno</h2>
+        <p class="muted" style="grid-column:1/-1;margin:0">Antes de conectarse, cada conductor verifica una vez al día su cara, su camisa y su carro. Prende esto <b>solo cuando todos tengan la app 1.0.16 o más nueva</b>. Apagado, la app funciona como siempre.</p>
+        <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="cfg-turno-on" style="width:20px;height:20px"> Pedir verificación del turno</label>
+        <label>Dirección del servidor de revisión
+          <input type="url" id="cfg-turno-url" placeholder="https://autoamigo-revision.TU-CUENTA.workers.dev" autocomplete="off"></label>
+        <div class="fila-botones"><button class="btn btn-primario" type="submit">Guardar</button></div>
       </form>
       <form id="form-admin" class="tarjeta form-grid">
         <h2>Agregar otro administrador</h2>
@@ -479,6 +505,7 @@
 <script src="mapas.js?v=202610292359"></script>
 <script src="config.js?v=202610292359"></script>
 <script src="despacho.js?v=20261030190000"></script>
-<script src="app.js?v=20261103160000"></script>
+<script src="app.js?v=20261103180000"></script>
+<script src="turnos.js?v=20261103180000"></script>
 </body>
 </html>

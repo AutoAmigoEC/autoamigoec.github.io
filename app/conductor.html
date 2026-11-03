@@ -322,6 +322,55 @@
   .fin .pie{margin-top:auto;position:sticky;bottom:0;background:#fff;padding:4px 0 18px}
   .fin .pie .btn-final{margin-top:0;position:static}
   .fin .espacio{height:18px;flex:none}
+  /* ---------- Verificación al empezar el turno ---------- */
+  .verif{position:absolute;inset:0;z-index:55;background:#fff;display:flex;flex-direction:column;animation:entra .18s ease}
+  .verif .vcab{flex:none;padding:44px 18px 10px;display:flex;align-items:center;gap:12px}
+  .verif .vcab b{font-family:Manrope,sans-serif;font-size:19px;color:var(--navy);flex:1}
+  .verif .vcab button{width:40px;height:40px;border-radius:12px;border:0;background:var(--suave);font-size:20px;cursor:pointer;color:var(--texto)}
+  .verif .vprog{flex:none;display:flex;gap:6px;padding:0 18px}
+  .verif .vprog i{flex:1;height:5px;border-radius:9px;background:#E4E7EC}
+  .verif .vprog i.ok{background:var(--verde)}.verif .vprog i.ya{background:var(--navy)}
+  .verif .vpaso{flex:none;padding:12px 18px 0;font-size:13px;font-weight:700;color:var(--gris)}
+  .verif .vcuerpo{flex:1;overflow:auto;padding:4px 18px 18px;display:flex;flex-direction:column;gap:12px}
+  .verif h2{margin:0;font-family:Manrope,sans-serif;font-size:22px;color:var(--texto);line-height:1.2}
+  .verif p{margin:0;color:var(--gris);font-size:14.5px;line-height:1.45}
+  .verif .cam{position:relative;border-radius:22px;overflow:hidden;background:#101828;aspect-ratio:3/4;max-height:52vh;flex:none;width:100%}
+  .verif .cam.ancha{aspect-ratio:4/3}
+  .verif .cam video,.verif .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .cam video.espejo{transform:scaleX(-1)}
+  .verif .cam .ovalo{position:absolute;left:50%;top:44%;width:62%;aspect-ratio:3/4;transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 999px rgba(10,15,60,.45);border:4px solid #fff;transition:border-color .3s}
+  .verif .cam .ovalo.ok{border-color:var(--verde)}
+  .verif .cam .marco{position:absolute;inset:12%;border:3px dashed rgba(255,255,255,.85);border-radius:18px}
+  .verif .cam .indica{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(16,24,40,.78);color:#fff;border-radius:14px;padding:11px 12px;text-align:center;font-weight:800;font-size:16px}
+  .verif .cam .marca{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;border-radius:8px;padding:4px 8px}
+  .verif .reglas{display:flex;flex-wrap:wrap;gap:8px}
+  .verif .reglas span{border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:700}
+  .verif .reglas .si{background:#DCFAE6;color:#067647}.verif .reglas .no{background:#FDECEC;color:#B42318}
+  .verif .vbtn{flex:none;height:58px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer;width:100%}
+  .verif .vbtn.claro{background:var(--suave);color:var(--texto)}
+  .verif .vbtn:disabled{opacity:.5}
+  .verif .fila2{display:flex;gap:10px}.verif .fila2 .vbtn{flex:1}
+  .verif .fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .fotos3 button{aspect-ratio:3/4;border-radius:14px;border:2px dashed #B9C0D4;background:#F8F9FC;font:inherit;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;padding:6px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .verif .fotos3 button.sel{border:3px solid var(--navy);color:var(--navy)}
+  .verif .fotos3 button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .fotos3 button.hecha::after{content:'✓';position:absolute;right:5px;top:5px;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .verif .compara{display:flex;align-items:center;gap:12px;justify-content:center}
+  .verif .compara figure{margin:0;text-align:center;font-size:12px;color:var(--gris);font-weight:600}
+  .verif .compara img{width:110px;height:140px;object-fit:cover;border-radius:16px;display:block;margin-bottom:6px;background:#E4E7EC}
+  .verif .grande{width:86px;height:86px;border-radius:50%;margin:24px auto 6px;display:flex;align-items:center;justify-content:center;font-size:42px;color:#fff;background:var(--verde);animation:aparece .45s cubic-bezier(.2,1.4,.4,1)}
+  .verif .grande.mal{background:var(--rojo)}.verif .grande.espera{background:var(--navy)}
+  .verif .grande.espera::before{content:'';width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .verif .centro{text-align:center}
+  .verif .motivo{background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .verif .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .resumen figure{margin:0;font-size:11.5px;color:var(--gris);font-weight:600;text-align:center}
+  .verif .resumen img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#E4E7EC;display:block;margin-bottom:3px}
+  .verif .vlista{border:1px solid #E4E7EC;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  .verif .vlista b{font-size:15.5px}.verif .vlista p{font-size:13.5px;margin-top:2px}
+  .turno-ok{display:inline-flex;align-items:center;gap:6px;background:#DCFAE6;color:#067647;font-weight:700;font-size:12.5px;border-radius:999px;padding:4px 10px;margin-top:6px}
+  .turno-ok.falta{background:#FFFAEB;color:#93370D;border:1px solid #FEDF89;cursor:pointer}
   .aviso{position:absolute;left:18px;right:18px;bottom:96px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:60;text-align:center}
   /* ---------- Controles de la prueba ---------- */
   .controles{width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:10px;align-self:center}
@@ -382,6 +431,7 @@
         <div class="hola">Hola,</div>
         <h1 id="nombre"></h1>
         <p id="saludo-txt">¡Buenos días, que tengas una excelente jornada!</p>
+        <span class="turno-ok" id="turno-ok" hidden></span>
       </div>
       <div class="carro" id="carro"></div>
     </div>
@@ -470,12 +520,14 @@
 
     <div class="fin" id="fin" hidden></div>
     <div class="confirmar" id="confirmar" hidden><div class="caja"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg></div><h3 id="confirmar-tit"></h3><p id="confirmar-txt"></p><div class="b"><button class="no" id="c-no"></button><button class="si" id="c-si"></button></div></div></div>
+    <div class="verif" id="verif" hidden></div>
     <div class="aviso" id="aviso" hidden></div>
     <div class="cargando" id="cargando"><img src="img/logo-blanco.png" alt="" style="width:120px;opacity:.95" onerror="this.remove()"><div class="rueda"></div><div id="cargando-txt">Cargando…</div></div>
   </div></div>
 </div>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="conductor.js?v=6"></script>
+<script src="turno.js?v=1"></script>
+<script src="conductor.js?v=7"></script>
 </body>
 </html>

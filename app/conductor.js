@@ -832,6 +832,7 @@
       try { D = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { return; }
       if (!D) return;
       $('#cargando').hidden = true;
+      if (window.AATurno) AATurno.estado(D);
       if (D.oferta || D.carrera) { U.menu = false; if (U.pantalla !== 'inicio') U.pantalla = 'inicio'; }
       render();
     },
@@ -847,13 +848,17 @@
     },
     // Botón "atrás" del teléfono: true si la página lo usó
     atras: function () {
+      if (window.AATurno && AATurno.atras()) return true;
       if (!$('#confirmar').hidden) { $('#confirmar').hidden = true; U.confirmar = null; return true; }
       if (U.menu) { alternarMenu(); return true; }
       if (U.fin) return true;
       if (U.pantalla !== 'inicio' && !enViaje()) { irA('inicio'); return true; }
       return false;
     },
-    cargando: function (t) { $('#cargando-txt').textContent = t; }
+    cargando: function (t) { $('#cargando-txt').textContent = t; },
+    // Verificación del turno (turno.js)
+    abrirTurno: function () { if (window.AATurno) AATurno.abrir(); },
+    turnoRespuesta: function (json) { if (window.AATurno) AATurno.respuesta(json); }
   };
 
   // Cada segundo: la cuenta regresiva de la oferta corre sola entre un estado y otro

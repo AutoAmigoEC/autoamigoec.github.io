@@ -569,7 +569,10 @@
       setHTML('#lista-activas', '<div class="vacio">No hay carreras activas.<br>Crea una con "+ Nueva carrera".</div>');
       return;
     }
-    var eleg = Despacho.elegibles(filtrarEstadosActivos(), t, S.saldos);
+    // Si la verificación del turno está prendida, solo cuentan los conductores con turno aprobado hoy
+    var estAct = filtrarEstadosActivos();
+    if (window.TurnosAA) Object.keys(estAct).forEach(function (u) { if (!TurnosAA.ok(u)) delete estAct[u]; });
+    var eleg = Despacho.elegibles(estAct, t, S.saldos);
     var limite = S.config.prioridadMin * 60000;
     setHTML('#lista-activas', ids.map(function (id) {
       var c = S.carreras[id];
@@ -2171,7 +2174,7 @@
       var n = Number($(f[0]).value);
       c[f[1]] = f[2] === 100 ? Math.round(n * 100) : n;
     });
-    db.ref('config').set(c).then(function () { toast('Configuración guardada.'); })
+    db.ref('config').update(c).then(function () { toast('Configuración guardada.'); })   // update: no borra la verificación del turno
       .catch(function (e) { toast(errorTexto(e), true); });
   });
 
