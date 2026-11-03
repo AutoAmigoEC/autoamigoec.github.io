@@ -1562,7 +1562,7 @@
         '<div class="resumen">' + fig(V.fotos.selfie, 'No se envía', 'queda') + fig(V.fotos.pecho, 'Sin la cara', 'sin-cara') +
         V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
         '<div class="soloprueba"><small>SOLO EN LA PRUEBA · elige qué ve la revisión automática</small><div class="reglas">' +
-        [['bien', 'Todo bien'], ['sincamisa', 'Sin camisa'], ['gorra', 'Con gorra'], ['carro', 'Carro sucio'], ['duda', 'Dudoso: camiseta']].map(function (o) {
+        [['bien', 'Todo bien'], ['sincamisa', 'Sin camisa'], ['random', 'Foto que no sirve'], ['gorra', 'Con gorra'], ['carro', 'Carro sucio'], ['duda', 'Dudoso: camiseta']].map(function (o) {
           return '<button data-v="simia" data-o="' + o[0] + '" style="height:36px;padding:0 12px;border-radius:999px;' + (V.simIA === o[0] ? 'background:var(--navy);color:#fff;border-color:var(--navy)' : '') + '">' + o[1] + '</button>';
         }).join('') + '</div></div>' +
         '<button class="vbtn" data-v="enviar">Enviar</button></div>';
@@ -1583,6 +1583,7 @@
     } else if (p === 'rechazado') {
       h = cabecera('Turno rechazado', -1) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">' + (V.porIA ? 'Tu turno no fue aprobado' : 'La central rechazó tu turno') + '</h2>' +
         '<div class="motivo">' + esc(V.motivo) + '</div>' +
+        (V.borrada && V.porIA ? '<p class="centro" style="font-size:13px">Esa foto se borró y no se guardó.</p>' : '') +
         '<button class="vbtn" data-v="corregir">Volver a tomar la foto</button></div>';
     }
     if (el.__h !== h || el.__s !== V.sinCam) { el.innerHTML = h; el.__h = h; el.__s = V.sinCam; if (ejemplo && frente !== null) montarCam(ejemplo); }
@@ -1590,7 +1591,8 @@
   }
 
   var MOTIVOS = {
-    sincamisa: ['No tienes camisa. Ponte camisa y vuelve a tomar la foto.', ['pecho']],
+    sincamisa: ['No tienes camisa. Ponte camisa y vuelve a tomar la foto.', ['pecho'], true],
+    random: ['Esa foto no sirve: no se ve tu camisa. Toma la foto de tu cara para abajo, con tu camisa puesta.', ['pecho'], true],
     camiseta: ['Llevas camiseta, no camisa. Ponte camisa y vuelve a tomar la foto.', ['pecho']],
     gorra: ['Estás con gorra. Quítatela y vuelve a tomar la foto de tu camisa.', ['pecho']],
     carro: ['El carro no está limpio. Límpialo y vuelve a tomar las fotos del carro.', ['carro']]
@@ -1636,7 +1638,7 @@
         V.porIA = true;
         if (V.simIA === 'bien') { V.aprobado = true; V.aprobadoA = Date.now(); V.paso = 'aprobado'; }
         else if (V.simIA === 'duda') { V.porIA = false; V.paso = 'espera'; }
-        else { var m = MOTIVOS[V.simIA]; V.motivo = m[0]; V.rehacer = m[1]; V.paso = 'rechazado'; }
+        else { var m = MOTIVOS[V.simIA]; V.motivo = m[0]; V.rehacer = m[1]; V.borrada = !!m[2]; V.paso = 'rechazado'; }   // sin camisa o foto que no sirve: se borra y nunca llega a la central
         V.simIA = 'bien';   // en la prueba, el siguiente envío vuelve a "Todo bien"
         vRender();
       }, 2500);

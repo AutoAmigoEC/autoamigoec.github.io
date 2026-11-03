@@ -48,7 +48,9 @@
     ],
     hechos: [
       { nombre: 'Carlos Mendoza', unidad: '07', aprobado: true, por: 'ia', a: ahora - 95 * MIN },
-      { nombre: 'Jorge Ramírez', unidad: '19', aprobado: false, por: 'ia', motivo: 'Sin camisa', a: ahora - 88 * MIN },
+      { nombre: 'Jorge Ramírez', unidad: '19', aprobado: false, bloqueada: true, por: 'ia', motivo: 'Sin camisa', a: ahora - 88 * MIN },
+      { nombre: 'Jorge Ramírez', unidad: '19', aprobado: true, por: 'ia', a: ahora - 84 * MIN },
+      { nombre: 'Luis Peña', unidad: '12', aprobado: false, bloqueada: true, por: 'ia', motivo: 'Foto que no sirve (no se ve la camisa)', a: ahora - 61 * MIN },
       { nombre: 'Pedro Alvarado', unidad: '03', aprobado: true, por: 'ia', a: ahora - 70 * MIN },
       { nombre: 'Kevin Mora', unidad: '21', aprobado: false, por: 'ia', motivo: 'Con gorra', a: ahora - 52 * MIN },
       { nombre: 'Kevin Mora', unidad: '21', aprobado: true, por: 'ia', a: ahora - 49 * MIN }
@@ -82,7 +84,8 @@
   }
   // ---- Detector propio: aprende de las decisiones de Gemini y de la central; cuando iguala a Gemini, se deja Gemini ----
   var DET = { fase: 1 };
-  var CLASES = [['Camisa', 612], ['Camiseta', 141], ['Sin camisa', 38], ['Con gorra', 77], ['Carro limpio', 1840], ['Carro sucio', 96]];
+  // Solo se guardan fotos aptas. Sin camisa y fotos que no sirven se borran al instante: esos casos el detector los aprende con fotos públicas de ejemplo
+  var CLASES = [['Camisa', 612], ['Camiseta', 141], ['Con gorra', 77], ['Carro limpio', 1840], ['Carro sucio', 96]];
   var META = 300;
   function detectorHTML() {
     var f = DET.fase;
@@ -91,7 +94,8 @@
     var cuerpo;
     if (f === 1) {
       var total = CLASES.reduce(function (t, c) { return t + c[1]; }, 0);
-      cuerpo = '<p>Ya tiene <b>' + total.toLocaleString('es-EC') + ' fotos</b> para aprender. Necesita al menos ' + META + ' de cada tipo. Faltan sobre todo fotos de <b>sin camisa</b> y <b>con gorra</b> (salen poco, y eso es bueno).</p>' +
+      cuerpo = '<p>Ya tiene <b>' + total.toLocaleString('es-EC') + ' fotos</b> para aprender. Necesita al menos ' + META + ' de cada tipo. Faltan sobre todo fotos de <b>camiseta</b> y <b>con gorra</b>.</p>' +
+        '<p class="muted">Las fotos sin camisa o que no sirven no se guardan nunca: se borran al instante. Esos casos el detector los aprende con fotos públicas de ejemplo, no con las de tus conductores.</p>' +
         '<div class="det-barras">' + CLASES.map(function (c) { var pct = Math.min(100, Math.round(c[1] / META * 100)); return '<div><span>' + c[0] + '</span><i><em style="width:' + pct + '%" class="' + (pct >= 100 ? 'ok' : '') + '"></em></i><small>' + c[1] + (c[1] >= META ? ' ✓' : ' / ' + META) + '</small></div>'; }).join('') + '</div>' +
         '<p class="muted">Cálculo: listo para la fase 2 en unas 5 semanas.</p>';
     } else if (f === 2) {
@@ -116,6 +120,8 @@
 
   function pintar() {
     var det = $('#detector-turnos'); if (det) det.innerHTML = detectorHTML();
+    var nb = T.hechos.filter(function (h) { return h.bloqueada; }).length;
+    var blq = $('#bloqueadas-turnos'); if (blq) { blq.hidden = !nb; blq.innerHTML = '<b>Gemini bloqueó ' + nb + ' foto' + (nb > 1 ? 's' : '') + ' hoy</b> (sin camisa o que no servían). Se eliminaron al instante y no se muestran aquí; al conductor le llegó el motivo para corregir.'; }
     var n = T.pendientes.length;
     var bad = $('#badge-turnos'); if (bad) { bad.textContent = n; bad.hidden = !n; }
     var sub = $('#turnos-sub'); if (sub) sub.textContent = n ? n + ' conductor' + (n > 1 ? 'es esperan' : ' espera') + ' para poder conectarse.' : 'No hay turnos por revisar.';
@@ -124,7 +130,7 @@
     var hechos = $('#turnos-hechos');
     if (hechos) hechos.innerHTML = T.hechos.length ? '<table class="tabla"><thead><tr><th>Conductor</th><th>Resultado</th><th>Revisó</th><th>Hora</th></tr></thead><tbody>' +
       T.hechos.slice().reverse().map(function (h) {
-        return '<tr><td>' + esc(h.nombre) + ' · U' + esc(h.unidad) + '</td><td>' + (h.aprobado ? '<span class="pill libre">Aprobado</span>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>') + '</td><td>' + (h.por === 'ia' ? 'Gemini' : 'Central') + '</td><td>' + hora(h.a) + '</td></tr>';
+        return '<tr><td>' + esc(h.nombre) + ' · U' + esc(h.unidad) + '</td><td>' + (h.aprobado ? '<span class="pill libre">Aprobado</span>' : (h.bloqueada ? '<span class="pill sinsaldo">Bloqueada</span> <small>' + esc(h.motivo) + ' · foto eliminada, no se muestra</small>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>')) + '</td><td>' + (h.por === 'ia' ? 'Gemini' : 'Central') + '</td><td>' + hora(h.a) + '</td></tr>';
       }).join('') + '</tbody></table>' : '';
     // Aviso arriba en cualquier vista
     var av = $('#aviso-turnos');

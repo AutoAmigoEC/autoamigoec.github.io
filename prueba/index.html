@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=20261103165500">
+<link rel="stylesheet" href="estilos.css?v=20261103170000">
 </head>
 <body>
 
@@ -122,8 +122,9 @@
       <header class="cabecera">
         <div><h1>Turnos por revisar</h1><p class="muted" id="turnos-sub"></p></div>
       </header>
-      <p class="muted" style="margin:0">La revisión automática (Gemini, gratis) aprueba sola lo que está bien y rechaza sola lo que está claramente mal (sin camisa, con gorra o carro sucio). Aquí solo llegan los casos dudosos. Aplasta una foto para verla grande.</p>
+      <p class="muted" style="margin:0">La revisión automática (Gemini, gratis) aprueba sola lo que está bien y rechaza sola lo que está claramente mal (con gorra o carro sucio). Las fotos sin camisa o que no sirven se bloquean y se eliminan sin que nadie las vea. Aquí solo llegan los casos dudosos. Aplasta una foto para verla grande.</p>
       <div id="detector-turnos"></div>
+      <div id="bloqueadas-turnos" class="bloqueadas-turnos" hidden></div>
       <div id="lista-turnos" class="lista-turnos"></div>
       <h2 style="margin:8px 0 0;font-size:17px">Revisados hoy</h2>
       <div class="tabla-caja" id="turnos-hechos"></div>
@@ -495,7 +496,7 @@
 <script src="mapas.js?v=20261103153600"></script>
 <script src="config.js?v=20261029223036"></script>
 <script src="despacho.js?v=20261030190000"></script>
-<script src="turnos.js?v=20261103165500" defer></script>
+<script src="turnos.js?v=20261103170000" defer></script>
 <script src="app.js?v=20261103151200"></script>
 </body>
 </html>

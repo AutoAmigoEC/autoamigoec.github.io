@@ -330,3 +330,4 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .det-nota b{font-family:Manrope,sans-serif;font-size:30px;color:#1E6FE8}
 .det-nota.ok{background:#ECFDF3}.det-nota.ok b{color:var(--libre-tx)}
 .det-nota span{font-size:14px;font-weight:600}.det-nota small{font-weight:400;color:var(--gris-2)}
+.bloqueadas-turnos{background:#F9FAFB;border:1px solid var(--linea);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--gris-1)}
