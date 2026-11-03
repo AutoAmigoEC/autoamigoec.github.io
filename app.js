@@ -556,7 +556,7 @@
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
         (c.estado === 'pendiente' ? ' · ' + duracion(espera) : '') + '</span></div>' +
         (c.telefono ? '<div class="cliente-tel">' + telMenu(c.telefono, 'a-' + id) + '</div>' : '') +
-        etiquetaCancelada(c) +
+        etiquetaCancelada(c) + avisoRevisar(c) +
         (typeof c.recogerEn === 'number' ? '<span class="etiqueta-prog">Programada · recoger ' + fechaHora(c.recogerEn) + '</span>' : '') +
         '<div class="ruta">De: ' + esc((c.origen || {}).dir || '—') + (c.exacta ? '<br><small>' + esc(c.exacta) + '</small>' : '') + '<br>A: ' + esc((c.destino || {}).dir || 'Sin destino') + '</div>' +
         extra +
@@ -626,7 +626,7 @@
         '<td>' + esc(c.cliente) + '<small>' + esc(c.telefono || '') + '</small></td>' +
         '<td>' + esc((c.origen || {}).dir || '—') + '<small>→ ' + esc((c.destino || {}).dir || 'Sin destino') + '</small></td>' +
         '<td>' + (c.conductor ? esc(c.conductorNombre || nombreCond(c.conductor)) + '<small>' + esc(c.unidad ? 'U' + c.unidad : '') + '</small>' : '—') + '</td>' +
-        '<td><span class="pill ' + (prog ? 'programada' : c.estado) + '">' + (prog ? 'Programada' : NOMBRE_CARRERA[c.estado]) + '</span></td>' +
+        '<td><span class="pill ' + (prog ? 'programada' : c.estado) + '">' + (prog ? 'Programada' : NOMBRE_CARRERA[c.estado]) + '</span>' + avisoRevisar(c) + '</td>' +
         '<td>' + espera + '</td>' +
         '<td>' + precioTexto(c) + '</td>' +
         '<td>' + com + '</td>' +
@@ -745,6 +745,16 @@
       if (d) d.close();
     }
   });
+
+  // Protección contra trampas: carrera que el conductor retomó después de borrar la app
+  function avisoRevisar(c) {
+    var tx = c.taximetro || {}, r = c.revisar;
+    if (!r && !tx.reanudada) return '';
+    var sin = tx.reanudada && tx.act && tx.reanudada > tx.act ? ' · sin señal ' + duracion(tx.reanudada - tx.act) : '';
+    if (c.estado !== 'finalizada') return '<span class="etiqueta-cancel">⚠️ Retomada después de borrar la app' + sin + '</span>';
+    var det = r ? ' · cobrado ' + dineroC(r.cobradoC) + (r.estimadoC ? ' · estimado ' + dineroC(r.estimadoC) : '') + (r.porEstimado ? ' · comisión sobre lo estimado' : '') : '';
+    return '<span class="etiqueta-cancel">⚠️ Revisar: se finalizó después de borrar la app' + det + sin + '</span>';
+  }
 
   // Carrera que un conductor canceló desde la app: vuelve a la cola para otro conductor
   function etiquetaCancelada(c) {
@@ -1975,6 +1985,9 @@
           if (!y.unidad && (cc.unidad || cd.unidad)) y.unidad = cc.unidad || cd.unidad;
           y.canc++; tot.cancCond++;
         });
+        if (c.revisar || (c.taximetro && c.taximetro.reanudada)) {
+          var ys = filaCond(c.conductor || '-', c.conductorNombre, c.unidad); ys.sosp = (ys.sosp || 0) + 1; tot.sosp = (tot.sosp || 0) + 1;
+        }
         if (c.estado === 'cancelada') { tot.canceladas++; return; }
         if (c.estado !== 'finalizada') return;
         var k = c.conductor || '-';
@@ -1990,15 +2003,16 @@
         kpi('pendiente', 'Comisión cobrada', dineroC(tot.cobrada)) +
         kpi('sinsaldo', 'Pérdida por saldo', dineroC(tot.perdida)) +
         kpi('fuera', 'Canceladas', tot.canceladas) +
-        kpi('sinsaldo', 'Canceladas por conductor', tot.cancCond));
+        kpi('sinsaldo', 'Canceladas por conductor', tot.cancCond) +
+        kpi('sinsaldo', 'Carreras sospechosas', tot.sosp || 0));
       var filas = Object.keys(porCond).sort(function (a, b) { return porCond[b].total - porCond[a].total; }).map(function (k) {
         var x = porCond[k];
         return '<tr><td><strong>' + esc(x.unidad ? 'U' + x.unidad : '') + '</strong></td><td>' + esc(x.nombre) + '</td><td>' + x.n +
           '</td><td><strong>' + dinero(x.total) + '</strong></td><td>' + dineroC(x.com) + '</td><td>' + dineroC(x.cobrada) +
-          '</td><td class="' + (x.perdida ? 'saldo-bajo' : '') + '">' + dineroC(x.perdida) + '</td><td class="' + (x.canc ? 'saldo-bajo' : '') + '">' + x.canc + '</td></tr>';
+          '</td><td class="' + (x.perdida ? 'saldo-bajo' : '') + '">' + dineroC(x.perdida) + '</td><td class="' + (x.canc ? 'saldo-bajo' : '') + '">' + x.canc + '</td><td class="' + (x.sosp ? 'saldo-bajo' : '') + '">' + (x.sosp || 0) + '</td></tr>';
       }).join('');
-      setHTML('#tabla-reporte', '<thead><tr><th>Unidad</th><th>Conductor</th><th>Carreras</th><th>Cobrado</th><th>Comisión</th><th>Comisión cobrada</th><th>Pérdida</th><th>Canceladas por conductor</th></tr></thead><tbody>' +
-        (filas || '<tr><td colspan="8" class="muted" style="text-align:center;padding:28px">No hay carreras finalizadas en esas fechas.</td></tr>') + '</tbody>');
+      setHTML('#tabla-reporte', '<thead><tr><th>Unidad</th><th>Conductor</th><th>Carreras</th><th>Cobrado</th><th>Comisión</th><th>Comisión cobrada</th><th>Pérdida</th><th>Canceladas por conductor</th><th>Sospechosas</th></tr></thead><tbody>' +
+        (filas || '<tr><td colspan="9" class="muted" style="text-align:center;padding:28px">No hay carreras finalizadas en esas fechas.</td></tr>') + '</tbody>');
     }).catch(function (e) { toast(errorTexto(e), true); });
   });
 
