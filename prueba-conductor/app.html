@@ -323,6 +323,56 @@
   .fin .pie{margin-top:auto;position:sticky;bottom:0;background:#fff;padding:4px 0 18px}
   .fin .pie .btn-final{margin-top:0;position:static}
   .fin .espacio{height:18px;flex:none}
+  /* ---------- Verificación al empezar el turno ---------- */
+  .verif{position:absolute;inset:0;z-index:55;background:#fff;display:flex;flex-direction:column;animation:entra .18s ease}
+  .verif .vcab{flex:none;padding:44px 18px 10px;display:flex;align-items:center;gap:12px}
+  .verif .vcab b{font-family:Manrope,sans-serif;font-size:19px;color:var(--navy);flex:1}
+  .verif .vcab button{width:40px;height:40px;border-radius:12px;border:0;background:var(--suave);font-size:20px;cursor:pointer;color:var(--texto)}
+  .verif .vprog{flex:none;display:flex;gap:6px;padding:0 18px}
+  .verif .vprog i{flex:1;height:5px;border-radius:9px;background:#E4E7EC}
+  .verif .vprog i.ok{background:var(--verde)}.verif .vprog i.ya{background:var(--navy)}
+  .verif .vpaso{flex:none;padding:12px 18px 0;font-size:13px;font-weight:700;color:var(--gris)}
+  .verif .vcuerpo{flex:1;overflow:auto;padding:4px 18px 18px;display:flex;flex-direction:column;gap:12px}
+  .verif h2{margin:0;font-family:Manrope,sans-serif;font-size:22px;color:var(--texto);line-height:1.2}
+  .verif p{margin:0;color:var(--gris);font-size:14.5px;line-height:1.45}
+  .verif .cam{position:relative;border-radius:22px;overflow:hidden;background:#101828;aspect-ratio:3/4;max-height:52vh;flex:none;width:100%}
+  .verif .cam.ancha{aspect-ratio:4/3}
+  .verif .cam video,.verif .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .cam video.espejo{transform:scaleX(-1)}
+  .verif .cam .ovalo{position:absolute;left:50%;top:44%;width:62%;aspect-ratio:3/4;transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 999px rgba(10,15,60,.45);border:4px solid #fff;transition:border-color .3s}
+  .verif .cam .ovalo.ok{border-color:var(--verde)}
+  .verif .cam .marco{position:absolute;inset:12%;border:3px dashed rgba(255,255,255,.85);border-radius:18px}
+  .verif .cam .indica{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(16,24,40,.78);color:#fff;border-radius:14px;padding:11px 12px;text-align:center;font-weight:800;font-size:16px}
+  .verif .cam .marca{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;border-radius:8px;padding:4px 8px}
+  .verif .reglas{display:flex;flex-wrap:wrap;gap:8px}
+  .verif .reglas span{border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:700}
+  .verif .reglas .si{background:#DCFAE6;color:#067647}.verif .reglas .no{background:#FDECEC;color:#B42318}
+  .verif .vbtn{flex:none;height:58px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer;width:100%}
+  .verif .vbtn.claro{background:var(--suave);color:var(--texto)}
+  .verif .vbtn:disabled{opacity:.5}
+  .verif .fila2{display:flex;gap:10px}.verif .fila2 .vbtn{flex:1}
+  .verif .fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .fotos3 button{aspect-ratio:3/4;border-radius:14px;border:2px dashed #B9C0D4;background:#F8F9FC;font:inherit;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;padding:6px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .verif .fotos3 button.sel{border:3px solid var(--navy);color:var(--navy)}
+  .verif .fotos3 button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .fotos3 button.hecha::after{content:'✓';position:absolute;right:5px;top:5px;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .verif .compara{display:flex;align-items:center;gap:12px;justify-content:center}
+  .verif .compara figure{margin:0;text-align:center;font-size:12px;color:var(--gris);font-weight:600}
+  .verif .compara img{width:110px;height:140px;object-fit:cover;border-radius:16px;display:block;margin-bottom:6px;background:#E4E7EC}
+  .verif .grande{width:86px;height:86px;border-radius:50%;margin:24px auto 6px;display:flex;align-items:center;justify-content:center;font-size:42px;color:#fff;background:var(--verde);animation:aparece .45s cubic-bezier(.2,1.4,.4,1)}
+  .verif .grande.mal{background:var(--rojo)}.verif .grande.espera{background:var(--navy)}
+  .verif .grande.espera::before{content:'';width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .verif .centro{text-align:center}
+  .verif .motivo{background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .verif .soloprueba{border:2px dashed #F5B300;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;background:#FFFBEB}
+  .verif .soloprueba small{font-weight:800;color:#93370D;font-size:12px}
+  .verif .soloprueba button{height:40px;border-radius:10px;border:1px solid #E4E7EC;background:#fff;font:inherit;font-weight:700;cursor:pointer}
+  .verif .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .resumen img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#E4E7EC}
+  .verif .vlista{border:1px solid #E4E7EC;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  .verif .vlista b{font-size:15.5px}.verif .vlista p{font-size:13.5px;margin-top:2px}
+  .turno-ok{display:inline-flex;align-items:center;gap:6px;background:#DCFAE6;color:#067647;font-weight:700;font-size:12.5px;border-radius:999px;padding:4px 10px;margin-top:6px}
   .aviso{position:absolute;left:18px;right:18px;bottom:96px;background:#101828;color:#fff;border-radius:14px;padding:12px 14px;font-size:14px;z-index:60;text-align:center}
   /* ---------- Controles de la prueba ---------- */
   .controles{width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);display:flex;flex-direction:column;gap:10px;align-self:center}
@@ -362,6 +412,7 @@
         <div class="hola">Hola,</div>
         <h1 id="nombre">Carlos</h1>
         <p id="saludo-txt">¡Buenos días, que tengas una excelente jornada!</p>
+        <span class="turno-ok" id="turno-ok" hidden></span>
       </div>
       <div class="carro" id="carro"></div>
     </div>
@@ -448,6 +499,7 @@
 
     <div class="fin" id="fin" hidden></div>
     <div class="confirmar" id="confirmar" hidden><div class="caja"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg></div><h3>¿Estás seguro de cancelar la carrera?</h3><p id="confirmar-txt"></p><div class="b"><button class="no" id="c-no">No, seguir con la carrera</button><button class="si" id="c-si">Sí, cancelar carrera</button></div></div></div>
+    <div class="verif" id="verif" hidden></div>
     <div class="aviso" id="aviso" hidden></div>
   </div></div>
 
@@ -455,6 +507,9 @@
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Al estar libre, la carrera sale sola en la pantalla (primero las de la bandeja, de la más cercana). Con estos botones puedes hacerla llegar al instante.</p>
+    <p><b>Verificación del turno:</b> al deslizar "Conectarme" la primera vez del día te pide cara, camisa, zapatos y carro.</p>
+    <button id="sim-dia">Nuevo día: pedir verificación otra vez</button>
+    <button id="sim-falla">Simular: la cara no coincide</button>
     <button class="prin" id="sim-escenario" style="background:#B42318">Escenario: acepto y me quedo sin internet</button>
     <button id="sim-red">Quitar internet</button>
     <button class="prin" id="sim-taxi">Llega carrera (taxímetro)</button>
@@ -610,6 +665,7 @@
   // ---------- Estado del conductor ----------
   var NOMBRE_ESTADO = { conectado: 'Conectado', desconectado: 'Desconectado', ocupado: 'Ocupado' };
   function ponerEstado(e, callado) {
+    if (e === 'conectado' && !callado && !V.aprobado && S.estado !== 'conectado') { abrirVerif(); return; }   // primero verificar el turno del día
     S.estado = e;
     if (!callado) aviso(e === 'conectado' ? 'Estás conectado. Te llegarán carreras.' : e === 'ocupado' ? 'Estás ocupado. No te llegarán carreras.' : 'Te desconectaste.');
     render();
@@ -1368,6 +1424,217 @@
     caja.addEventListener('pointerup', soltar);
     caja.addEventListener('pointercancel', soltar);
   })();
+
+  // ---------- Verificación al empezar el turno (una vez al día) ----------
+  // 1) selfie en vivo con parpadeo y giro: se compara con la foto de su cédula (en la app lo hace el teléfono, gratis)
+  // 2) foto del pecho (camisa, sin gorra)  3) foto de los pies (zapatos y basta del pantalón)  4) 3 fotos del carro
+  // Las fotos 2 a 4 las aprueba la central desde el panel. Hasta que aprueben no puede ponerse en Libre.
+  var V = { aprobado: false, aprobadoA: 0, paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, motivo: '', simFalla: false, stream: null, video: null, guiando: false };
+  function svgURI(s) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); }
+  var PH = {
+    cedula: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#DCE6F5"/><rect x="40" y="60" width="220" height="260" rx="14" fill="#fff"/><circle cx="150" cy="160" r="52" fill="#C89A72"/><path d="M98 150c0-40 104-40 104 0-8-22-96-22-104 0z" fill="#2A211B"/><path d="M70 320c8-60 152-60 160 0z" fill="#3B4A6B"/><rect x="60" y="340" width="180" height="12" rx="6" fill="#9AA8C2"/><rect x="60" y="362" width="120" height="10" rx="5" fill="#B9C3D6"/></svg>'),
+    selfie: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#B8C4D6"/><circle cx="150" cy="170" r="70" fill="#C89A72"/><path d="M80 160c0-55 140-55 140 0-12-30-128-30-140 0z" fill="#2A211B"/><path d="M40 400c10-90 210-90 220 0z" fill="#F4F5F7"/><path d="M125 318l25 30 25-30" fill="none" stroke="#C9CED8" stroke-width="6"/></svg>'),
+    pies: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#8F99A8"/><path d="M0 120h300M0 250h300M100 0v400M200 0v400" stroke="#7E8897" stroke-width="3"/><rect x="62" y="0" width="70" height="285" fill="#1F2A44"/><rect x="168" y="0" width="70" height="285" fill="#1F2A44"/><path d="M52 282h86v38c0 14-10 22-24 22H40c-14 0-18-14-6-22z" fill="#111"/><path d="M162 282h86v38c0 14-10 22-24 22h-74c-14 0-18-14-6-22z" fill="#111"/></svg>'),
+    carro: [
+      svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#3B3F46"/><rect x="20" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="165" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="128" y="250" width="44" height="110" rx="10" fill="#2B2E33"/></svg>'),
+      svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#3B3F46"/><rect x="15" y="80" width="270" height="200" rx="34" fill="#5A606B"/><rect x="15" y="270" width="270" height="70" rx="20" fill="#4C525C"/></svg>'),
+      svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#2B2E33"/><rect x="30" y="90" width="240" height="250" rx="16" fill="#3A3E45"/><path d="M50 120h200M50 160h200M50 200h200M50 240h200M50 280h200" stroke="#30343A" stroke-width="10"/></svg>')
+    ]
+  };
+  var PASOS = ['cara', 'pecho', 'pies', 'carro'];
+  var SLOTS = ['Asientos de adelante', 'Asientos de atrás', 'Piso'];
+  function horaCorta(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+
+  function abrirCam(frente) {
+    if (!V.video) { V.video = document.createElement('video'); V.video.playsInline = true; V.video.muted = true; V.video.autoplay = true; }
+    V.video.classList.toggle('espejo', !!frente);
+    if (V.sinCam || V.pidiendo) return;                       // sin cámara (o ya pidiéndola): se usa el dibujo de ejemplo
+    if (V.stream && V.frente === frente) return;
+    cerrarCam(); V.frente = frente; V.pidiendo = true;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { V.sinCam = true; vRender(); return; }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : 'environment', width: { ideal: 720 } }, audio: false })
+      .then(function (s) { V.pidiendo = false; if (!V.paso) { s.getTracks().forEach(function (t) { t.stop(); }); return; } V.stream = s; V.sinCam = false; V.video.srcObject = s; V.video.play().catch(function () {}); vRender(); })
+      .catch(function () { V.pidiendo = false; V.sinCam = true; vRender(); });
+  }
+  function cerrarCam() { if (V.stream) V.stream.getTracks().forEach(function (t) { t.stop(); }); V.stream = null; V.frente = null; }
+  // Foto chica (≈70 KB) con la hora impresa; sin cámara usa un dibujo de ejemplo
+  function capturar(ejemplo) {
+    var v = V.video;
+    if (!V.stream || !v || !v.videoWidth) return ejemplo;
+    var w = 360, h = Math.round(w * v.videoHeight / v.videoWidth), c = document.createElement('canvas'); c.width = w; c.height = h;
+    var g = c.getContext('2d');
+    if (V.frente) { g.translate(w, 0); g.scale(-1, 1); }
+    g.drawImage(v, 0, 0, w, h); g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, h - 22, w, 22); g.fillStyle = '#fff'; g.font = '12px sans-serif';
+    g.fillText(new Date().toLocaleString('es-EC') + ' · Unidad 07', 8, h - 7);
+    return c.toDataURL('image/jpeg', 0.6);
+  }
+  function camHTML(ancha, extra) { return '<div class="cam' + (ancha ? ' ancha' : '') + '" id="vcam">' + (extra || '') + '<span class="marca">' + horaCorta(Date.now()) + ' · Unidad 07</span></div>'; }
+  function montarCam(ejemplo) {
+    var cam = $('#vcam'); if (!cam) return;
+    if (V.sinCam) { var im = document.createElement('img'); im.src = ejemplo; cam.insertBefore(im, cam.firstChild); }
+    else if (V.video) cam.insertBefore(V.video, cam.firstChild);
+  }
+
+  function abrirVerif() {
+    if (V.paso === 'espera') { V.oculta = false; vRender(); return; }
+    V.paso = 'intro'; V.rehacer = null; V.sinCam = false; vRender();
+  }
+  function cerrarVerif() { cerrarCam(); V.guiando = false; if (V.paso !== 'espera') V.paso = null; else V.oculta = true; vRender(); }
+  function siguientePaso(actual) {
+    if (V.rehacer) { var i = V.rehacer.indexOf(actual); V.paso = V.rehacer[i + 1] || 'enviar'; }
+    else V.paso = PASOS[PASOS.indexOf(actual) + 1] || 'enviar';
+    if (V.paso === 'carro') V.slot = 0;
+    vRender();
+  }
+  function cabecera(titulo, n) {
+    var prog = PASOS.map(function (p, i) { return '<i class="' + (i < n ? 'ok' : i === n ? 'ya' : '') + '"></i>'; }).join('');
+    return '<div class="vcab"><b>' + titulo + '</b><button data-v="cerrar" aria-label="Cerrar">✕</button></div>' +
+      (n >= 0 ? '<div class="vprog">' + prog + '</div><div class="vpaso">Paso ' + (n + 1) + ' de 4</div>' : '');
+  }
+
+  function vRender() {
+    var el = $('#verif');
+    var ok = $('#turno-ok');
+    if (ok) { ok.hidden = !V.aprobado; ok.textContent = '✓ Turno aprobado ' + (V.aprobadoA ? horaCorta(V.aprobadoA) : ''); }
+    if (!V.paso || V.oculta) { el.hidden = true; return; }
+    el.hidden = false;
+    var p = V.paso, h = '', ejemplo = null, frente = null;
+    if (p === 'intro') {
+      h = cabecera('Empezar mi turno', -1) + '<div class="vcuerpo">' +
+        '<div class="grande" style="background:var(--navy)">🪪</div>' +
+        '<h2 class="centro">Antes de conectarte, verificamos tu turno</h2>' +
+        '<p class="centro">Se hace una sola vez al día. Toma menos de 2 minutos.</p>' +
+        '<div class="vlista">' +
+        '<div><b>1. Tu cara</b><p>Confirmamos que eres el mismo de tu cédula.</p></div>' +
+        '<div><b>2. Tu camisa</b><p>Con camisa y sin gorra.</p></div>' +
+        '<div><b>3. Tus zapatos</b><p>Zapatos y pantalón largo. No zapatillas ni short.</p></div>' +
+        '<div><b>4. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
+        '<button class="vbtn" data-v="empezar">Empezar</button></div>';
+    } else if (p === 'cara') {
+      frente = true; ejemplo = PH.selfie;
+      h = cabecera('Tu cara', 0) + '<div class="vcuerpo">' +
+        '<h2>Pon tu cara dentro del óvalo</h2><p>Con buena luz, sin gafas oscuras y sin gorra.</p>' +
+        camHTML(false, '<div class="ovalo" id="vovalo"></div><div class="indica" id="vindica">' + (V.guiando ? 'Mira de frente' : 'Cuando estés listo, aplasta Empezar') + '</div>') +
+        '<button class="vbtn" data-v="cara-ir"' + (V.guiando ? ' disabled' : '') + '>' + (V.guiando ? 'Verificando…' : 'Empezar') + '</button></div>';
+    } else if (p === 'compara') {
+      h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Comparando con tu cédula…</h2>' +
+        '<div class="compara"><figure><img src="' + PH.cedula + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div></div>';
+    } else if (p === 'cara-ok') {
+      h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">Eres Carlos Ruiz</h2><p class="centro">Tu cara coincide con la de tu cédula.</p>' +
+        '<div class="compara"><figure><img src="' + PH.cedula + '">Foto de tu cédula</figure><figure><img src="' + V.fotos.selfie + '">Ahora</figure></div>' +
+        '<button class="vbtn" data-v="sig" data-de="cara">Siguiente</button></div>';
+    } else if (p === 'nocoincide') {
+      h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu cédula</h2>' +
+        '<p class="centro">Ponte en un lugar con buena luz, quítate gafas o gorra y vuelve a intentarlo. Si sigue fallando, llama a la central.</p>' +
+        '<button class="vbtn" data-v="reintentar">Intentar otra vez</button><button class="vbtn claro" data-v="llamar">Llamar a la central</button></div>';
+    } else if (p === 'pecho' || p === 'pies') {
+      var esPecho = p === 'pecho';
+      frente = esPecho; ejemplo = esPecho ? PH.selfie : PH.pies;
+      var foto = V.prev;
+      h = cabecera(esPecho ? 'Tu camisa' : 'Tus zapatos', esPecho ? 1 : 2) + '<div class="vcuerpo">' +
+        '<h2>' + (esPecho ? 'Foto de tu cara y tu camisa' : 'Apunta la cámara a tus pies') + '</h2>' +
+        '<p>' + (esPecho ? 'Que se vea bien tu camisa y tu cabeza.' : 'Que se vean tus zapatos y la basta del pantalón.') + '</p>' +
+        '<div class="reglas">' + (esPecho ? '<span class="si">✓ Camisa</span><span class="no">✕ Gorra</span>'
+          : '<span class="si">✓ Zapatos</span><span class="si">✓ Pantalón largo</span><span class="no">✕ Zapatillas</span><span class="no">✕ Short</span>') + '</div>' +
+        (foto ? '<div class="cam"><img src="' + foto + '"></div><div class="fila2"><button class="vbtn claro" data-v="repetir">Repetir</button><button class="vbtn" data-v="usar" data-de="' + p + '">Usar foto</button></div>'
+          : camHTML(false, '<div class="marco"></div>') + '<button class="vbtn" data-v="foto" data-de="' + p + '">Tomar foto</button>') + '</div>';
+      if (foto) frente = null;
+    } else if (p === 'carro') {
+      frente = false; ejemplo = PH.carro[V.slot] || PH.carro[0];
+      var listas = V.fotos.carro.filter(Boolean).length === 3;
+      h = cabecera('Tu carro', 3) + '<div class="vcuerpo">' +
+        '<h2>' + (listas ? 'Listo, ya tienes las 3 fotos' : 'Foto: ' + SLOTS[V.slot]) + '</h2><p>El interior tiene que estar limpio y ordenado.</p>' +
+        (listas ? '' : camHTML(true, '<div class="marco"></div>')) +
+        '<div class="fotos3">' + SLOTS.map(function (s, i) {
+          var f = V.fotos.carro[i];
+          return '<button data-v="slot" data-i="' + i + '" class="' + (i === V.slot && !listas ? 'sel ' : '') + (f ? 'hecha' : '') + '">' + (f ? '<img src="' + f + '">' : '📷<span>' + s + '</span>') + '</button>';
+        }).join('') + '</div>' +
+        (listas ? '<button class="vbtn" data-v="sig" data-de="carro">Siguiente</button>' : '<button class="vbtn" data-v="foto-carro">Tomar foto</button>') + '</div>';
+      if (listas) frente = null;
+    } else if (p === 'enviar') {
+      var todas = [V.fotos.selfie, V.fotos.pecho, V.fotos.pies].concat(V.fotos.carro);
+      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Estas fotos se envían a la central para aprobar tu turno.</p>' +
+        '<div class="resumen">' + todas.map(function (f) { return '<img src="' + f + '">'; }).join('') + '</div>' +
+        '<button class="vbtn" data-v="enviar">Enviar a la central</button></div>';
+    } else if (p === 'espera') {
+      h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Enviado a la central</h2>' +
+        '<p class="centro">Te avisaremos apenas aprueben tu turno. Normalmente toma menos de 1 minuto.</p>' +
+        '<div class="soloprueba"><small>SOLO EN LA PRUEBA · lo que haría la central en el panel</small>' +
+        '<button data-v="aprobar">✓ Aprobar turno</button>' +
+        '<button data-v="rechazar" data-m="gorra">✕ Rechazar: está con gorra</button>' +
+        '<button data-v="rechazar" data-m="zapatillas">✕ Rechazar: está con zapatillas</button>' +
+        '<button data-v="rechazar" data-m="short">✕ Rechazar: está en short</button>' +
+        '<button data-v="rechazar" data-m="carro">✕ Rechazar: carro sucio</button></div></div>';
+    } else if (p === 'aprobado') {
+      h = cabecera('Turno aprobado', -1) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">¡Turno aprobado!</h2>' +
+        '<p class="centro">Aprobado a las ' + horaCorta(V.aprobadoA) + '. Ya puedes conectarte. Hoy no te lo volveremos a pedir.</p>' +
+        '<button class="vbtn" data-v="conectar" style="background:var(--verde)">Conectarme</button></div>';
+    } else if (p === 'rechazado') {
+      h = cabecera('Turno rechazado', -1) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">La central rechazó tu turno</h2>' +
+        '<div class="motivo">' + esc(V.motivo) + '</div>' +
+        '<button class="vbtn" data-v="corregir">Volver a tomar la foto</button></div>';
+    }
+    if (el.__h !== h || el.__s !== V.sinCam) { el.innerHTML = h; el.__h = h; el.__s = V.sinCam; if (ejemplo && frente !== null) montarCam(ejemplo); }
+    if (frente !== null && ejemplo) abrirCam(frente); else cerrarCam();
+  }
+
+  var MOTIVOS = {
+    gorra: ['Estás con gorra. Quítatela y vuelve a tomar la foto de tu camisa.', ['pecho']],
+    zapatillas: ['Estás con zapatillas. Ponte zapatos y vuelve a tomar la foto de tus pies.', ['pies']],
+    short: ['Estás en short. Ponte pantalón largo y vuelve a tomar la foto de tus pies.', ['pies']],
+    carro: ['El carro no está limpio. Límpialo y vuelve a tomar las fotos del carro.', ['carro']]
+  };
+  $('#verif').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-v]'); if (!b) return;
+    var a = b.getAttribute('data-v');
+    if (a === 'cerrar') { cerrarVerif(); aviso(V.paso === 'espera' ? 'Tu turno está esperando la aprobación de la central.' : 'Sin verificar tu turno no puedes conectarte.'); return; }
+    if (a === 'empezar') { V.paso = 'cara'; vRender(); return; }
+    if (a === 'cara-ir' || a === 'reintentar') {
+      if (a === 'reintentar') { V.paso = 'cara'; vRender(); }
+      V.guiando = true; vRender();
+      var pasos = ['Mira de frente', 'Parpadea dos veces', 'Gira la cabeza a la izquierda', 'Gira la cabeza a la derecha', '¡Listo!'], i = 0;
+      (function guia() {
+        if (V.paso !== 'cara') { V.guiando = false; return; }
+        var ind = $('#vindica'); if (ind) ind.textContent = pasos[i];
+        if (i === 0) V.fotos.selfie = capturar(PH.selfie);
+        if (i === pasos.length - 1) { var ov = $('#vovalo'); if (ov) ov.classList.add('ok'); }
+        i++;
+        if (i < pasos.length) setTimeout(guia, 1400);
+        else setTimeout(function () {
+          V.guiando = false; V.paso = 'compara'; vRender();
+          setTimeout(function () { if (V.paso === 'compara') { V.paso = V.simFalla ? 'nocoincide' : 'cara-ok'; vRender(); } }, 1600);
+        }, 700);
+      })();
+      return;
+    }
+    if (a === 'sig') { siguientePaso(b.getAttribute('data-de')); return; }
+    if (a === 'foto') { V.prev = capturar(b.getAttribute('data-de') === 'pecho' ? PH.selfie : PH.pies); vRender(); return; }
+    if (a === 'repetir') { V.prev = null; vRender(); return; }
+    if (a === 'usar') { var de = b.getAttribute('data-de'); V.fotos[de] = V.prev; V.prev = null; siguientePaso(de); return; }
+    if (a === 'slot') { V.slot = +b.getAttribute('data-i'); V.fotos.carro[V.slot] = null; vRender(); return; }
+    if (a === 'foto-carro') {
+      V.fotos.carro[V.slot] = capturar(PH.carro[V.slot]);
+      var falta = [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; });
+      V.slot = falta.length ? falta[0] : V.slot; vRender(); return;
+    }
+    if (a === 'enviar') { V.paso = 'espera'; V.rehacer = null; vRender(); return; }
+    if (a === 'aprobar') { V.aprobado = true; V.aprobadoA = Date.now(); V.paso = 'aprobado'; V.oculta = false; vRender(); return; }
+    if (a === 'rechazar') { var m = MOTIVOS[b.getAttribute('data-m')]; V.motivo = m[0]; V.rehacer = m[1]; V.paso = 'rechazado'; V.oculta = false; vRender(); return; }
+    if (a === 'corregir') {
+      V.rehacer.forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else V.fotos[k] = null; });
+      V.paso = V.rehacer[0]; V.slot = 0; V.prev = null; vRender(); return;
+    }
+    if (a === 'conectar') { V.paso = null; vRender(); ponerEstado('conectado'); return; }
+    if (a === 'llamar') { aviso('En la app aquí se llama a la central.'); return; }
+  });
+  $('#sim-falla').addEventListener('click', function () { V.simFalla = !V.simFalla; this.textContent = V.simFalla ? 'Simular: la cara SÍ coincide' : 'Simular: la cara no coincide'; aviso(V.simFalla ? 'La próxima verificación de cara va a fallar.' : 'La cara va a coincidir.'); });
+  $('#sim-dia').addEventListener('click', function () {
+    V.aprobado = false; V.aprobadoA = 0; V.paso = null; V.oculta = false; V.fotos = { carro: [] };
+    if (S.estado === 'conectado' && !S.carrera) ponerEstado('desconectado', true);
+    vRender(); aviso('Nuevo día: al conectarte te pedirá verificar el turno.');
+  });
+  vRender();
 
   // Controles de la prueba
   $('#sim-taxi').addEventListener('click', function () { nuevaOferta(0); });
