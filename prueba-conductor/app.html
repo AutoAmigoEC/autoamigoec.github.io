@@ -1428,8 +1428,10 @@
   // ---------- Verificación al empezar el turno (una vez al día) ----------
   // 1) selfie en vivo con parpadeo y giro: se compara con la foto de su cédula (en la app lo hace el teléfono, gratis)
   // 2) foto del pecho (camisa, sin gorra)  3) 3 fotos del carro
-  // Las fotos 2 y 3 las aprueba la central desde el panel. Hasta que aprueben no puede ponerse en Libre.
-  var V = { aprobado: false, aprobadoA: 0, paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, motivo: '', simFalla: false, stream: null, video: null, guiando: false };
+  // Las fotos 2 y 3 las revisa una IA: si está claramente bien aprueba sola, si está claramente mal rechaza sola
+  // (sin camisa, con gorra, carro sucio) y solo los casos dudosos (p. ej. camiseta en vez de camisa) van a la central.
+  // Hasta que aprueben no puede ponerse en Libre.
+  var V = { simIA: 'bien', porIA: false, aprobado: false, aprobadoA: 0, paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, motivo: '', simFalla: false, stream: null, video: null, guiando: false };
   function svgURI(s) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); }
   var PH = {
     cedula: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#DCE6F5"/><rect x="40" y="60" width="220" height="260" rx="14" fill="#fff"/><circle cx="150" cy="160" r="52" fill="#C89A72"/><path d="M98 150c0-40 104-40 104 0-8-22-96-22-104 0z" fill="#2A211B"/><path d="M70 320c8-60 152-60 160 0z" fill="#3B4A6B"/><rect x="60" y="340" width="180" height="12" rx="6" fill="#9AA8C2"/><rect x="60" y="362" width="120" height="10" rx="5" fill="#B9C3D6"/></svg>'),
@@ -1476,10 +1478,10 @@
   }
 
   function abrirVerif() {
-    if (V.paso === 'espera') { V.oculta = false; vRender(); return; }
+    if (V.oculta) { V.oculta = false; vRender(); return; }
     V.paso = 'intro'; V.rehacer = null; V.sinCam = false; vRender();
   }
-  function cerrarVerif() { cerrarCam(); V.guiando = false; if (V.paso !== 'espera') V.paso = null; else V.oculta = true; vRender(); }
+  function cerrarVerif() { cerrarCam(); V.guiando = false; if (['espera', 'revisando', 'rechazado'].indexOf(V.paso) >= 0) V.oculta = true; else V.paso = null; vRender(); }
   function siguientePaso(actual) {
     if (V.rehacer) { var i = V.rehacer.indexOf(actual); V.paso = V.rehacer[i + 1] || 'enviar'; }
     else V.paso = PASOS[PASOS.indexOf(actual) + 1] || 'enviar';
@@ -1550,22 +1552,29 @@
       if (listas) frente = null;
     } else if (p === 'enviar') {
       var todas = [V.fotos.selfie, V.fotos.pecho].concat(V.fotos.carro);
-      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Estas fotos se envían a la central para aprobar tu turno.</p>' +
+      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno.</p>' +
         '<div class="resumen">' + todas.map(function (f) { return '<img src="' + f + '">'; }).join('') + '</div>' +
-        '<button class="vbtn" data-v="enviar">Enviar a la central</button></div>';
+        '<div class="soloprueba"><small>SOLO EN LA PRUEBA · elige qué ve la revisión automática</small><div class="reglas">' +
+        [['bien', 'Todo bien'], ['sincamisa', 'Sin camisa'], ['gorra', 'Con gorra'], ['carro', 'Carro sucio'], ['duda', 'Dudoso: camiseta']].map(function (o) {
+          return '<button data-v="simia" data-o="' + o[0] + '" style="height:36px;padding:0 12px;border-radius:999px;' + (V.simIA === o[0] ? 'background:var(--navy);color:#fff;border-color:var(--navy)' : '') + '">' + o[1] + '</button>';
+        }).join('') + '</div></div>' +
+        '<button class="vbtn" data-v="enviar">Enviar</button></div>';
+    } else if (p === 'revisando') {
+      h = cabecera('Revisando', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Revisando tus fotos…</h2>' +
+        '<p class="centro">Toma unos segundos.</p></div>';
     } else if (p === 'espera') {
-      h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Enviado a la central</h2>' +
-        '<p class="centro">Te avisaremos apenas aprueben tu turno. Normalmente toma menos de 1 minuto.</p>' +
+      h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo"><div class="grande espera"></div><h2 class="centro">Tu turno lo está revisando la central</h2>' +
+        '<p class="centro">La revisión automática no pudo decidir, así que tus fotos pasaron a la central. Te avisaremos apenas lo aprueben.</p>' +
         '<div class="soloprueba"><small>SOLO EN LA PRUEBA · lo que haría la central en el panel</small>' +
         '<button data-v="aprobar">✓ Aprobar turno</button>' +
-        '<button data-v="rechazar" data-m="gorra">✕ Rechazar: está con gorra</button>' +
+        '<button data-v="rechazar" data-m="camiseta">✕ Rechazar: es camiseta, no camisa</button>' +
         '<button data-v="rechazar" data-m="carro">✕ Rechazar: carro sucio</button></div></div>';
     } else if (p === 'aprobado') {
       h = cabecera('Turno aprobado', -1) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">¡Turno aprobado!</h2>' +
-        '<p class="centro">Aprobado a las ' + horaCorta(V.aprobadoA) + '. Ya puedes conectarte. Hoy no te lo volveremos a pedir.</p>' +
+        '<p class="centro">' + (V.porIA ? 'Tus fotos están bien. ' : 'La central aprobó tu turno. ') + 'Aprobado a las ' + horaCorta(V.aprobadoA) + '. Ya puedes conectarte. Hoy no te lo volveremos a pedir.</p>' +
         '<button class="vbtn" data-v="conectar" style="background:var(--verde)">Conectarme</button></div>';
     } else if (p === 'rechazado') {
-      h = cabecera('Turno rechazado', -1) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">La central rechazó tu turno</h2>' +
+      h = cabecera('Turno rechazado', -1) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">' + (V.porIA ? 'Tu turno no fue aprobado' : 'La central rechazó tu turno') + '</h2>' +
         '<div class="motivo">' + esc(V.motivo) + '</div>' +
         '<button class="vbtn" data-v="corregir">Volver a tomar la foto</button></div>';
     }
@@ -1574,13 +1583,15 @@
   }
 
   var MOTIVOS = {
+    sincamisa: ['No tienes camisa. Ponte camisa y vuelve a tomar la foto.', ['pecho']],
+    camiseta: ['Llevas camiseta, no camisa. Ponte camisa y vuelve a tomar la foto.', ['pecho']],
     gorra: ['Estás con gorra. Quítatela y vuelve a tomar la foto de tu camisa.', ['pecho']],
     carro: ['El carro no está limpio. Límpialo y vuelve a tomar las fotos del carro.', ['carro']]
   };
   $('#verif').addEventListener('click', function (e) {
     var b = e.target.closest('[data-v]'); if (!b) return;
     var a = b.getAttribute('data-v');
-    if (a === 'cerrar') { cerrarVerif(); aviso(V.paso === 'espera' ? 'Tu turno está esperando la aprobación de la central.' : 'Sin verificar tu turno no puedes conectarte.'); return; }
+    if (a === 'cerrar') { cerrarVerif(); aviso(V.paso === 'espera' ? 'Tu turno está esperando la aprobación de la central.' : V.paso === 'revisando' ? 'Estamos revisando tus fotos.' : V.paso === 'rechazado' ? 'Corrige lo que te indicamos para poder conectarte.' : 'Sin verificar tu turno no puedes conectarte.'); return; }
     if (a === 'empezar') { V.paso = 'cara'; vRender(); return; }
     if (a === 'cara-ir' || a === 'reintentar') {
       if (a === 'reintentar') { V.paso = 'cara'; vRender(); }
@@ -1610,9 +1621,22 @@
       var falta = [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; });
       V.slot = falta.length ? falta[0] : V.slot; vRender(); return;
     }
-    if (a === 'enviar') { V.paso = 'espera'; V.rehacer = null; vRender(); return; }
-    if (a === 'aprobar') { V.aprobado = true; V.aprobadoA = Date.now(); V.paso = 'aprobado'; V.oculta = false; vRender(); return; }
-    if (a === 'rechazar') { var m = MOTIVOS[b.getAttribute('data-m')]; V.motivo = m[0]; V.rehacer = m[1]; V.paso = 'rechazado'; V.oculta = false; vRender(); return; }
+    if (a === 'simia') { V.simIA = b.getAttribute('data-o'); vRender(); return; }
+    if (a === 'enviar') {
+      V.paso = 'revisando'; V.rehacer = null; vRender();
+      setTimeout(function () {
+        if (V.paso !== 'revisando') return;
+        V.porIA = true;
+        if (V.simIA === 'bien') { V.aprobado = true; V.aprobadoA = Date.now(); V.paso = 'aprobado'; }
+        else if (V.simIA === 'duda') { V.porIA = false; V.paso = 'espera'; }
+        else { var m = MOTIVOS[V.simIA]; V.motivo = m[0]; V.rehacer = m[1]; V.paso = 'rechazado'; }
+        V.simIA = 'bien';   // en la prueba, el siguiente envío vuelve a "Todo bien"
+        vRender();
+      }, 2500);
+      return;
+    }
+    if (a === 'aprobar') { V.porIA = false; V.aprobado = true; V.aprobadoA = Date.now(); V.paso = 'aprobado'; V.oculta = false; vRender(); return; }
+    if (a === 'rechazar') { V.porIA = false; var m = MOTIVOS[b.getAttribute('data-m')]; V.motivo = m[0]; V.rehacer = m[1]; V.paso = 'rechazado'; V.oculta = false; vRender(); return; }
     if (a === 'corregir') {
       V.rehacer.forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else V.fotos[k] = null; });
       V.paso = V.rehacer[0]; V.slot = 0; V.prev = null; vRender(); return;

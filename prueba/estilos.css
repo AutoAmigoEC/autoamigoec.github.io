@@ -307,3 +307,4 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .foto-grande{position:fixed;inset:0;z-index:4000;background:rgba(9,1,69,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:zoom-out;padding:20px}
 .foto-grande img{max-height:80vh;max-width:90vw;border-radius:16px;background:#fff}
 .foto-grande p{color:#fff;font-weight:700;margin:0}
+.turno .duda-ia{background:#FFFAEB;border:1px solid #FEDF89;color:#93370D;border-radius:10px;padding:9px 12px;font-size:14px}
