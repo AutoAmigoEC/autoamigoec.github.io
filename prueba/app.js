@@ -132,6 +132,28 @@
     if (n.indexOf('593') !== 0) return '593' + n;
     return n;
   }
+  // Avisos al cliente por WhatsApp (gratis): se abre WhatsApp con el mensaje listo y la operadora solo pulsa Enviar
+  function mensajeAviso(c, tipo) {
+    if (tipo === 'fin') {
+      return 'Gracias por viajar con AutoAmigo 🙌\nTotal de tu carrera: *' + dinero(c.tarifa) + '*\n¡Que tengas un excelente día!';
+    }
+    var cd = S.conductores[c.conductor] || {};
+    var l = ['*AutoAmigo está en camino*', 'Unidad *' + (c.unidad || cd.unidad || '') + '* · ' + (c.conductorNombre || cd.nombre || '')];
+    if (cd.placa || cd.vehiculo) l.push((cd.placa ? 'Placa *' + cd.placa + '*' : '') + (cd.placa && cd.vehiculo ? ' · ' : '') + (cd.vehiculo || ''));
+    var e = S.estados[c.conductor], o = c.origen || {};
+    if (c.estado === 'aceptada' && e && typeof e.lat === 'number' && typeof o.lat === 'number') {
+      var km = Despacho.distanciaKm(e.lat, e.lng, o.lat, o.lng) * 1.3;
+      l.push('Llega en unos *' + Math.max(1, Math.round(km / 0.4)) + ' minutos*.');   // ~24 km/h en ciudad
+    }
+    return l.join('\n');
+  }
+  function botonAviso(id, c, tipo) {
+    var wa = telefonoWhatsapp(c.telefono);
+    if (!wa) return '';
+    var hecho = c.avisos && typeof c.avisos[tipo] === 'number' ? c.avisos[tipo] : 0;
+    return '<a class="btn btn-chico ' + (hecho ? '' : 'btn-wa') + '" data-aviso="' + id + '" data-tipo="' + tipo + '" target="_blank" rel="noopener" href="https://wa.me/' + wa + '?text=' +
+      encodeURIComponent(mensajeAviso(c, tipo)) + '">' + (hecho ? '✓ Enviado ' + hora(hecho) + ' · reenviar' : (tipo === 'fin' ? 'Enviar total por WhatsApp' : 'Enviar datos por WhatsApp')) + '</a>';
+  }
   // Teléfono del cliente: al tocarlo muestra Llamar y WhatsApp
   var telAbiertos = {};
   function opcionesTel(tel) {
@@ -511,6 +533,7 @@
     var t = ahora();
     var ids = Object.keys(S.carreras).filter(function (id) {
       var c = S.carreras[id];
+      if (c.estado === 'finalizada') return !!telefonoWhatsapp(c.telefono) && !(c.avisos && c.avisos.fin) && t - (Number(c.finalizada) || 0) < 30 * 60000;
       return ['pendiente', 'aceptada', 'ejecucion'].indexOf(c.estado) >= 0 && !Despacho.esProgramada(c, t);
     }).sort(ordenActivas);
     if (!ids.length) {
@@ -534,23 +557,26 @@
           (c.manual ? ' · asignada por la central' : '') + '</div>';
         // El conductor perdió internet en plena carrera: la carrera sigue, pero no se ve en vivo
         var ec = S.estados[c.conductor];
-        if (!ec || ec.online === false || t - (Number(ec.t) || 0) > 3 * 60000) extra += '<span class="etiqueta-cancel">Sin señal · en carrera · última vez ' + (ec && ec.t ? hora(ec.t) : '—') + '</span>';
+        if (c.estado !== 'finalizada' && (!ec || ec.online === false || t - (Number(ec.t) || 0) > 3 * 60000)) extra += '<span class="etiqueta-cancel">Sin señal · en carrera · última vez ' + (ec && ec.t ? hora(ec.t) : '—') + '</span>';
         if (c.estado === 'ejecucion' && c.taximetro && !c.precioFijo) {
           extra += '<div class="meta">' + ((Number(c.taximetro.metros) || 0) / 1000).toFixed(1) + ' km · ' +
             Math.floor((Number(c.taximetro.esperaSeg) || 0) / 60) + ' min detenido</div>';
         }
       }
       var acciones = '';
-      if (c.estado === 'pendiente') {
+      if (c.estado === 'finalizada') {
+        acciones = botonAviso(id, c, 'fin') + '<button class="btn btn-chico" data-sin-aviso="' + id + '">No avisar</button>';
+      } else if (c.estado === 'pendiente') {
         acciones = '<button class="btn btn-chico" data-asignar="' + id + '">Asignar manual</button>' +
           '<button class="btn btn-chico" data-editar-carrera="' + id + '">Editar</button>';
       } else {
         var e = S.estados[c.conductor];
         if (e && typeof e.lat === 'number') acciones += '<button class="btn btn-chico" data-ver="' + c.conductor + '">Ver carro</button>';
+        acciones = botonAviso(id, c, 'acepta') + acciones;
         if (c.estado === 'aceptada') acciones += '<button class="btn btn-chico" data-reofrecer="' + id + '">Devolver a la cola</button>';
       }
-      acciones += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>' +
-        '<button class="btn btn-chico btn-eliminar" data-eliminar-carrera="' + id + '">Eliminar</button>';
+      if (c.estado !== 'finalizada') acciones += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>' +
+        (c.estado !== 'finalizada' ? '<button class="btn btn-chico btn-eliminar" data-eliminar-carrera="' + id + '">Eliminar</button>' : '');
       return '<div class="carrera ' + clase + '">' +
         '<div class="fila"><strong>#' + esc(c.numero) + ' · ' + esc(c.cliente) + '</strong>' +
         '<span class="pill ' + c.estado + '">' + NOMBRE_CARRERA[c.estado] +
@@ -613,6 +639,8 @@
       var c = S.carreras[id];
       var acc = '';
       if (c.estado === 'pendiente') acc += '<button class="btn btn-chico" data-asignar="' + id + '">Asignar</button><button class="btn btn-chico" data-editar-carrera="' + id + '">Editar</button>';
+      if (c.estado === 'aceptada' || c.estado === 'ejecucion') acc += botonAviso(id, c, 'acepta');
+      if (c.estado === 'finalizada') acc += botonAviso(id, c, 'fin');
       if (c.estado === 'aceptada') acc += '<button class="btn btn-chico" data-reofrecer="' + id + '">Devolver a la cola</button>';
       if (['pendiente', 'aceptada', 'ejecucion'].indexOf(c.estado) >= 0)
         acc += '<button class="btn btn-chico btn-peligro" data-cancelar="' + id + '">Cancelar</button>';
@@ -719,6 +747,16 @@
     if (b.getAttribute('data-accion') === 'nueva-carrera') { abrirNuevaCarrera(null); return; }
     if (accionCliente(b)) return;
     var id;
+    if ((id = b.getAttribute('data-aviso'))) {
+      var up = {}; up['carreras/' + id + '/avisos/' + b.getAttribute('data-tipo')] = TS;
+      db.ref().update(up).catch(function (e) { toast(errorTexto(e), true); });
+      return;
+    }
+    if ((id = b.getAttribute('data-sin-aviso'))) {
+      var up2 = {}; up2['carreras/' + id + '/avisos/fin'] = 'no';
+      db.ref().update(up2).catch(function (e) { toast(errorTexto(e), true); });
+      return;
+    }
     if ((id = b.getAttribute('data-eliminar-carrera'))) { eliminarCarrera(id); return; }
     if ((id = b.getAttribute('data-ir-programadas')) !== null) { irA('carreras'); filtrarCarreras('programada'); return; }
     if ((id = b.getAttribute('data-asignar'))) { abrirAsignar(id); return; }
