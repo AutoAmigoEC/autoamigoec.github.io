@@ -271,7 +271,9 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .programar-campos .muted{grid-column:1/-1;margin:0;color:#026AA2;font-weight:600}
 .etiqueta-cancel{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#B42318;background:#FDECEC;border-radius:999px;padding:2px 9px}
 .etiqueta-prog{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#026AA2;background:#E0F2FE;border-radius:999px;padding:2px 9px}
-.carrera.ejecucion{border:2px solid var(--ejecucion);background:#FAF8FF}
+/* El cuadro de la carrera toma el color del carro en el mapa según la fase */
+.carrera.aceptada{border:2px solid #1E6FE8;background:#F3F8FF}
+.carrera.ejecucion{border:2px solid #6927DA;background:#FAF8FF}
 
 /* Avisos al cliente por WhatsApp */
 .btn.btn-wa{background:#25D366;border-color:#25D366;color:#fff}
