@@ -1,7 +1,7 @@
 /*
  * PRUEBA · Turnos por aprobar.
  * Al empezar el turno (una vez al día) el conductor manda: selfie (ya comparado con su cédula en el teléfono),
- * foto de la camisa, foto de los pies y 3 fotos del carro. La central aprueba o rechaza con un motivo.
+ * foto de la camisa y 3 fotos del carro. La central aprueba o rechaza con un motivo.
  * Aquí todo es de ejemplo (dibujos); en el sistema real las fotos llegan desde la app del conductor.
  */
 (function () {
@@ -22,17 +22,6 @@
       '<path d="M98 150c0-40 104-40 104 0-8-22-96-22-104 0z" fill="' + pelo + '"/><path d="M70 320c8-60 152-60 160 0z" fill="#3B4A6B"/>' +
       '<rect x="60" y="340" width="180" height="12" rx="6" fill="#9AA8C2"/><rect x="60" y="362" width="120" height="10" rx="5" fill="#B9C3D6"/>');
   }
-  function pies(tipo) {
-    var piso = '<rect width="300" height="400" fill="#8F99A8"/><path d="M0 120h300M0 250h300M100 0v400M200 0v400" stroke="#7E8897" stroke-width="3"/>';
-    if (tipo === 'short') return uri(piso + '<rect x="56" y="0" width="82" height="90" fill="#3E5C8A"/><rect x="162" y="0" width="82" height="90" fill="#3E5C8A"/>' +
-      '<rect x="72" y="90" width="50" height="195" fill="#C89A72"/><rect x="178" y="90" width="50" height="195" fill="#C89A72"/>' +
-      '<path d="M52 282h86v38c0 14-10 22-24 22H40c-14 0-18-14-6-22z" fill="#111"/><path d="M162 282h86v38c0 14-10 22-24 22h-74c-14 0-18-14-6-22z" fill="#111"/>');
-    var zap = tipo === 'zapatillas'
-      ? '<path d="M48 280h92v44c0 12-8 20-22 20H36c-14 0-18-16-4-24z" fill="#F4F5F7"/><path d="M60 300l60-10M62 314l64-10" stroke="#E5252A" stroke-width="6"/><rect x="34" y="334" width="106" height="12" rx="6" fill="#D0D5DD"/>' +
-        '<path d="M160 280h92v44c0 12-8 20-22 20h-82c-14 0-18-16-4-24z" fill="#F4F5F7"/><path d="M172 300l60-10M174 314l64-10" stroke="#E5252A" stroke-width="6"/><rect x="146" y="334" width="106" height="12" rx="6" fill="#D0D5DD"/>'
-      : '<path d="M52 282h86v38c0 14-10 22-24 22H40c-14 0-18-14-6-22z" fill="#111"/><path d="M162 282h86v38c0 14-10 22-24 22h-74c-14 0-18-14-6-22z" fill="#111"/>';
-    return uri(piso + '<rect x="62" y="0" width="70" height="285" fill="#1F2A44"/><rect x="168" y="0" width="70" height="285" fill="#1F2A44"/>' + zap);
-  }
   function carro(i, sucio) {
     var b = ['<rect width="300" height="400" fill="#3B3F46"/><rect x="20" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="165" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="128" y="250" width="44" height="110" rx="10" fill="#2B2E33"/>',
       '<rect width="300" height="400" fill="#3B3F46"/><rect x="15" y="80" width="270" height="200" rx="34" fill="#5A606B"/><rect x="15" y="270" width="270" height="70" rx="20" fill="#4C525C"/>',
@@ -42,16 +31,16 @@
   }
 
   var ahora = Date.now(), MIN = 60000;
-  function turno(id, nombre, unidad, hace, piel, pelo, camisa, gorra, tipoPies, sucio, parecido) {
+  function turno(id, nombre, unidad, hace, piel, pelo, camisa, gorra, sucio, parecido) {
     return { id: id, nombre: nombre, unidad: unidad, t: ahora - hace * MIN, parecido: parecido,
-      fotos: { cedula: cedula(piel, pelo), selfie: persona(piel, pelo, camisa, null), pecho: persona(piel, pelo, camisa, gorra), pies: pies(tipoPies),
+      fotos: { cedula: cedula(piel, pelo), selfie: persona(piel, pelo, camisa, null), pecho: persona(piel, pelo, camisa, gorra),
         carro: [carro(0, sucio), carro(1, sucio), carro(2, false)] } };
   }
   var T = {
     pendientes: [
-      turno('t1', 'Rosa Vélez', '26', 4, '#E0B48A', '#3B2A20', '#F4F5F7', null, 'zapatos', false, 97),
-      turno('t2', 'Milca Fierro', '08', 2, '#C89A72', '#1E1A17', '#DCE6F5', '#E5252A', 'zapatos', false, 95),
-      turno('t3', 'Luis Peña', '12', 1, '#B07C55', '#2A211B', '#F4F5F7', null, 'zapatillas', true, 96)
+      turno('t1', 'Rosa Vélez', '26', 4, '#E0B48A', '#3B2A20', '#F4F5F7', null, false, 97),
+      turno('t2', 'Milca Fierro', '08', 2, '#C89A72', '#1E1A17', '#DCE6F5', '#E5252A', false, 95),
+      turno('t3', 'Luis Peña', '12', 1, '#B07C55', '#2A211B', '#F4F5F7', null, true, 96)
     ],
     hechos: [
       { nombre: 'Carlos Mendoza', unidad: '07', aprobado: true, a: ahora - 95 * MIN },
@@ -60,9 +49,9 @@
     rechazando: null, motivos: {}, otro: ''
   };
   // Llega uno nuevo al minuto, para ver cómo avisa
-  setTimeout(function () { T.pendientes.push(turno('t4', 'Andrés Cedeño', '15', 0, '#D7A47C', '#2A211B', '#F4F5F7', null, 'short', false, 94)); pintar(); avisoNuevo('Andrés Cedeño · U15 envió su turno para aprobar.'); }, 60000);
+  setTimeout(function () { T.pendientes.push(turno('t4', 'Andrés Cedeño', '15', 0, '#D7A47C', '#2A211B', '#F4F5F7', null, false, 94)); pintar(); avisoNuevo('Andrés Cedeño · U15 envió su turno para aprobar.'); }, 60000);
 
-  var MOTIVOS = [['gorra', 'Está con gorra'], ['camisa', 'No tiene camisa'], ['zapatillas', 'Está con zapatillas'], ['short', 'Está en short'],
+  var MOTIVOS = [['gorra', 'Está con gorra'], ['camisa', 'No tiene camisa'],
     ['carro', 'Carro sucio'], ['foto', 'Las fotos no se ven bien'], ['otro', 'No es el conductor']];
 
   function tarjeta(p) {
@@ -73,7 +62,7 @@
       '<span class="cara-ok">✓ La cara coincide con la cédula (' + p.parecido + '%)</span></div>' +
       '<div class="fotos-turno">' +
         '<div class="grupo"><h4>Identidad</h4><div class="g">' + foto(p.fotos.cedula, 'Cédula') + foto(p.fotos.selfie, 'Selfie de hoy') + '</div></div>' +
-        '<div class="grupo"><h4>Vestimenta</h4><div class="g">' + foto(p.fotos.pecho, 'Camisa · sin gorra') + foto(p.fotos.pies, 'Zapatos · pantalón') + '</div></div>' +
+        '<div class="grupo"><h4>Vestimenta</h4><div class="g">' + foto(p.fotos.pecho, 'Camisa · sin gorra') + '</div></div>' +
         '<div class="grupo"><h4>Carro</h4><div class="g">' + foto(p.fotos.carro[0], 'Adelante') + foto(p.fotos.carro[1], 'Atrás') + foto(p.fotos.carro[2], 'Piso') + '</div></div>' +
       '</div>' +
       (rech

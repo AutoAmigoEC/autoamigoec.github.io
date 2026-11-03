@@ -507,7 +507,7 @@
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Al estar libre, la carrera sale sola en la pantalla (primero las de la bandeja, de la más cercana). Con estos botones puedes hacerla llegar al instante.</p>
-    <p><b>Verificación del turno:</b> al deslizar "Conectarme" la primera vez del día te pide cara, camisa, zapatos y carro.</p>
+    <p><b>Verificación del turno:</b> al deslizar "Conectarme" la primera vez del día te pide cara, camisa y carro.</p>
     <button id="sim-dia">Nuevo día: pedir verificación otra vez</button>
     <button id="sim-falla">Simular: la cara no coincide</button>
     <button class="prin" id="sim-escenario" style="background:#B42318">Escenario: acepto y me quedo sin internet</button>
@@ -1427,21 +1427,20 @@
 
   // ---------- Verificación al empezar el turno (una vez al día) ----------
   // 1) selfie en vivo con parpadeo y giro: se compara con la foto de su cédula (en la app lo hace el teléfono, gratis)
-  // 2) foto del pecho (camisa, sin gorra)  3) foto de los pies (zapatos y basta del pantalón)  4) 3 fotos del carro
-  // Las fotos 2 a 4 las aprueba la central desde el panel. Hasta que aprueben no puede ponerse en Libre.
+  // 2) foto del pecho (camisa, sin gorra)  3) 3 fotos del carro
+  // Las fotos 2 y 3 las aprueba la central desde el panel. Hasta que aprueben no puede ponerse en Libre.
   var V = { aprobado: false, aprobadoA: 0, paso: null, fotos: { carro: [] }, slot: 0, rehacer: null, motivo: '', simFalla: false, stream: null, video: null, guiando: false };
   function svgURI(s) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); }
   var PH = {
     cedula: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#DCE6F5"/><rect x="40" y="60" width="220" height="260" rx="14" fill="#fff"/><circle cx="150" cy="160" r="52" fill="#C89A72"/><path d="M98 150c0-40 104-40 104 0-8-22-96-22-104 0z" fill="#2A211B"/><path d="M70 320c8-60 152-60 160 0z" fill="#3B4A6B"/><rect x="60" y="340" width="180" height="12" rx="6" fill="#9AA8C2"/><rect x="60" y="362" width="120" height="10" rx="5" fill="#B9C3D6"/></svg>'),
     selfie: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#B8C4D6"/><circle cx="150" cy="170" r="70" fill="#C89A72"/><path d="M80 160c0-55 140-55 140 0-12-30-128-30-140 0z" fill="#2A211B"/><path d="M40 400c10-90 210-90 220 0z" fill="#F4F5F7"/><path d="M125 318l25 30 25-30" fill="none" stroke="#C9CED8" stroke-width="6"/></svg>'),
-    pies: svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#8F99A8"/><path d="M0 120h300M0 250h300M100 0v400M200 0v400" stroke="#7E8897" stroke-width="3"/><rect x="62" y="0" width="70" height="285" fill="#1F2A44"/><rect x="168" y="0" width="70" height="285" fill="#1F2A44"/><path d="M52 282h86v38c0 14-10 22-24 22H40c-14 0-18-14-6-22z" fill="#111"/><path d="M162 282h86v38c0 14-10 22-24 22h-74c-14 0-18-14-6-22z" fill="#111"/></svg>'),
     carro: [
       svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#3B3F46"/><rect x="20" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="165" y="60" width="115" height="290" rx="30" fill="#5A606B"/><rect x="128" y="250" width="44" height="110" rx="10" fill="#2B2E33"/></svg>'),
       svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#3B3F46"/><rect x="15" y="80" width="270" height="200" rx="34" fill="#5A606B"/><rect x="15" y="270" width="270" height="70" rx="20" fill="#4C525C"/></svg>'),
       svgURI('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#2B2E33"/><rect x="30" y="90" width="240" height="250" rx="16" fill="#3A3E45"/><path d="M50 120h200M50 160h200M50 200h200M50 240h200M50 280h200" stroke="#30343A" stroke-width="10"/></svg>')
     ]
   };
-  var PASOS = ['cara', 'pecho', 'pies', 'carro'];
+  var PASOS = ['cara', 'pecho', 'carro'];
   var SLOTS = ['Asientos de adelante', 'Asientos de atrás', 'Piso'];
   function horaCorta(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 
@@ -1490,7 +1489,7 @@
   function cabecera(titulo, n) {
     var prog = PASOS.map(function (p, i) { return '<i class="' + (i < n ? 'ok' : i === n ? 'ya' : '') + '"></i>'; }).join('');
     return '<div class="vcab"><b>' + titulo + '</b><button data-v="cerrar" aria-label="Cerrar">✕</button></div>' +
-      (n >= 0 ? '<div class="vprog">' + prog + '</div><div class="vpaso">Paso ' + (n + 1) + ' de 4</div>' : '');
+      (n >= 0 ? '<div class="vprog">' + prog + '</div><div class="vpaso">Paso ' + (n + 1) + ' de ' + PASOS.length + '</div>' : '');
   }
 
   function vRender() {
@@ -1508,8 +1507,7 @@
         '<div class="vlista">' +
         '<div><b>1. Tu cara</b><p>Confirmamos que eres el mismo de tu cédula.</p></div>' +
         '<div><b>2. Tu camisa</b><p>Con camisa y sin gorra.</p></div>' +
-        '<div><b>3. Tus zapatos</b><p>Zapatos y pantalón largo. No zapatillas ni short.</p></div>' +
-        '<div><b>4. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
+        '<div><b>3. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
         '<button class="vbtn" data-v="empezar">Empezar</button></div>';
     } else if (p === 'cara') {
       frente = true; ejemplo = PH.selfie;
@@ -1528,22 +1526,20 @@
       h = cabecera('Tu cara', 0) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu cédula</h2>' +
         '<p class="centro">Ponte en un lugar con buena luz, quítate gafas o gorra y vuelve a intentarlo. Si sigue fallando, llama a la central.</p>' +
         '<button class="vbtn" data-v="reintentar">Intentar otra vez</button><button class="vbtn claro" data-v="llamar">Llamar a la central</button></div>';
-    } else if (p === 'pecho' || p === 'pies') {
-      var esPecho = p === 'pecho';
-      frente = esPecho; ejemplo = esPecho ? PH.selfie : PH.pies;
+    } else if (p === 'pecho') {
+      frente = true; ejemplo = PH.selfie;
       var foto = V.prev;
-      h = cabecera(esPecho ? 'Tu camisa' : 'Tus zapatos', esPecho ? 1 : 2) + '<div class="vcuerpo">' +
-        '<h2>' + (esPecho ? 'Foto de tu cara y tu camisa' : 'Apunta la cámara a tus pies') + '</h2>' +
-        '<p>' + (esPecho ? 'Que se vea bien tu camisa y tu cabeza.' : 'Que se vean tus zapatos y la basta del pantalón.') + '</p>' +
-        '<div class="reglas">' + (esPecho ? '<span class="si">✓ Camisa</span><span class="no">✕ Gorra</span>'
-          : '<span class="si">✓ Zapatos</span><span class="si">✓ Pantalón largo</span><span class="no">✕ Zapatillas</span><span class="no">✕ Short</span>') + '</div>' +
+      h = cabecera('Tu camisa', 1) + '<div class="vcuerpo">' +
+        '<h2>Foto de tu cara y tu camisa</h2>' +
+        '<p>Que se vea bien tu camisa y tu cabeza.</p>' +
+        '<div class="reglas"><span class="si">✓ Camisa</span><span class="no">✕ Gorra</span></div>' +
         (foto ? '<div class="cam"><img src="' + foto + '"></div><div class="fila2"><button class="vbtn claro" data-v="repetir">Repetir</button><button class="vbtn" data-v="usar" data-de="' + p + '">Usar foto</button></div>'
           : camHTML(false, '<div class="marco"></div>') + '<button class="vbtn" data-v="foto" data-de="' + p + '">Tomar foto</button>') + '</div>';
       if (foto) frente = null;
     } else if (p === 'carro') {
       frente = false; ejemplo = PH.carro[V.slot] || PH.carro[0];
       var listas = V.fotos.carro.filter(Boolean).length === 3;
-      h = cabecera('Tu carro', 3) + '<div class="vcuerpo">' +
+      h = cabecera('Tu carro', 2) + '<div class="vcuerpo">' +
         '<h2>' + (listas ? 'Listo, ya tienes las 3 fotos' : 'Foto: ' + SLOTS[V.slot]) + '</h2><p>El interior tiene que estar limpio y ordenado.</p>' +
         (listas ? '' : camHTML(true, '<div class="marco"></div>')) +
         '<div class="fotos3">' + SLOTS.map(function (s, i) {
@@ -1553,7 +1549,7 @@
         (listas ? '<button class="vbtn" data-v="sig" data-de="carro">Siguiente</button>' : '<button class="vbtn" data-v="foto-carro">Tomar foto</button>') + '</div>';
       if (listas) frente = null;
     } else if (p === 'enviar') {
-      var todas = [V.fotos.selfie, V.fotos.pecho, V.fotos.pies].concat(V.fotos.carro);
+      var todas = [V.fotos.selfie, V.fotos.pecho].concat(V.fotos.carro);
       h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Estas fotos se envían a la central para aprobar tu turno.</p>' +
         '<div class="resumen">' + todas.map(function (f) { return '<img src="' + f + '">'; }).join('') + '</div>' +
         '<button class="vbtn" data-v="enviar">Enviar a la central</button></div>';
@@ -1563,8 +1559,6 @@
         '<div class="soloprueba"><small>SOLO EN LA PRUEBA · lo que haría la central en el panel</small>' +
         '<button data-v="aprobar">✓ Aprobar turno</button>' +
         '<button data-v="rechazar" data-m="gorra">✕ Rechazar: está con gorra</button>' +
-        '<button data-v="rechazar" data-m="zapatillas">✕ Rechazar: está con zapatillas</button>' +
-        '<button data-v="rechazar" data-m="short">✕ Rechazar: está en short</button>' +
         '<button data-v="rechazar" data-m="carro">✕ Rechazar: carro sucio</button></div></div>';
     } else if (p === 'aprobado') {
       h = cabecera('Turno aprobado', -1) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">¡Turno aprobado!</h2>' +
@@ -1581,8 +1575,6 @@
 
   var MOTIVOS = {
     gorra: ['Estás con gorra. Quítatela y vuelve a tomar la foto de tu camisa.', ['pecho']],
-    zapatillas: ['Estás con zapatillas. Ponte zapatos y vuelve a tomar la foto de tus pies.', ['pies']],
-    short: ['Estás en short. Ponte pantalón largo y vuelve a tomar la foto de tus pies.', ['pies']],
     carro: ['El carro no está limpio. Límpialo y vuelve a tomar las fotos del carro.', ['carro']]
   };
   $('#verif').addEventListener('click', function (e) {
@@ -1609,7 +1601,7 @@
       return;
     }
     if (a === 'sig') { siguientePaso(b.getAttribute('data-de')); return; }
-    if (a === 'foto') { V.prev = capturar(b.getAttribute('data-de') === 'pecho' ? PH.selfie : PH.pies); vRender(); return; }
+    if (a === 'foto') { V.prev = capturar(PH.selfie); vRender(); return; }
     if (a === 'repetir') { V.prev = null; vRender(); return; }
     if (a === 'usar') { var de = b.getAttribute('data-de'); V.fotos[de] = V.prev; V.prev = null; siguientePaso(de); return; }
     if (a === 'slot') { V.slot = +b.getAttribute('data-i'); V.fotos.carro[V.slot] = null; vRender(); return; }
