@@ -172,7 +172,7 @@ label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;
 .alerta .acciones{display:flex;gap:8px;flex-wrap:wrap}
 .saldo-ok{color:var(--libre-tx);font-weight:700}
 .saldo-bajo{color:var(--sinsaldo);font-weight:700}
-.taxi{font-weight:700;color:var(--ejecucion-tx)}
+.taxi{font-weight:700;color:#1A5CE0}   /* mismo azul del taxímetro de la app del conductor */
 .dos-columnas{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
 .dos-columnas>.tarjeta{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px}
 .lista-paquetes{display:flex;flex-direction:column;gap:8px}
@@ -274,8 +274,8 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .carrera.ejecucion{border:2px solid var(--ejecucion);background:#FAF8FF}
 
 /* Avisos al cliente por WhatsApp */
-.btn.btn-wa{background:#25D366;border-color:#25D366;color:#fff}
-.btn.btn-wa:hover{background:#1EBE5A}
+.btn.btn-wa{background:var(--navy);border-color:var(--navy);color:#fff;text-decoration:none}
+.btn.btn-wa:hover{background:var(--navy-2);border-color:var(--navy-2)}
 .carrera.finalizada{border:2px dashed #25D366;background:#F3FCF6}
 
 /* Filtro del mapa desde las tarjetas de arriba */
