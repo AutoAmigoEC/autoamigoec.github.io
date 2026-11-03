@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=20261103155200">
+<link rel="stylesheet" href="estilos.css?v=20261103163000">
 </head>
 <body>
 
@@ -43,6 +43,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Carreras</button>
     <button class="menu-item" data-vista="conductores">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>Conductores</button>
+    <button class="menu-item" data-vista="turnos">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Turnos<span class="badge-menu" id="badge-turnos" hidden>0</span></button>
     <button class="menu-item" data-vista="clientes">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></svg>Clientes</button>
     <button class="menu-item" data-vista="reportes">
@@ -64,6 +66,7 @@
     <p style="background:#FEF0C7;color:#93370D;font-weight:700;padding:8px 14px;border-radius:10px;margin:0 0 14px">PRUEBA · Datos de ejemplo. Nada de esto se guarda en tu panel real. La carrera #1005 (programada) entra a Carreras activas en 1 minuto.</p>
     <!-- Alertas de saldo bajo (aparecen arriba en cualquier vista) -->
     <div id="alertas" class="alertas" aria-live="assertive"></div>
+    <div id="aviso-turnos" class="alerta alerta-turnos" hidden></div>
 
     <!-- ---------- MAPA ---------- -->
     <section id="vista-mapa" class="vista">
@@ -113,6 +116,18 @@
       </div>
       <div class="tabla-caja"><table class="tabla" id="tabla-carreras"></table></div>
     </section>
+
+    <!-- ---------- TURNOS (verificación al empezar el turno) ---------- -->
+    <section id="vista-turnos" class="vista" hidden>
+      <header class="cabecera">
+        <div><h1>Turnos por aprobar</h1><p class="muted" id="turnos-sub"></p></div>
+      </header>
+      <p class="muted" style="margin:0">Revisa que tenga camisa y sin gorra, zapatos y pantalón largo (no zapatillas ni short), y el carro limpio. Aplasta una foto para verla grande.</p>
+      <div id="lista-turnos" class="lista-turnos"></div>
+      <h2 style="margin:8px 0 0;font-size:17px">Revisados hoy</h2>
+      <div class="tabla-caja" id="turnos-hechos"></div>
+    </section>
+    <div id="foto-grande" class="foto-grande" hidden></div>
 
     <!-- ---------- CLIENTES ---------- -->
     <section id="vista-clientes" class="vista" hidden>
@@ -479,6 +494,7 @@
 <script src="mapas.js?v=20261103153600"></script>
 <script src="config.js?v=20261029223036"></script>
 <script src="despacho.js?v=20261030190000"></script>
+<script src="turnos.js?v=20261103163000" defer></script>
 <script src="app.js?v=20261103151200"></script>
 </body>
 </html>
