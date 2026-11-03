@@ -151,6 +151,16 @@
   .taxim small{display:block;color:var(--gris);font-size:11px;font-weight:700;letter-spacing:.06em}
   .taxim b{font-size:24px}
 
+  .taxi{margin-top:14px;background:#E6EEFF;border-radius:18px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .taxi .t{color:#1A5CE0;font-weight:800;font-size:13px;letter-spacing:.4px}
+  .taxi .i{color:#475467;font-size:13.5px;margin-top:3px;line-height:1.45}
+  .taxi .v{color:#1A5CE0;font-weight:800;font-size:34px;letter-spacing:-.8px}
+  .filas{border:1px solid var(--linea);border-radius:16px;padding:4px 14px;margin:6px 0 14px}
+  .filas .fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px}
+  .filas .fila + .fila{border-top:1px solid var(--linea)}
+  .filas .fila span{color:var(--gris)}
+  .filas .fila b{text-align:right}
+  .nota-min{background:#FFF6E5;color:#93370D;border-radius:12px;padding:10px 12px;font-size:13px;margin:0 0 10px;line-height:1.4}
   /* ---- Fin ---- */
   .total{text-align:center;padding:4px 0 10px}
   .total b{display:block;font-size:44px;font-weight:800;letter-spacing:-.02em}
@@ -307,7 +317,10 @@
   function horaTxt(t) { var d = new Date(t), h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0'); return (h % 12 || 12) + ':' + m + (h < 12 ? ' a. m.' : ' p. m.'); }
 
   // Mismas tarifas y fórmula del panel (Configuración)
-  var CFG = { arranqueC: 50, kmC: 50, minimaC: 250 };
+  var CFG = { arranqueC: 50, kmC: 50, minimaC: 250, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30 };
+  // Misma fórmula que el taxímetro de la app del conductor
+  function taximetroC(metros, esperaSeg) { return CFG.arranqueC + Math.floor(metros / 100) * Math.round(CFG.kmC / 10) + Math.floor(esperaSeg / CFG.esperaCadaSeg) * CFG.esperaC; }
+  function mmss(seg) { seg = Math.floor(seg || 0); return Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0'); }
   function tarifaEstimadaC(km) { return Math.max(CFG.minimaC, CFG.arranqueC + Math.floor(km * 10) * Math.round(CFG.kmC / 10)); }
   var CENTRO = [-2.1700, -79.9224];
 
@@ -479,14 +492,21 @@
         '<div class="cond"><div class="foto"><div class="av">' + iniciales(c.nombre) + '</div><div class="est">★ ' + c.calif + '</div></div>' +
         '<div class="tx"><div class="nom">' + esc(c.nombre.split(' ')[0]) + ' · Unidad ' + c.u + '</div><div class="placa">' + esc(c.placa) + '</div><small>' + esc(c.carro) + ' · ' + esc(c.color) + '</small></div>' +
         '<span class="auto">' + autoSVG(c.hex) + '</span></div>' +
-        (f === 'viaje' ? '<div class="taxim"><div><small>TAXÍMETRO</small><b id="taxi-val">' + dinero(S.taxC) + '</b></div><div style="text-align:right"><small>ESTIMADO</small><b style="font-size:18px">' + dinero(S.precioC) + '</b></div></div>' :
+        (f === 'viaje' ? '<div class="taxi" id="taxi">' + taxiHTML() + '</div>' :
           '<div class="msj"><button class="caja" id="b-chat">Enviar un mensaje a ' + esc(c.nombre.split(' ')[0]) + '…</button><button class="circulo" data-acc="llamar" aria-label="Llamar">' + ICONO.tel + '</button></div>') +
         '<div class="opciones-viaje">' + rutaMini() +
         '<button class="op" data-acc="seguridad">' + ICONO.escudo + '<span>Seguridad<small>Compartir viaje, emergencia</small></span></button>' +
         '<button class="op" data-acc="compartir">' + ICONO.compartir + '<span>Compartir el estado del viaje<small>Tu familia ve tu viaje en vivo</small></span></button>' +
         (f === 'viaje' ? '' : '<button class="op rojo" id="b-cancelar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DE0B13" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg><span>Cancelar viaje</span></button>') + '</div>';
     } else if (f === 'fin') {
-      h += '<div class="total"><span class="sub" style="margin:0">Llegaste · ' + esc(S.destino.nombre) + '</span><b>' + dinero(S.totalC) + '</b><span class="sub">Paga en efectivo a ' + esc(S.cond.nombre.split(' ')[0]) + '</span></div>' +
+      var t = S.tx, rec = Math.floor(t.metros / 100) * Math.round(CFG.kmC / 10), esp = Math.floor(t.espera / CFG.esperaCadaSeg) * CFG.esperaC;
+      var filas = [['Recogida', S.recogida.nombre], ['Destino', S.destino.nombre], ['Distancia', (t.metros / 1000).toFixed(2) + ' km'],
+        ['Tiempo de viaje', Math.max(1, Math.round(t.seg / 60)) + ' min'], ['Arranque', dinero(CFG.arranqueC)], ['Recorrido', dinero(rec)],
+        ['Tiempo detenido (' + mmss(t.espera) + ')', dinero(esp)], ['Taxímetro marcó', dinero(t.marcadoC)],
+        ['Unidad', S.cond.u + ' · ' + S.cond.nombre], ['Placa', S.cond.placa]];
+      h += '<div class="total"><span class="sub" style="margin:0">Total a pagar · Taxímetro</span><b>' + dinero(S.totalC) + '</b><span class="sub">Paga en efectivo a ' + esc(S.cond.nombre.split(' ')[0]) + '</span></div>' +
+        (t.marcadoC < CFG.minimaC ? '<div class="nota-min">El taxímetro marcó menos de ' + dinero(CFG.minimaC) + ', se cobra la carrera mínima.</div>' : '') +
+        '<div class="filas">' + filas.map(function (r) { return '<div class="fila"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'; }).join('') + '</div>' +
         '<div style="display:flex;align-items:center;gap:12px;justify-content:center;margin:2px 0 4px"><div class="foto" style="width:48px;height:48px"><div class="av" style="width:48px;height:48px;font-size:16px">' + iniciales(S.cond.nombre) + '</div></div><b style="font-size:17px">¿Cómo te fue con ' + esc(S.cond.nombre.split(' ')[0]) + '?</b></div>' +
         '<div class="estrellas">' + [1, 2, 3, 4, 5].map(function (n) { return '<button data-est="' + n + '" aria-label="' + n + ' estrellas"><svg width="44" height="44" viewBox="0 0 24 24" fill="' + (n <= S.est ? '#0E0F1A' : '#E3E5EC') + '"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></button>'; }).join('') + '</div>' +
         (S.est ? '<div class="chips">' + (S.est >= 4 ? ['Muy amable', 'Buena conducción', 'Carro limpio', 'Puntual', 'Buena música'] : ['Llegó tarde', 'Mala conducción', 'Carro sucio', 'Trato descortés', 'Ruta más larga']).map(function (t) { return '<button class="chip' + (S.tags[t] ? ' on' : '') + '" data-tag="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' : '') +
@@ -494,6 +514,11 @@
     }
     $('#hoja').innerHTML = h;
     posBoton();
+  }
+  function taxiHTML() {
+    var t = S.tx;
+    return '<div><div class="t">TAXÍMETRO</div><div class="i">' + (t.metros / 1000).toFixed(2) + ' km · ' + mmss(t.espera) + ' detenido' +
+      (t.mostradoC < CFG.minimaC ? '<br>Mínimo a cobrar ' + dinero(CFG.minimaC) : '') + (t.parado ? '<br><span style="color:#B54708;font-weight:700">Detenido</span>' : '') + '</div></div><div class="v">' + dinero(t.mostradoC) + '</div>';
   }
   function rutaMini() {
     return '<div class="ruta-mini"><i></i><span>' + esc(S.recogida.nombre) + (S.ref ? ' · ' + esc(S.ref) : '') + '</span><b></b><span>' + esc(S.destino.nombre) + '</span></div>';
@@ -687,23 +712,50 @@
     S.fase = 'llego'; render(); avisoTop('Tu AutoAmigo te espera afuera');
     if (navigator.vibrate) try { navigator.vibrate([200, 100, 200]); } catch (e) {}
   }
+  // Viaje: el taxímetro avanza igual que en la app del conductor (metros recorridos + tiempo detenido,
+  // los primeros segundos gratis, mínimo a cobrar). En la app real estos datos llegan del teléfono del conductor.
   function iniciar() {
     if (S.fase !== 'llego' && S.fase !== 'encamino') return; pararSim(); avisoTop('');
     poner(mO, null); linea(null, 'r-cond', '#0E0F1A', 4);
-    S.fase = 'viaje'; S.taxC = CFG.arranqueC; S.minRest = S.min; render();
     var coords = S.ruta && S.ruta.coords ? S.ruta.coords : [[S.recogida.lng, S.recogida.lat], [S.destino.lng, S.destino.lat]];
-    encuadrar([S.recogida, S.destino]);
-    var finalC = S.finalC = S.precioC + 5 * (2 + Math.floor(Math.random() * 6));
-    animarEnRuta(coords, 32, function (k, resto) {
-      linea(resto, 'r-viaje', '#0E0F1A', 5);
-      var c = Math.round((CFG.arranqueC + (finalC - CFG.arranqueC) * k) / 5) * 5;
-      if (c !== S.taxC) { S.taxC = c; var t = $('#taxi-val'); if (t) t.textContent = dinero(c); }
-      actualizarMin(Math.max(1, Math.ceil(S.min * (1 - k))));
-    }, function () { terminar(Math.max(CFG.minimaC, finalC)); });
+    var largo = [0]; for (var i = 1; i < coords.length; i++) largo.push(largo[i - 1] + Math.hypot(coords[i][0] - coords[i - 1][0], coords[i][1] - coords[i - 1][1]));
+    var total = largo[largo.length - 1] || 1, metrosRuta = (S.km || 1) * 1000;
+    var REAL_MOV = 40, escala = Math.max(1, (S.min || 10) * 60 / REAL_MOV);        // segundos simulados por segundo real
+    var paradas = [0.22, 0.5, 0.78].map(function (k) { return { k: k, real: 2 + Math.random() * 2, hecha: false }; });
+    S.tx = { metros: 0, espera: 0, seg: 0, mostradoC: 0, parado: false, inicio: Date.now() };
+    S.fase = 'viaje'; S.minRest = S.min; render(); encuadrar([S.recogida, S.destino]);
+    var k = 0, ultimo = performance.now(), paradaHasta = 0;
+    function paso(ahora) {
+      var dt = Math.min(0.1, (ahora - ultimo) / 1000); ultimo = ahora;
+      var t = S.tx, simDt = dt * escala;
+      t.seg += simDt;
+      var detenido = ahora < paradaHasta;
+      if (!detenido) {
+        var p = paradas.filter(function (x) { return !x.hecha && k >= x.k; })[0];
+        if (p) { p.hecha = true; paradaHasta = ahora + p.real * 1000; detenido = true; }
+      }
+      if (!detenido) {
+        var dk = dt / REAL_MOV; k = Math.min(1, k + dk);
+        if (t.seg > CFG.gratisSeg) t.metros += dk * metrosRuta;
+      } else if (t.seg > CFG.gratisSeg) t.espera += simDt;
+      t.parado = detenido;
+      t.mostradoC = t.seg < 3 ? 0 : taximetroC(t.metros, t.espera);
+      // carro en el mapa
+      var d = k * total, j = 1; while (j < largo.length - 1 && largo[j] < d) j++;
+      var a = coords[j - 1], b = coords[j], f = (d - largo[j - 1]) / ((largo[j] - largo[j - 1]) || 1);
+      var pos = { lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f };
+      poner(mC, pos); mC.el.firstChild.style.transform = 'rotate(' + (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI) + 'deg)';
+      linea([[pos.lng, pos.lat]].concat(coords.slice(j)), 'r-viaje', '#0E0F1A', 5);
+      var e = $('#taxi'); if (e) e.innerHTML = taxiHTML();
+      actualizarMin(Math.max(1, Math.ceil((S.min || 1) * (1 - k))));
+      if (k < 1) S.anim = requestAnimationFrame(paso); else { S.anim = null; terminar(); }
+    }
+    S.anim = requestAnimationFrame(paso);
   }
-  function terminar(totalC) {
-    if (['viaje', 'llego', 'encamino'].indexOf(S.fase) < 0) return; pararSim();
-    S.totalC = totalC; S.fase = 'fin'; S.est = 0; S.tags = {};
+  function terminar() {
+    if (S.fase !== 'viaje') return; pararSim();
+    var t = S.tx; t.fin = Date.now(); t.marcadoC = taximetroC(t.metros, t.espera);
+    S.totalC = Math.max(CFG.minimaC, t.marcadoC); S.fase = 'fin'; S.est = 0; S.tags = {};
     poner(mC, S.destino); linea(null, 'r-viaje', '#0E0F1A', 5); avisoTop(''); render();
     S.viajes.unshift({ t: Date.now(), o: { nombre: S.recogida.nombre, lat: S.recogida.lat, lng: S.recogida.lng }, d: { nombre: S.destino.nombre, lat: S.destino.lat, lng: S.destino.lng }, totalC: S.totalC, cond: S.cond.nombre + ' · U' + S.cond.u });
     guardar('aac_viajes', S.viajes.slice(0, 40));
@@ -819,7 +871,7 @@
       if (s === 'acepta') { if (S.fase === 'buscando') aceptar(); else toast('Primero pide un viaje.'); }
       if (s === 'llego') { if (S.fase === 'encamino') llego(); else toast('Funciona cuando la unidad va en camino.'); }
       if (s === 'inicia') { if (S.fase === 'llego' || S.fase === 'encamino') iniciar(); else toast('Funciona cuando la unidad llegó.'); }
-      if (s === 'fin') { if (S.fase === 'viaje') terminar(Math.max(CFG.minimaC, S.finalC || S.precioC)); else toast('Funciona durante el viaje.'); }
+      if (s === 'fin') { if (S.fase === 'viaje') terminar(); else toast('Funciona durante el viaje.'); }
       if (s === 'reiniciar') { ['aac_perfil', 'aac_viajes', 'aac_casa', 'aac_trabajo'].forEach(function (k) { guardar(k, null); }); location.reload(); }
       return;
     }
