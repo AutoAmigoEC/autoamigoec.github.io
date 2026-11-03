@@ -121,7 +121,7 @@
   function pintar() {
     var det = $('#detector-turnos'); if (det) det.innerHTML = detectorHTML();
     var nb = T.hechos.filter(function (h) { return h.bloqueada; }).length;
-    var blq = $('#bloqueadas-turnos'); if (blq) { blq.hidden = !nb; blq.innerHTML = '<b>Gemini bloqueó ' + nb + ' foto' + (nb > 1 ? 's' : '') + ' hoy</b> (sin camisa o que no servían). Se eliminaron al instante y no se muestran aquí; al conductor le llegó el motivo para corregir.'; }
+    var blq = $('#bloqueadas-turnos'); if (blq) { blq.hidden = !nb; blq.innerHTML = '<b>Gemini bloqueó ' + nb + ' foto' + (nb > 1 ? 's' : '') + ' hoy</b>. Se eliminaron al instante y no se muestran aquí; al conductor le llegó el motivo para corregir.'; }
     var n = T.pendientes.length;
     var bad = $('#badge-turnos'); if (bad) { bad.textContent = n; bad.hidden = !n; }
     var sub = $('#turnos-sub'); if (sub) sub.textContent = n ? n + ' conductor' + (n > 1 ? 'es esperan' : ' espera') + ' para poder conectarse.' : 'No hay turnos por revisar.';
