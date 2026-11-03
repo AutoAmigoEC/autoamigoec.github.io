@@ -494,7 +494,7 @@
     }
     if (S.encuadrarFiltro) {
       S.encuadrarFiltro = false;
-      if (puntos.length) MapaAA.encuadrar(mapa, puntos, 15); else if (S.filtroMapa) toast('No hay ' + FILTRABLES[S.filtroMapa].toLowerCase() + ' en este momento.');
+      if (!puntos.length && S.filtroMapa) toast('No hay ' + FILTRABLES[S.filtroMapa].toLowerCase() + ' en este momento.');   // el mapa se queda donde lo dejó el operador
     }
     if (!mapaCentrado && puntos.length) {
       mapaCentrado = true;
