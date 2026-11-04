@@ -58,7 +58,7 @@
     escuchar(db.ref('carreras').orderByChild('estado').equalTo('pendiente'), function (s) { W.pend = s.val() || {}; });
     escuchar(db.ref('carreras').orderByChild('conductor').equalTo(u.uid).limitToLast(500), function (s) { W.mis = s.val() || {}; W.misCargadas = true; });
     escuchar('identidad/' + u.uid, function (s) { W.ident = s.val() || {}; }, true);
-    escuchar('turnos/' + u.uid, function (s) { W.turno = s.val() || {}; }, true);
+    escuchar('turnos/' + u.uid, function (s) { W.turno = s.val() || {}; if (!W.turnoBase) { W.turnoUsadoT = W.turno.t || 0; W.turnoBase = true; } }, true);
     escuchar('fichas/' + u.uid, function (s) { W.ficha = s.val(); }, true);
     escuchar('perfiles/' + u.uid, function (s) { var v = s.val() || {}; W.perfilFoto = { estado: v.estado || null, motivo: v.motivo || '' }; }, true);
     escuchar('docsPendientes/' + u.uid, function (s) { var v = s.val() || {}, o = {}; Object.keys(v).forEach(function (k) { o[k] = { vence: v[k].vence || '' }; }); W.docsP = o; }, true);
@@ -66,7 +66,7 @@
   function detenerDatos() {
     W.registros.forEach(function (r) { r[0].off('value', r[1]); }); W.registros = [];
     W.uid = null; W.perfil = null; W.perfilCargado = false; W.estados = {}; W.saldos = {}; W.pend = {}; W.mis = {};
-    W.cargado = W.misCargadas = false; W.ident = {}; W.turno = {}; W.ficha = null; W.oferta = null;
+    W.cargado = W.misCargadas = false; W.ident = {}; W.turno = {}; W.turnoUsadoT = 0; W.turnoBase = false; W.ficha = null; W.oferta = null;
   }
 
   // ---------------- Carreras (mismos campos que la app de Android) ----------------
@@ -95,7 +95,12 @@
 
   // Verificación del turno
   function requiereTurno() { return W.cfgRaw.verificarTurno === true && /^https:\/\//.test(W.cfgRaw.turnoUrl || ''); }
-  function turnoDeHoy() { return W.turno.dia === diaHoy() ? (W.turno.estado || null) : null; }
+  function turnoDeHoy() {
+    if (W.turno.dia !== diaHoy()) return null;
+    // Usuario de prueba (verificarSiempre): cada aprobación sirve para una sola conexión
+    if (W.turno.estado === 'aprobado' && W.perfil && W.perfil.verificarSiempre === true && (W.turno.t || 0) <= (W.turnoUsadoT || 0)) return null;
+    return W.turno.estado || null;
+  }
   function turnoOk() { return !requiereTurno() || turnoDeHoy() === 'aprobado'; }
 
   // ---------------- Escrituras ----------------
@@ -341,6 +346,7 @@
         break;
       case 'desconectar':
         if (activa()) { aviso('Termina tu carrera antes de desconectarte.'); return; }
+        if (W.perfil && W.perfil.verificarSiempre === true) W.turnoUsadoT = W.turno.t || 0;
         ponerOcupado(false); desconectar(); break;
       case 'aceptar': accionAceptar(pendiente(d.id), false); break;
       case 'tomar': accionAceptar(pendiente(d.id), true); break;

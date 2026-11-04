@@ -159,13 +159,13 @@ async function turno(uid, b, env) {
   if (!ident || ident.estado !== 'aprobada') throw new Error('identidad');
   const t = Date.now(), dia = diaEcuador(t);
   const previo = (await db(env, 'GET', 'turnos/' + uid)) || {};
-  if (previo.dia === dia && previo.estado === 'aprobado') return { ok: true, estado: 'aprobado' };
+  if (previo.dia === dia && previo.estado === 'aprobado' && !(await db(env, 'GET', 'conductores/' + uid + '/verificarSiempre'))) return { ok: true, estado: 'aprobado' };
   const intentos = previo.dia === dia ? (previo.intentos || 0) + 1 : 1;
   const cond = (await db(env, 'GET', 'conductores/' + uid)) || {};
   const base = { dia, t, intentos, cara: typeof b.cara === 'number' ? Math.round(b.cara * 1000) / 1000 : null };
 
   let r;
-  if (intentos > MAX_INTENTOS_DIA) r = { estado: 'revision', duda: 'Muchos intentos hoy: revísalo tú.' };
+  if (intentos > MAX_INTENTOS_DIA && !cond.verificarSiempre) r = { estado: 'revision', duda: 'Muchos intentos hoy: revísalo tú.' };
   else {
     let g = null;
     try { g = await preguntarGemini(b, env); } catch (e) { g = null; }
