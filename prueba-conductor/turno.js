@@ -162,8 +162,8 @@
         '<button class="vbtn" data-v="ir" data-a="cara">Empezar</button></div>';
     } else if (p === 'enviar') {
       var fig = function (src, txt) { return '<figure><img src="' + src + '"><figcaption>' + txt + '</figcaption></figure>'; };
-      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno. Tu cara no se envía: sale borrosa.</p>' + err +
-        '<div class="resumen">' + fig(V.fotos.pecho, 'Camisa') + V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
+      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno. Tu cara se queda en tu teléfono: a la revisión le llega borrosa.</p>' + err +
+        '<div class="resumen">' + fig(V.fotos.pechoVista || V.fotos.pecho, 'Tú y tu camisa') + V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
         '<button class="vbtn" data-v="enviar">Enviar</button></div>';
     } else if (p === 'espera') {
       h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo">' + cargandoHTML('Tu turno lo está revisando la central') +
@@ -260,8 +260,9 @@
         V.fallos = 0;
         V.fotoVista = cuadro(720, 0.8, f.c).url();
         // La misma foto sirve para la camisa: la cara sale borrosa antes de enviarla
-        var pe = cuadro(480, 0.62, f.c);
-        borrarCara(pe).then(function () { marcaHora(pe); V.fotos.pecho = pe.url(); ir('caraOk'); });
+        var pe = cuadro(480, 0.62, f.c), vista = cuadro(480, 0.7, f.c);
+        marcaHora(vista); V.fotos.pechoVista = vista.url();   // la que ve el conductor (con su cara)
+        borrarCara(pe).then(function () { marcaHora(pe); V.fotos.pecho = pe.url(); ir('caraOk'); });   // la que se envía (cara borrosa)
       }).catch(function () { V.analizando = false; V.error = 'No se pudo revisar la foto. Revisa tu internet e intenta otra vez.'; pintar(); });
       return;
     }
@@ -283,7 +284,7 @@
     }
     if (a === 'corregir') {
       var re = (V.rehacer || ['pecho', 'carro']).map(function (k) { return k === 'pecho' ? 'cara' : k; });
-      re.forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else V.fotos.pecho = null; });
+      re.forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else { V.fotos.pecho = null; V.fotos.pechoVista = null; } });
       // La foto de la cara es la misma de la camisa: si cerró la app hay que volver a tomarla
       if (V.cara == null || !V.fotos.pecho) { if (re.indexOf('cara') < 0) re.unshift('cara'); }
       V.rehacer = re; ir(re[0]); return;
