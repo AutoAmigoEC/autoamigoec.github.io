@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>AutoAmigo · Prueba de la verificación del turno</title>
+<link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0A0F3C;--navy2:#141A52;--texto:#101828;--gris:#667085;--suave:#F2F4F7;--linea:#E4E7EC;--verde:#12B76A;--rojo:#E5252A;--amarillo:#F5B300;--azul:#1570EF;--morado:#6927DA}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{margin:0;height:100%;background:#F6F7FB;font-family:Inter,system-ui,sans-serif;color:var(--texto)}
+  button{font:inherit;color:inherit;cursor:pointer}
+  .inicio{max-width:480px;margin:0 auto;padding:32px 20px;display:flex;flex-direction:column;gap:14px}
+  .inicio h1{font-family:Manrope,sans-serif;font-size:24px;margin:0;color:var(--navy)}
+  .inicio p{margin:0;color:var(--gris);line-height:1.5}
+  .inicio .libre{height:62px;border:0;border-radius:18px;background:var(--verde);color:#fff;font-size:19px;font-weight:800}
+  .inicio .nota{background:#FFF8E6;border-radius:14px;padding:12px 14px;font-size:14px;color:#7A5300}
+  .aviso{position:fixed;left:16px;right:16px;bottom:24px;background:var(--texto);color:#fff;border-radius:14px;padding:13px 16px;font-weight:600;z-index:99}
+  @keyframes entra{from{opacity:0}to{opacity:1}}
+  @keyframes aparece{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+  .verif{position:absolute;inset:0;z-index:55;background:#fff;display:flex;flex-direction:column;animation:entra .18s ease}
+  .verif .vcab{flex:none;padding:44px 18px 10px;display:flex;align-items:center;gap:12px}
+  .verif .vcab b{font-family:Manrope,sans-serif;font-size:19px;color:var(--navy);flex:1}
+  .verif .vcab button{width:40px;height:40px;border-radius:12px;border:0;background:var(--suave);font-size:20px;cursor:pointer;color:var(--texto)}
+  .verif .vprog{flex:none;display:flex;gap:6px;padding:0 18px}
+  .verif .vprog i{flex:1;height:5px;border-radius:9px;background:#E4E7EC}
+  .verif .vprog i.ok{background:var(--verde)}.verif .vprog i.ya{background:var(--navy)}
+  .verif .vpaso{flex:none;padding:12px 18px 0;font-size:13px;font-weight:700;color:var(--gris)}
+  .verif .vcuerpo{flex:1;overflow:auto;padding:4px 18px 18px;display:flex;flex-direction:column;gap:12px}
+  .verif h2{margin:0;font-family:Manrope,sans-serif;font-size:22px;color:var(--texto);line-height:1.2}
+  .verif p{margin:0;color:var(--gris);font-size:14.5px;line-height:1.45}
+  .verif .cam{position:relative;border-radius:22px;overflow:hidden;background:#101828;aspect-ratio:3/4;max-height:52vh;flex:none;width:100%}
+  .verif .cam.ancha{aspect-ratio:4/3}
+  .verif .cam video,.verif .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .cam video.espejo{transform:scaleX(-1)}
+  .verif .cam .ovalo{position:absolute;left:50%;top:44%;width:62%;aspect-ratio:3/4;transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 999px rgba(10,15,60,.45);border:4px solid #fff;transition:border-color .3s}
+  .verif .cam .ovalo.ok{border-color:var(--verde)}
+  .verif .cam .marco{position:absolute;inset:12%;border:3px dashed rgba(255,255,255,.85);border-radius:18px}
+  .verif .cam .indica{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(16,24,40,.78);color:#fff;border-radius:14px;padding:11px 12px;text-align:center;font-weight:800;font-size:16px}
+  .verif .cam .marca{position:absolute;left:10px;top:10px;background:rgba(0,0,0,.5);color:#fff;font-size:11px;border-radius:8px;padding:4px 8px}
+  .verif .reglas{display:flex;flex-wrap:wrap;gap:8px}
+  .verif .reglas span{border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:700}
+  .verif .reglas .si{background:#DCFAE6;color:#067647}.verif .reglas .no{background:#FDECEC;color:#B42318}
+  .verif .vbtn{flex:none;height:58px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer;width:100%}
+  .verif .vbtn.claro{background:var(--suave);color:var(--texto)}
+  .verif .vbtn:disabled{opacity:.5}
+  .verif .fila2{display:flex;gap:10px}.verif .fila2 .vbtn{flex:1}
+  .verif .fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .fotos3 button{aspect-ratio:3/4;border-radius:14px;border:2px dashed #B9C0D4;background:#F8F9FC;font:inherit;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;padding:6px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .verif .fotos3 button.sel{border:3px solid var(--navy);color:var(--navy)}
+  .verif .fotos3 button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .fotos3 button.hecha::after{content:'✓';position:absolute;right:5px;top:5px;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .verif .compara{display:flex;align-items:center;gap:12px;justify-content:center}
+  .verif .compara figure{margin:0;text-align:center;font-size:12px;color:var(--gris);font-weight:600}
+  .verif .compara img{width:110px;height:140px;object-fit:cover;border-radius:16px;display:block;margin-bottom:6px;background:#E4E7EC}
+  .verif .grande{width:86px;height:86px;border-radius:50%;margin:24px auto 6px;display:flex;align-items:center;justify-content:center;font-size:42px;color:#fff;background:var(--verde);animation:aparece .45s cubic-bezier(.2,1.4,.4,1)}
+  .verif .grande.mal{background:var(--rojo)}.verif .grande.espera{background:var(--navy)}
+  .verif .grande.espera::before{content:'';width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  .verif .centro{text-align:center}
+  .verif.camara{background:#000}
+  .verif .vcf{position:absolute;inset:0;background:#000;overflow:hidden}
+  .verif .vcf video,.verif .vcf .vfoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .verif .vcf video.espejo{transform:scaleX(-1)}
+  .verif .vcf-top{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:flex-start;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 28px;background:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,0));color:#fff}
+  .verif .vcf-tit{flex:1;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .verif .vcf-tit small{font-size:12.5px;font-weight:700;opacity:.85}
+  .verif .vcf-tit b{font-family:Manrope,sans-serif;font-size:21px;line-height:1.2}
+  .verif .vcf-tit span{font-size:14px;line-height:1.4;opacity:.92}
+  .verif .vcf-x{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:19px;cursor:pointer}
+  .verif .vcf-error{position:absolute;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:3;background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .verif .vcf-marco{position:absolute;left:8%;right:8%;top:30%;bottom:30%;border:3px dashed rgba(255,255,255,.85);border-radius:18px;z-index:1}
+  .verif .vcf-bot{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 16px calc(env(safe-area-inset-bottom,0px) + 24px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72))}
+  .verif .vcf-bot .fila2,.verif .vcf-bot .vbtn{width:100%}
+  .verif .vcf-bot .vbtn.claro{background:rgba(255,255,255,.92)}
+  .verif .vbtn.verde{background:var(--verde)}
+  .verif .disparo{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:transparent;padding:0;cursor:pointer;position:relative}
+  .verif .disparo::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:transform .1s}
+  .verif .disparo:active::after{transform:scale(.88)}
+  .verif .vcf-txt{color:#fff;font-size:15px}
+  .verif .vcf-espera{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  .verif .vcf-mini{display:flex;gap:10px}
+  .verif .vcf-mini button{width:54px;height:70px;border-radius:12px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:16px;padding:0;overflow:hidden;position:relative;cursor:pointer}
+  .verif .vcf-mini button.sel{border:3px solid #fff}
+  .verif .vcf-mini button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .vcf-mini button.hecha::after{content:'✓';position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--verde);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .verif .motivo{background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .verif .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .verif .resumen figure{margin:0;font-size:11.5px;color:var(--gris);font-weight:600;text-align:center}
+  .verif .resumen img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#E4E7EC;display:block;margin-bottom:3px}
+  .verif .vlista{border:1px solid #E4E7EC;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  .verif .vlista b{font-size:15.5px}.verif .vlista p{font-size:13.5px;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="inicio">
+  <h1>Prueba: verificación del turno</h1>
+  <p>Así se verá al apretar <b>Libre</b>. Usa la cámara de verdad de tu teléfono.</p>
+  <div class="nota">En esta prueba, la <b>primera foto de tu cara</b> queda como si fuera la de tu registro. Si después le pasas el teléfono a otra persona, no la va a dejar pasar. El carro y la camisa se aprueban solos (no se envía nada).</div>
+  <button class="libre" id="libre">Ponerme en Libre</button>
+</div>
+<div class="verif" id="verif" hidden></div>
+<div class="aviso" id="aviso" hidden></div>
+<script>
+  window.AATurnoPrueba = true;
+  var D = { perfil: { nombre: 'Conductor de prueba', unidad: '00' }, turno: { requerido: true, aprobadoHoy: false, estado: null, identidad: 'aprobada', descriptor: [], descCedula: [], descLicencia: [] } };
+  window.AA = { aviso: function (t) { var a = document.getElementById('aviso'); a.textContent = t; a.hidden = false; clearTimeout(a.__t); a.__t = setTimeout(function () { a.hidden = true; }, 3000); } };
+  window.AndroidAA = { accion: function (n, j) {
+    if (n === 'turnoEnviar') setTimeout(function () { AATurno.respuesta({ ok: true, estado: 'aprobado' }); }, 1500);
+    if (n === 'conectar') { D.turno.aprobadoHoy = true; AATurno.estado(D); AA.aviso('¡Listo! Estás en Libre (prueba).'); }
+  } };
+  document.getElementById('libre').onclick = function () { D.turno.aprobadoHoy = false; D.turno.estado = null; AATurno.estado(D); AATurno.abrir(); };
+</script>
+<script src="turno.js?v=1"></script>
+<script>AATurno.estado(D);</script>
+</body>
+</html>
