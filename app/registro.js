@@ -9,7 +9,7 @@
   function aviso(t) { var a = $('#aviso'); a.textContent = t; a.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.hidden = true; }, 3500); }
   function hoyISO(d) { var x = new Date(); x.setDate(x.getDate() + (d || 0)); return x.toISOString().slice(0, 10); }
   function diasHasta(iso) { return Math.round((new Date(iso + 'T12:00:00') - new Date()) / 86400000); }
-  function cerrar() { if (window.AndroidRegistro && AndroidRegistro.cerrar) AndroidRegistro.cerrar(); else history.back(); }
+  function cerrar() { if (window.AndroidRegistro && AndroidRegistro.cerrar) AndroidRegistro.cerrar(); else if (history.length > 1) history.back(); else location.href = 'conductor.html'; }
 
   var FA = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
   var carga = null;
