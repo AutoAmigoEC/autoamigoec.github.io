@@ -379,6 +379,33 @@
   .verif .grande.espera::before{content:'';width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
   @keyframes gira{to{transform:rotate(360deg)}}
   .verif .centro{text-align:center}
+  /* Cámara a pantalla completa (como la cámara del teléfono) */
+  .verif.camara{background:#000}
+  .verif .vcf{position:absolute;inset:0;background:#000;overflow:hidden}
+  .verif .vcf video,.verif .vcf .vfoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .verif .vcf video.espejo{transform:scaleX(-1)}
+  .verif .vcf-top{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:flex-start;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 28px;background:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,0));color:#fff}
+  .verif .vcf-tit{flex:1;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .verif .vcf-tit small{font-size:12.5px;font-weight:700;opacity:.85}
+  .verif .vcf-tit b{font-family:Manrope,sans-serif;font-size:21px;line-height:1.2}
+  .verif .vcf-tit span{font-size:14px;line-height:1.4;opacity:.92}
+  .verif .vcf-x{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:19px;cursor:pointer}
+  .verif .vcf-error{position:absolute;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:3;background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .verif .vcf-marco{position:absolute;left:8%;right:8%;top:30%;bottom:30%;border:3px dashed rgba(255,255,255,.85);border-radius:18px;z-index:1}
+  .verif .vcf-bot{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 16px calc(env(safe-area-inset-bottom,0px) + 24px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72))}
+  .verif .vcf-bot .fila2,.verif .vcf-bot .vbtn{width:100%}
+  .verif .vcf-bot .vbtn.claro{background:rgba(255,255,255,.92)}
+  .verif .vbtn.verde{background:var(--verde)}
+  .verif .disparo{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:transparent;padding:0;cursor:pointer;position:relative}
+  .verif .disparo::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:transform .1s}
+  .verif .disparo:active::after{transform:scale(.88)}
+  .verif .vcf-txt{color:#fff;font-size:15px}
+  .verif .vcf-espera{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  .verif .vcf-mini{display:flex;gap:10px}
+  .verif .vcf-mini button{width:54px;height:70px;border-radius:12px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:16px;padding:0;overflow:hidden;position:relative;cursor:pointer}
+  .verif .vcf-mini button.sel{border:3px solid #fff}
+  .verif .vcf-mini button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .verif .vcf-mini button.hecha::after{content:'✓';position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--verde);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
   .verif .motivo{background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
   .verif .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .verif .resumen figure{margin:0;font-size:11.5px;color:var(--gris);font-weight:600;text-align:center}
@@ -570,7 +597,7 @@
 </div>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="turno.js?v=3"></script>
+<script src="turno.js?v=4"></script>
 <script src="perfil.js?v=1"></script>
 <script src="conductor.js?v=8"></script>
 </body>

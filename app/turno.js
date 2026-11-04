@@ -1,9 +1,9 @@
 /* AutoAmigo · Verificación del turno (una vez al día, antes de conectarse).
  *
  * Primera vez: registro de identidad -> foto de la cédula + selfie en vivo. La central lo aprueba en el panel.
- * Cada día:   1) cara en vivo (parpadeo y giro) comparada con la cara aprobada, DENTRO del teléfono
- *             2) foto de la camisa: la cara se pone borrosa en el teléfono antes de enviarla
- *             3) 3 fotos del interior del carro
+ * Cada día:   1) una foto (cámara frontal, pantalla completa): la cara se compara DENTRO del teléfono con la de su
+ *                registro, su cédula y su licencia; la misma foto sirve para la camisa (la cara sale borrosa)
+ *             2) 3 fotos del interior del carro
  *             Se envía al servidor de revisión (Gemini). Aprueba solo, rechaza solo o pasa a la central.
  *
  * La app (Kotlin) manda los datos en D.turno y bloquea "Conectarme" hasta que el turno de hoy esté aprobado.
@@ -36,15 +36,6 @@
     return cargaFA;
   }
   function opciones() { return new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.35 }); }
-  function dist2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-  function centro(p) { var x = 0, y = 0; p.forEach(function (q) { x += q.x; y += q.y; }); return { x: x / p.length, y: y / p.length }; }
-  function ear(o) { return (dist2(o[1], o[5]) + dist2(o[2], o[4])) / (2 * dist2(o[0], o[3])); }
-  function medidas(r) {
-    var l = r.landmarks, ojoI = l.getLeftEye(), ojoD = l.getRightEye(), nariz = l.getNose()[3];
-    var cI = centro(ojoI), cD = centro(ojoD), entre = dist2(cI, cD) || 1;
-    return { ear: (ear(ojoI) + ear(ojoD)) / 2, giro: (nariz.x - (cI.x + cD.x) / 2) / entre, ancho: r.detection.box.width };
-  }
-  function promedio(lista) { var m = new Array(128).fill(0); lista.forEach(function (d) { for (var i = 0; i < 128; i++) m[i] += d[i] / lista.length; }); return m; }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
 
   // ---------- Cámara ----------
@@ -54,7 +45,7 @@
     if (V.stream && V.frente === frente) return Promise.resolve();
     cerrarCam(); V.frente = frente;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { V.error = 'Tu teléfono no permite usar la cámara aquí. Actualiza la app.'; pintar(); return Promise.reject(); }
-    return navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : { ideal: 'environment' }, width: { ideal: 960 } }, audio: false })
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
       .then(function (s) { if (!V.paso) { s.getTracks().forEach(function (t) { t.stop(); }); return; } V.stream = s; V.video.srcObject = s; V.error = ''; return V.video.play().catch(function () { }); })
       .catch(function (e) { V.error = 'Activa el permiso de cámara de AutoAmigo para verificar tu turno.'; pintar(); throw e; });
   }
@@ -63,7 +54,7 @@
     var v = fuente || V.video, w0 = v.videoWidth || v.width, h0 = v.videoHeight || v.height;
     var w = Math.min(ancho, w0), h = Math.round(w * h0 / w0), c = document.createElement('canvas'); c.width = w; c.height = h;
     var g = c.getContext('2d');
-    if (!fuente && V.frente) { g.translate(w, 0); g.scale(-1, 1); }
+    // Como la cámara del teléfono: la vista previa de la cámara de adelante se ve como espejo, pero la foto sale derecha
     g.drawImage(v, 0, 0, w, h); g.setTransform(1, 0, 0, 1, 0, 0);
     return { c: c, g: g, url: function () { return c.toDataURL('image/jpeg', calidad); } };
   }
@@ -85,47 +76,22 @@
       f.g.imageSmoothingEnabled = false; f.g.drawImage(t, 0, 0, t.width, t.height, x, y, bw, bh); f.g.imageSmoothingEnabled = true;
     });
   }
-  function camHTML(ancha, extra) { return '<div class="cam' + (ancha ? ' ancha' : '') + '" id="vcam">' + (extra || '') + '</div>'; }
   function montarCam() { var cam = $('#vcam'); if (cam && V.video && V.video.parentNode !== cam) cam.insertBefore(V.video, cam.firstChild); }
-
-  // ---------- Verificación en vivo (parpadeo y giro) ----------
-  function enVivo(al) {
-    var ind = function (t) { var e = $('#vindica'); if (e) e.textContent = t; };
-    var desc = [], fase = 0, maxEar = 0, cerro = false, lado = 0, inicio = Date.now(), selfie = null, pasoAntes = V.paso, vioCara = false;
-    var avanza = function (f, t) { fase = f; inicio = Date.now(); ind(t); };
-    ind('Mira de frente');
-    (function ciclo() {
-      if (V.paso !== pasoAntes) return;
-      if (Date.now() - inicio > 45000) {
-        var msgs = ['No vemos bien tu cara. Ponte frente a una luz (no de espaldas a la ventana), sin gafas ni gorra, con el teléfono a la altura de tu cara.',
-          'No vimos el parpadeo. Mira de frente y cierra los ojos un momento, despacio.',
-          'No vimos el giro. Gira la cabeza despacio hacia un lado y luego hacia el otro.',
-          'No vimos el giro. Gira la cabeza despacio hacia el otro lado.'];
-        al(null, vioCara ? msgs[fase] : msgs[0]); return;
-      }
-      if (!V.video || !V.video.videoWidth) { setTimeout(ciclo, 200); return; }
-      faceapi.detectSingleFace(V.video, opciones()).withFaceLandmarks().withFaceDescriptor().then(function (r) {
-        if (V.paso !== pasoAntes) return;
-        if (!r) { ind(fase ? 'No te vemos: vuelve al óvalo' : 'Pon tu cara dentro del óvalo'); setTimeout(ciclo, 150); return; }
-        vioCara = true;
-        var m = medidas(r);
-        if (m.ancho < V.video.videoWidth * 0.15) { ind('Acércate un poco más'); setTimeout(ciclo, 150); return; }
-        if (fase === 0) {
-          if (Math.abs(m.giro) < 0.18) { desc.push(Array.prototype.slice.call(r.descriptor)); maxEar = Math.max(maxEar, m.ear); if (desc.length === 1) { var f = cuadro(480, 0.72); selfie = f.url(); } }
-          if (desc.length >= 4) avanza(1, 'Parpadea');
-        } else if (fase === 1) {
-          maxEar = Math.max(maxEar, m.ear);
-          if (!cerro && m.ear < maxEar * 0.8) cerro = true;
-          else if (cerro && m.ear > maxEar * 0.9) avanza(2, 'Gira la cabeza hacia un lado');
-        } else if (fase === 2) {
-          if (Math.abs(m.giro) > 0.25) { lado = m.giro > 0 ? 1 : -1; avanza(3, 'Ahora hacia el otro lado'); }
-        } else if (fase === 3) {
-          if (m.giro * lado < -0.25) { var ov = $('#vovalo'); if (ov) ov.classList.add('ok'); ind('¡Listo!'); al({ descriptor: promedio(desc), selfie: selfie }); return; }
-        }
-        setTimeout(ciclo, 90);
-      }).catch(function () { setTimeout(ciclo, 300); });
-    })();
+  // Pantalla completa, como la cámara del teléfono: se ve TODO lo que capta la cámara (sin recortar)
+  function camaraHTML(o) {
+    var mini = o.mini || '', foto = o.foto ? '<img class="vfoto" src="' + o.foto + '">' : '';
+    var abajo = o.abajo || (V.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">Revisando…</b>'
+      : '<button class="disparo" data-v="' + o.disparo + '" aria-label="Tomar foto"></button>');
+    return '<div class="vcf" id="vcam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
+      '<div class="vcf-top"><div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>' +
+      '<button class="vcf-x" data-v="cerrar" aria-label="Cerrar">✕</button></div>' +
+      (V.error ? '<div class="vcf-error">' + esc(V.error) + '</div>' : '') +
+      '<div class="vcf-bot">' + mini + abajo + '</div></div>';
   }
+  function botonesFoto(usar) { return '<div class="fila2"><button class="vbtn claro" data-v="repetir">Repetir</button><button class="vbtn" data-v="' + usar + '">Usar foto</button></div>'; }
+  // Cara y descriptor de una foto ya tomada
+  function leerCara(c) { return faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.35 })).withFaceLandmarks().withFaceDescriptor(); }
+  function tomarFrente() { var f = cuadro(960, 0.85); return f; }
 
   // ---------- Pantallas ----------
   function cabecera(titulo, n, total) {
@@ -152,21 +118,34 @@
       h = cabecera('Registro de identidad', -1) + '<div class="vcuerpo"><div class="grande" style="background:var(--navy)">🪪</div>' +
         '<h2 class="centro">Primero registramos tu identidad</h2><p class="centro">Se hace una sola vez. La central revisa que seas el mismo de tu cédula.</p>' +
         (rech ? '<div class="motivo">La central rechazó tu registro' + (D.turno.identidadMotivo ? ': ' + esc(D.turno.identidadMotivo) : '') + '. Hazlo otra vez.</div>' : '') +
-        '<div class="vlista"><div><b>1. Tu cédula</b><p>Foto clara del frente de tu cédula.</p></div><div><b>2. Tu cara</b><p>Un selfie en vivo: te pediremos parpadear y girar la cabeza.</p></div></div>' +
+        '<div class="vlista"><div><b>1. Tu cédula</b><p>Foto clara del frente de tu cédula.</p></div><div><b>2. Tu cara</b><p>Una foto de frente, con buena luz.</p></div></div>' +
         '<p style="font-size:12.5px">Al continuar aceptas que AutoAmigo guarde la foto de tu cédula y de tu cara solo para verificar que eres tú al empezar cada turno.</p>' +
         '<button class="vbtn" data-v="ir" data-a="idCedula">Acepto, empezar</button></div>';
     } else if (p === 'idCedula') {
-      cam = false;
-      h = cabecera('Tu cédula', 0, 2) + '<div class="vcuerpo"><h2>Foto del frente de tu cédula</h2><p>Que se lea bien y se vea tu foto. Sin reflejos.</p>' + err +
-        (V.prev ? '<div class="cam ancha"><img src="' + V.prev + '"></div><div class="fila2"><button class="vbtn claro" data-v="repetir">Repetir</button><button class="vbtn" data-v="usarCedula">Usar foto</button></div>'
-          : camHTML(true, '<div class="marco"></div>') + '<button class="vbtn" data-v="fotoCedula">Tomar foto</button>') + '</div>';
-      if (V.prev) cam = null;
+      cam = V.prev ? null : false;
+      h = camaraHTML({ paso: 'Paso 1 de 2', titulo: 'Frente de tu cédula', ayuda: 'Que se lea bien y se vea tu foto. Sin reflejos.', marco: !V.prev, foto: V.prev,
+        abajo: V.prev ? botonesFoto('usarCedula') : null, disparo: 'fotoCedula' });
     } else if (p === 'idCara' || p === 'cara') {
-      cam = true;
       var reg = p === 'idCara';
-      h = cabecera('Tu cara', 0 + (reg ? 1 : 0), reg ? 2 : 3) + '<div class="vcuerpo"><h2>Pon tu cara dentro del óvalo</h2><p>Con buena luz, sin gafas oscuras y sin gorra.</p>' + err +
-        camHTML(false, '<div class="ovalo" id="vovalo"></div><div class="indica" id="vindica">' + (V.guiando ? 'Preparando…' : 'Cuando estés listo, aplasta Empezar') + '</div>') +
-        '<button class="vbtn" data-v="cara-ir"' + (V.guiando ? ' disabled' : '') + '>' + (V.guiando ? 'Verificando…' : 'Empezar') + '</button></div>';
+      cam = V.prev ? null : true;
+      h = camaraHTML({ paso: reg ? 'Paso 2 de 2' : 'Paso 1 de 2', titulo: 'Tu cara y tu camisa', ayuda: 'Teléfono a la altura de tu cara, que se vea tu camisa. Con buena luz, sin gafas ni gorra.',
+        foto: V.prev, disparo: 'fotoCara' });
+    } else if (p === 'caraOk') {
+      h = camaraHTML({ paso: 'Paso 1 de 2', titulo: '✓ Eres ' + ((D && D.perfil && D.perfil.nombre) || 'tú'), ayuda: 'Tu cara coincide con la de tu registro y tus documentos.', foto: V.fotoVista,
+        abajo: '<button class="vbtn verde" data-v="sig" data-de="cara">Siguiente</button>' });
+    } else if (p === 'noCoincide') {
+      h = cabecera('Tu cara', -1) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu registro</h2>' +
+        '<p class="centro">Ponte de frente a una luz, quítate gafas o gorra y vuelve a intentarlo. Si sigue fallando, llama a la central.</p>' +
+        '<button class="vbtn" data-v="ir" data-a="cara">Intentar otra vez</button></div>';
+    } else if (p === 'carro') {
+      cam = false;
+      var falta = [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; });
+      var mini = '<div class="vcf-mini">' + SLOTS.map(function (sl, k) {
+        var f = V.fotos.carro[k];
+        return '<button data-v="slot" data-i="' + k + '" class="' + (k === V.slot ? 'sel ' : '') + (f ? 'hecha' : '') + '">' + (f ? '<img src="' + f + '">' : '<span>' + (k + 1) + '</span>') + '</button>';
+      }).join('') + '</div>';
+      h = camaraHTML({ paso: 'Paso 2 de 2 · Foto ' + (V.slot + 1) + ' de 3', titulo: SLOTS[V.slot], ayuda: 'El interior tiene que estar limpio y ordenado.', marco: false, mini: mini, disparo: 'fotoCarro' });
+      if (!falta.length) cam = null;
     } else if (p === 'enviando') {
       h = cabecera('Enviando', -1) + '<div class="vcuerpo">' + cargandoHTML(V.envio === 'identidad' ? 'Enviando tu registro…' : 'Revisando tus fotos…') + '<p class="centro">Toma unos segundos. Tu cara no se envía.</p></div>';
       if (V.envio === 'identidad') h = h.replace('<p class="centro">Toma unos segundos. Tu cara no se envía.</p>', '<p class="centro">Toma unos segundos.</p>');
@@ -178,38 +157,13 @@
         '<button class="vbtn" data-v="ir" data-a="intro">Continuar</button></div>';
     } else if (p === 'intro') {
       h = cabecera('Empezar mi turno', -1) + '<div class="vcuerpo"><div class="grande" style="background:var(--navy)">🪪</div>' +
-        '<h2 class="centro">Antes de conectarte, verificamos tu turno</h2><p class="centro">Se hace una sola vez al día. Toma menos de 2 minutos.</p>' +
-        '<div class="vlista"><div><b>1. Tu cara</b><p>Confirmamos que eres el mismo de tu cédula.</p></div><div><b>2. Tu camisa</b><p>Con camisa y sin gorra.</p></div><div><b>3. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
+        '<h2 class="centro">Antes de conectarte, verificamos tu turno</h2><p class="centro">Se hace una sola vez al día. Toma menos de 1 minuto.</p>' +
+        '<div class="vlista"><div><b>1. Tu cara y tu camisa</b><p>Una foto: confirmamos que eres tú (cédula y licencia) y que tienes camisa, sin gorra.</p></div><div><b>2. Tu carro</b><p>3 fotos del interior limpio.</p></div></div>' +
         '<button class="vbtn" data-v="ir" data-a="cara">Empezar</button></div>';
-    } else if (p === 'caraOk') {
-      h = cabecera('Tu cara', 0, 3) + '<div class="vcuerpo"><div class="grande">✓</div><h2 class="centro">Eres ' + esc((D && D.perfil && D.perfil.nombre) || 'tú') + '</h2><p class="centro">Tu cara coincide con la de tu cédula y tu registro.</p>' +
-        '<button class="vbtn" data-v="sig" data-de="cara">Siguiente</button></div>';
-    } else if (p === 'noCoincide') {
-      h = cabecera('Tu cara', 0, 3) + '<div class="vcuerpo"><div class="grande mal">✕</div><h2 class="centro">Tu cara no coincide con la de tu registro</h2>' +
-        '<p class="centro">Ponte en un lugar con buena luz, quítate gafas o gorra y vuelve a intentarlo. Si sigue fallando, llama a la central.</p>' +
-        '<button class="vbtn" data-v="ir" data-a="cara">Intentar otra vez</button></div>';
-    } else if (p === 'pecho') {
-      cam = true;
-      h = cabecera('Tu camisa', 1, 3) + '<div class="vcuerpo"><h2>Foto de tu cara y tu camisa</h2><p>Que se vea bien tu camisa y tu cabeza. Tu cara se pondrá borrosa antes de enviarla.</p>' +
-        '<div class="reglas"><span class="si">✓ Camisa</span><span class="no">✕ Gorra</span></div>' + err +
-        (V.prev ? '<div class="cam"><img src="' + V.prev + '"></div><div class="fila2"><button class="vbtn claro" data-v="repetir">Repetir</button><button class="vbtn" data-v="usarPecho">Usar foto</button></div>'
-          : camHTML(false, '<div class="marco"></div>') + '<button class="vbtn" data-v="fotoPecho">Tomar foto</button>') + '</div>';
-      if (V.prev) cam = null;
-    } else if (p === 'carro') {
-      cam = false;
-      var listas = V.fotos.carro.filter(Boolean).length === 3;
-      h = cabecera('Tu carro', 2, 3) + '<div class="vcuerpo"><h2>' + (listas ? 'Listo, ya tienes las 3 fotos' : 'Foto: ' + SLOTS[V.slot]) + '</h2><p>El interior tiene que estar limpio y ordenado.</p>' + err +
-        (listas ? '' : camHTML(true, '<div class="marco"></div>')) +
-        '<div class="fotos3">' + SLOTS.map(function (s, i) {
-          var f = V.fotos.carro[i];
-          return '<button data-v="slot" data-i="' + i + '" class="' + (i === V.slot && !listas ? 'sel ' : '') + (f ? 'hecha' : '') + '">' + (f ? '<img src="' + f + '">' : '📷<span>' + s + '</span>') + '</button>';
-        }).join('') + '</div>' +
-        (listas ? '<button class="vbtn" data-v="sig" data-de="carro">Siguiente</button>' : '<button class="vbtn" data-v="fotoCarro">Tomar foto</button>') + '</div>';
-      if (listas) cam = null;
     } else if (p === 'enviar') {
       var fig = function (src, txt) { return '<figure><img src="' + src + '"><figcaption>' + txt + '</figcaption></figure>'; };
-      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno. Tu cara no se envía: sale borrosa.</p>' + err +
-        '<div class="resumen">' + fig(V.fotos.pecho, 'Camisa') + V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
+      h = cabecera('Revisa y envía', -1) + '<div class="vcuerpo"><h2>Todo listo</h2><p>Revisaremos tus fotos para aprobar tu turno. Tu cara se queda en tu teléfono: a la revisión le llega borrosa.</p>' + err +
+        '<div class="resumen">' + fig(V.fotos.pechoVista || V.fotos.pecho, 'Tú y tu camisa') + V.fotos.carro.map(function (f, i) { return fig(f, SLOTS[i]); }).join('') + '</div>' +
         '<button class="vbtn" data-v="enviar">Enviar</button></div>';
     } else if (p === 'espera') {
       h = cabecera('Esperando aprobación', -1) + '<div class="vcuerpo">' + cargandoHTML('Tu turno lo está revisando la central') +
@@ -229,6 +183,7 @@
       h = cabecera('No se pudo enviar', -1) + '<div class="vcuerpo"><div class="grande mal">!</div><h2 class="centro">No se pudo enviar</h2><div class="motivo">' + esc(V.error || 'Revisa tu internet e intenta otra vez.') + '</div>' +
         '<button class="vbtn" data-v="reenviar">Intentar otra vez</button></div>';
     }
+    el.classList.toggle('camara', h.indexOf('class="vcf"') >= 0);
     if (el.__h !== h) { el.innerHTML = h; el.__h = h; }
     if (cam !== null) { abrirCam(cam).then(montarCam, function () { }); montarCam(); } else cerrarCam();
   }
@@ -242,9 +197,10 @@
     if (t.estado === 'rechazado') { V.rehacer = (t.rehacer && t.rehacer.length) ? t.rehacer : ['pecho', 'carro']; V.resultado = null; return 'rechazado'; }
     return 'intro';
   }
-  function ir(p) { V.paso = p; V.prev = null; V.error = ''; V.guiando = false; if (p === 'carro') V.slot = Math.max(0, [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; })[0] || 0); pintar(); }
+  function ir(p) { V.paso = p; V.prev = null; V.error = ''; V.analizando = false; if (p === 'carro') V.slot = Math.max(0, [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; })[0] || 0); pintar(); }
   function siguiente(de) {
-    var orden = V.rehacer && V.rehacer.length ? V.rehacer.slice() : ['cara', 'pecho', 'carro'];
+    var orden = V.rehacer && V.rehacer.length ? V.rehacer.map(function (k) { return k === 'pecho' ? 'cara' : k; }) : ['cara', 'carro'];
+    if (de === 'pecho') de = 'cara';
     var i = orden.indexOf(de);
     ir(orden[i + 1] || 'enviar');
   }
@@ -272,65 +228,66 @@
     if (a === 'repetir') { V.prev = null; pintar(); return; }
     if (a === 'fotoCedula') { if (!V.video || !V.video.videoWidth) return; var fc = cuadro(900, 0.75); V.prev = fc.url(); pintar(); return; }
     if (a === 'usarCedula') { V.fotos.cedula = V.prev; ir('idCara'); return; }
-    if (a === 'cara-ir') {
-      V.guiando = true; V.error = ''; pintar();
-      cargarFA().then(function () {
-        var paso = V.paso;
-        enVivo(function (r, msg) {
-          V.guiando = false;
-          if (!r) { V.error = msg; pintar(); return; }
-          if (paso === 'idCara') {
-            // Registro: también se mide el parecido con la foto de la cédula (ayuda a la central)
-            var img = new Image();
-            img.onload = function () {
-              faceapi.detectSingleFace(img, opciones()).withFaceLandmarks().withFaceDescriptor().then(function (c) {
-                V.envio = 'identidad'; V.paso = 'enviando'; pintar();
-                accion('identidadEnviar', { cedula: V.fotos.cedula, selfie: r.selfie, descriptor: r.descriptor, parecido: c ? Math.round(distancia(r.descriptor, Array.prototype.slice.call(c.descriptor)) * 1000) / 1000 : null });
-              });
-            };
-            img.src = V.fotos.cedula;
-            return;
-          }
-          // Se compara SOLO con la cara registrada de este conductor: la foto en vivo de su registro (estricto)
-          // y la cara de SU cédula (más tolerante, porque la foto de la cédula suele ser vieja)
-          var ref = (D && D.turno && D.turno.descriptor) || [], refC = (D && D.turno && D.turno.descCedula) || [];
-          var d = ref.length === 128 ? distancia(r.descriptor, ref) : 9;
-          var dc = refC.length === 128 ? distancia(r.descriptor, refC) : 0;
-          V.cara = Math.round(d * 1000) / 1000;
-          if (d <= UMBRAL && dc <= UMBRAL_CEDULA) { V.fallos = 0; ir('caraOk'); }
-          else { V.fallos++; ir('noCoincide'); }
-        });
-      }).catch(function () { V.guiando = false; V.error = 'No se pudo cargar el verificador de cara. Revisa tu internet e intenta otra vez.'; pintar(); });
+    if (a === 'fotoCara') {
+      if (!V.video || !V.video.videoWidth || V.analizando) return;
+      var paso = V.paso, f = tomarFrente();
+      V.analizando = true; V.error = ''; pintar();
+      cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
+        if (V.paso !== paso) return;
+        V.analizando = false;
+        if (!r) { V.error = 'No se ve bien tu cara. Ponte de frente a una luz (no de espaldas a la ventana), sin gafas ni gorra, y toma otra.'; pintar(); return; }
+        var desc = Array.prototype.slice.call(r.descriptor);
+        if (paso === 'idCara') {
+          // Registro: también se mide el parecido con la foto de la cédula (ayuda a la central)
+          var img = new Image();
+          img.onload = function () {
+            leerCara(img).then(function (c) {
+              V.envio = 'identidad'; V.paso = 'enviando'; pintar();
+              accion('identidadEnviar', { cedula: V.fotos.cedula, selfie: cuadro(480, 0.72, f.c).url(), descriptor: desc, parecido: c ? Math.round(distancia(desc, Array.prototype.slice.call(c.descriptor)) * 1000) / 1000 : null });
+            });
+          };
+          img.src = V.fotos.cedula;
+          return;
+        }
+        // Se compara SOLO con las caras de este conductor: la de su registro (estricta) y las de SU cédula y SU licencia
+        var t = (D && D.turno) || {}, ref = t.descriptor || [];
+        if (window.AATurnoPrueba && ref.length !== 128) { ref = t.descriptor = desc; }   // solo en el link de prueba: la primera foto queda como "registro"
+        var d = ref.length === 128 ? distancia(desc, ref) : 9;
+        var docs = [t.descCedula, t.descLicencia].filter(function (x) { return x && x.length === 128; }).map(function (x) { return distancia(desc, x); });
+        var dd = docs.length ? Math.min.apply(null, docs) : 0;
+        V.cara = Math.round(d * 1000) / 1000;
+        if (d > UMBRAL || dd > UMBRAL_CEDULA) { V.fallos++; ir('noCoincide'); return; }
+        V.fallos = 0;
+        V.fotoVista = cuadro(720, 0.8, f.c).url();
+        // La misma foto sirve para la camisa: la cara sale borrosa antes de enviarla
+        var pe = cuadro(480, 0.62, f.c), vista = cuadro(480, 0.7, f.c);
+        marcaHora(vista); V.fotos.pechoVista = vista.url();   // la que ve el conductor (con su cara)
+        borrarCara(pe).then(function () { marcaHora(pe); V.fotos.pecho = pe.url(); ir('caraOk'); });   // la que se envía (cara borrosa)
+      }).catch(function () { V.analizando = false; V.error = 'No se pudo revisar la foto. Revisa tu internet e intenta otra vez.'; pintar(); });
       return;
     }
     if (a === 'sig') { siguiente(b.getAttribute('data-de')); return; }
-    if (a === 'fotoPecho') {
-      if (!V.video || !V.video.videoWidth) return;
-      var f = cuadro(420, 0.62);
-      cargarFA().then(function () { return borrarCara(f); }).then(function () { marcaHora(f); V.prev = f.url(); pintar(); })
-        .catch(function () { V.error = 'No se pudo preparar la foto. Revisa tu internet.'; pintar(); });
-      return;
-    }
-    if (a === 'usarPecho') { V.fotos.pecho = V.prev; siguiente('pecho'); return; }
-    if (a === 'slot') { V.slot = +b.getAttribute('data-i'); V.fotos.carro[V.slot] = null; pintar(); return; }
+    if (a === 'slot') { V.slot = +b.getAttribute('data-i'); V.fotos.carro[V.slot] = null; V.error = ''; pintar(); return; }
     if (a === 'fotoCarro') {
       if (!V.video || !V.video.videoWidth) return;
       var fk = cuadro(420, 0.62); marcaHora(fk); V.fotos.carro[V.slot] = fk.url();
       var falta = [0, 1, 2].filter(function (k) { return !V.fotos.carro[k]; });
-      V.slot = falta.length ? falta[0] : V.slot; pintar(); return;
+      if (falta.length) { V.slot = falta[0]; pintar(); } else siguiente('carro');
+      return;
     }
     if (a === 'enviar' || a === 'reenviar') {
       if (a === 'reenviar' && V.envio === 'identidad') { V.paso = 'idIntro'; pintar(); return; }
-      if (!V.fotos.pecho || V.fotos.carro.filter(Boolean).length !== 3) { ir(V.fotos.pecho ? 'carro' : 'pecho'); return; }
+      if (!V.fotos.pecho || V.fotos.carro.filter(Boolean).length !== 3) { ir(V.fotos.pecho ? 'carro' : 'cara'); return; }
       V.envio = 'turno'; V.paso = 'enviando'; V.error = ''; pintar();
       accion('turnoEnviar', { pecho: V.fotos.pecho, carro: V.fotos.carro, cara: V.cara == null ? null : V.cara });
       return;
     }
     if (a === 'corregir') {
-      (V.rehacer || ['pecho', 'carro']).forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else V.fotos[k] = null; });
-      // La cara se verifica solo una vez por día; si cerró la app, se vuelve a pedir
-      if (V.cara == null) { V.rehacer = ['cara'].concat(V.rehacer || []); }
-      ir(V.rehacer[0]); return;
+      var re = (V.rehacer || ['pecho', 'carro']).map(function (k) { return k === 'pecho' ? 'cara' : k; });
+      re.forEach(function (k) { if (k === 'carro') V.fotos.carro = []; else { V.fotos.pecho = null; V.fotos.pechoVista = null; } });
+      // La foto de la cara es la misma de la camisa: si cerró la app hay que volver a tomarla
+      if (V.cara == null || !V.fotos.pecho) { if (re.indexOf('cara') < 0) re.unshift('cara'); }
+      V.rehacer = re; ir(re[0]); return;
     }
     if (a === 'conectar') { V.paso = null; pintar(); accion('conectar'); return; }
   });
