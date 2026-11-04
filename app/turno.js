@@ -80,10 +80,10 @@
   // Pantalla completa, como la cámara del teléfono: se ve TODO lo que capta la cámara (sin recortar)
   function camaraHTML(o) {
     var mini = o.mini || '', foto = o.foto ? '<img class="vfoto" src="' + o.foto + '">' : '';
-    var abajo = o.abajo || (V.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">Revisando…</b>'
+    var abajo = o.abajo || (V.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">Revisando tu cara…</b>'
       : '<button class="disparo" data-v="' + o.disparo + '" aria-label="Tomar foto"></button>');
     return '<div class="vcf" id="vcam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
-      '<div class="vcf-top"><div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>' +
+      (V.analizando ? '<div class="vcf-top">' : '<div class="vcf-top"><div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
       '<button class="vcf-x" data-v="cerrar" aria-label="Cerrar">✕</button></div>' +
       (V.error ? '<div class="vcf-error">' + esc(V.error) + '</div>' : '') +
       '<div class="vcf-bot">' + mini + abajo + '</div></div>';
@@ -231,11 +231,13 @@
     if (a === 'fotoCara') {
       if (!V.video || !V.video.videoWidth || V.analizando) return;
       var paso = V.paso, f = tomarFrente();
+      // La foto se congela en la pantalla apenas se toma: el conductor ya se puede mover
+      V.prev = f.c.toDataURL('image/jpeg', 0.8);
       V.analizando = true; V.error = ''; pintar();
       cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
         if (V.paso !== paso) return;
         V.analizando = false;
-        if (!r) { V.error = 'No se ve bien tu cara. Ponte de frente a una luz (no de espaldas a la ventana), sin gafas ni gorra, y toma otra.'; pintar(); return; }
+        if (!r) { V.prev = null; V.error = 'No se ve bien tu cara. Ponte de frente a una luz (no de espaldas a la ventana), sin gafas ni gorra, y toma otra.'; pintar(); return; }
         var desc = Array.prototype.slice.call(r.descriptor);
         if (paso === 'idCara') {
           // Registro: también se mide el parecido con la foto de la cédula (ayuda a la central)
@@ -263,7 +265,7 @@
         var pe = cuadro(480, 0.62, f.c), vista = cuadro(480, 0.7, f.c);
         marcaHora(vista); V.fotos.pechoVista = vista.url();   // la que ve el conductor (con su cara)
         borrarCara(pe).then(function () { marcaHora(pe); V.fotos.pecho = pe.url(); ir('caraOk'); });   // la que se envía (cara borrosa)
-      }).catch(function () { V.analizando = false; V.error = 'No se pudo revisar la foto. Revisa tu internet e intenta otra vez.'; pintar(); });
+      }).catch(function () { V.analizando = false; V.prev = null; V.error = 'No se pudo revisar la foto. Revisa tu internet e intenta otra vez.'; pintar(); });
       return;
     }
     if (a === 'sig') { siguiente(b.getAttribute('data-de')); return; }
@@ -313,6 +315,7 @@
       if (Date.now() - V.aprobadoLocal < 20000 && !D.turno.aprobadoHoy) { setTimeout(function () { accion('conectar'); }, 1500); return; }
       if (V.paso && V.paso !== 'aprobado') { pintar(); return; }
       V.paso = pasoInicial(); V.error = ''; pintar();
+      cargarFA().catch(function () { });   // se carga mientras lee la pantalla de inicio: la revisión de la foto sale más rápido
     },
     respuesta: respuesta,
     atras: function () { if (!V.paso) return false; V.paso = null; pintar(); return true; }
