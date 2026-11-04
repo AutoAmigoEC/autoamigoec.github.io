@@ -80,10 +80,10 @@
   // Pantalla completa, como la cámara del teléfono: se ve TODO lo que capta la cámara (sin recortar)
   function camaraHTML(o) {
     var mini = o.mini || '', foto = o.foto ? '<img class="vfoto" src="' + o.foto + '">' : '';
-    var abajo = o.abajo || (V.analizando ? '<div class="vcf-listo">✓ Foto tomada, ya te puedes mover</div><div class="vcf-espera"></div><b class="vcf-txt">Revisando tu cara…</b>'
+    var abajo = o.abajo || (V.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">Revisando tu cara…</b>'
       : '<button class="disparo" data-v="' + o.disparo + '" aria-label="Tomar foto"></button>');
     return '<div class="vcf" id="vcam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
-      '<div class="vcf-top"><div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>' +
+      (V.analizando ? '<div class="vcf-top">' : '<div class="vcf-top"><div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
       '<button class="vcf-x" data-v="cerrar" aria-label="Cerrar">✕</button></div>' +
       (V.error ? '<div class="vcf-error">' + esc(V.error) + '</div>' : '') +
       '<div class="vcf-bot">' + mini + abajo + '</div></div>';

@@ -69,7 +69,7 @@
   .verif .vcf-tit small{font-size:12.5px;font-weight:700;opacity:.85}
   .verif .vcf-tit b{font-family:Manrope,sans-serif;font-size:21px;line-height:1.2}
   .verif .vcf-tit span{font-size:14px;line-height:1.4;opacity:.92}
-  .verif .vcf-x{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:19px;cursor:pointer}
+  .verif .vcf-x{flex:none;margin-left:auto;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:19px;cursor:pointer}
   .verif .vcf-error{position:absolute;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:3;background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
   .verif .vcf-marco{position:absolute;left:8%;right:8%;top:30%;bottom:30%;border:3px dashed rgba(255,255,255,.85);border-radius:18px;z-index:1}
   .verif .vcf-bot{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 16px calc(env(safe-area-inset-bottom,0px) + 24px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72))}
@@ -114,7 +114,7 @@
   } };
   document.getElementById('libre').onclick = function () { D.turno.aprobadoHoy = false; D.turno.estado = null; AATurno.estado(D); AATurno.abrir(); };
 </script>
-<script src="turno.js?v=3"></script>
+<script src="turno.js?v=4"></script>
 <script>AATurno.estado(D);</script>
 </body>
 </html>
