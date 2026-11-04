@@ -433,7 +433,7 @@
     var ap = W.ident.estado === 'aprobada';
     o.turno = { requerido: requiereTurno(), camara: true, aprobadoHoy: turnoDeHoy() === 'aprobado', estado: turnoDeHoy(), motivo: W.turno.motivo || '', duda: W.turno.duda || '', por: W.turno.por || '',
       bloqueada: !!W.turno.bloqueada, rehacer: W.turno.rehacer || [], identidad: W.ident.estado || null, identidadMotivo: W.ident.motivo || '',
-      descriptor: ap && W.ident.descriptor ? W.ident.descriptor : [], descCedula: ap && W.ident.descCedula ? W.ident.descCedula : [] };
+      descriptor: ap && W.ident.descriptor ? W.ident.descriptor : [], descCedula: ap && W.ident.descCedula ? W.ident.descCedula : [], descLicencia: ap && W.ident.descLicencia ? W.ident.descLicencia : [] };
     o.ficha = W.ficha || null; o.fotoPerfil = W.perfilFoto; o.docsPendientes = W.docsP;
     var todas = misCarreras();
     o.carrerasTotal = todas.filter(function (x) { return x.estado === 'finalizada'; }).length; o.calif = null;
