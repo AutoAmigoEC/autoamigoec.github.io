@@ -35,7 +35,7 @@
     }).catch(function (e) { cargaFA = null; throw e; });
     return cargaFA;
   }
-  function opciones() { return new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }); }
+  function opciones() { return new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.35 }); }
   function dist2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function centro(p) { var x = 0, y = 0; p.forEach(function (q) { x += q.x; y += q.y; }); return { x: x / p.length, y: y / p.length }; }
   function ear(o) { return (dist2(o[1], o[5]) + dist2(o[2], o[4])) / (2 * dist2(o[0], o[3])); }
@@ -91,28 +91,36 @@
   // ---------- Verificación en vivo (parpadeo y giro) ----------
   function enVivo(al) {
     var ind = function (t) { var e = $('#vindica'); if (e) e.textContent = t; };
-    var desc = [], fase = 0, maxEar = 0, cerro = false, lado = 0, inicio = Date.now(), selfie = null, pasoAntes = V.paso;
+    var desc = [], fase = 0, maxEar = 0, cerro = false, lado = 0, inicio = Date.now(), selfie = null, pasoAntes = V.paso, vioCara = false;
+    var avanza = function (f, t) { fase = f; inicio = Date.now(); ind(t); };
     ind('Mira de frente');
     (function ciclo() {
       if (V.paso !== pasoAntes) return;
-      if (Date.now() - inicio > 30000) { al(null, 'No pudimos verificarte. Ponte con buena luz, sin gafas y vuelve a intentarlo.'); return; }
+      if (Date.now() - inicio > 45000) {
+        var msgs = ['No vemos bien tu cara. Ponte frente a una luz (no de espaldas a la ventana), sin gafas ni gorra, con el teléfono a la altura de tu cara.',
+          'No vimos el parpadeo. Mira de frente y cierra los ojos un momento, despacio.',
+          'No vimos el giro. Gira la cabeza despacio hacia un lado y luego hacia el otro.',
+          'No vimos el giro. Gira la cabeza despacio hacia el otro lado.'];
+        al(null, vioCara ? msgs[fase] : msgs[0]); return;
+      }
       if (!V.video || !V.video.videoWidth) { setTimeout(ciclo, 200); return; }
       faceapi.detectSingleFace(V.video, opciones()).withFaceLandmarks().withFaceDescriptor().then(function (r) {
         if (V.paso !== pasoAntes) return;
-        if (!r) { ind('Pon tu cara dentro del óvalo'); setTimeout(ciclo, 150); return; }
+        if (!r) { ind(fase ? 'No te vemos: vuelve al óvalo' : 'Pon tu cara dentro del óvalo'); setTimeout(ciclo, 150); return; }
+        vioCara = true;
         var m = medidas(r);
-        if (m.ancho < V.video.videoWidth * 0.22) { ind('Acércate un poco más'); setTimeout(ciclo, 150); return; }
+        if (m.ancho < V.video.videoWidth * 0.15) { ind('Acércate un poco más'); setTimeout(ciclo, 150); return; }
         if (fase === 0) {
-          if (Math.abs(m.giro) < 0.12) { desc.push(Array.prototype.slice.call(r.descriptor)); maxEar = Math.max(maxEar, m.ear); if (desc.length === 1) { var f = cuadro(480, 0.72); selfie = f.url(); } }
-          if (desc.length >= 4) { fase = 1; ind('Parpadea'); }
+          if (Math.abs(m.giro) < 0.18) { desc.push(Array.prototype.slice.call(r.descriptor)); maxEar = Math.max(maxEar, m.ear); if (desc.length === 1) { var f = cuadro(480, 0.72); selfie = f.url(); } }
+          if (desc.length >= 4) avanza(1, 'Parpadea');
         } else if (fase === 1) {
           maxEar = Math.max(maxEar, m.ear);
-          if (!cerro && m.ear < maxEar * 0.72) cerro = true;
-          else if (cerro && m.ear > maxEar * 0.88) { fase = 2; ind('Gira la cabeza hacia un lado'); }
+          if (!cerro && m.ear < maxEar * 0.8) cerro = true;
+          else if (cerro && m.ear > maxEar * 0.9) avanza(2, 'Gira la cabeza hacia un lado');
         } else if (fase === 2) {
-          if (Math.abs(m.giro) > 0.3) { lado = m.giro > 0 ? 1 : -1; fase = 3; ind('Ahora hacia el otro lado'); }
+          if (Math.abs(m.giro) > 0.25) { lado = m.giro > 0 ? 1 : -1; avanza(3, 'Ahora hacia el otro lado'); }
         } else if (fase === 3) {
-          if (m.giro * lado < -0.3) { var ov = $('#vovalo'); if (ov) ov.classList.add('ok'); ind('¡Listo!'); al({ descriptor: promedio(desc), selfie: selfie }); return; }
+          if (m.giro * lado < -0.25) { var ov = $('#vovalo'); if (ov) ov.classList.add('ok'); ind('¡Listo!'); al({ descriptor: promedio(desc), selfie: selfie }); return; }
         }
         setTimeout(ciclo, 90);
       }).catch(function () { setTimeout(ciclo, 300); });
