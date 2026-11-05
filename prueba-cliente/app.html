@@ -429,6 +429,8 @@
   .otra small{color:var(--gris);font-size:13px;line-height:1.4}
   .otra.no{opacity:.6}
   .otra .entrada{margin:0}
+  .nav-centrar{position:absolute;left:12px;z-index:7;height:44px;padding:0 16px 0 12px;border:0;border-radius:999px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+  .nav-centrar[hidden]{display:none}
   .etiqueta.recalc{background:#B54708;margin-top:12px;margin-left:6px}
   .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
 </style>
@@ -481,6 +483,7 @@
       <div id="mapa"></div>
       <button class="redondo" id="b-centrar" style="right:16px;bottom:16px" aria-label="Mi ubicación">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg></button>
+      <button class="nav-centrar" id="nav-centrar" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Centrar</button>
       <button class="redondo" id="b-ruta" style="left:14px;bottom:16px;display:none" aria-label="Ver toda la ruta">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg></button>
     </div>
@@ -664,7 +667,7 @@
   }
   var carroEl = document.createElement('div'); carroEl.className = 'carro-mapa';
   carroEl.innerHTML = '<svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="18" fill="#fff" stroke="#E4E7EC"/><g class="g"><rect x="12" y="6" width="14" height="26" rx="5" fill="#0A0F3C"/><rect x="14" y="10" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="14" y="23" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="12.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="22.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/></g></svg>';
-  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl }), carroEnMapa = false;
+  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map' }), carroEnMapa = false;
   function relleno() {
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
@@ -689,7 +692,7 @@
   function carro(p, rumbo) {
     if (!p) { if (carroEnMapa) { mkC.remove(); carroEnMapa = false; } return; }
     mkC.setLngLat([p.lng, p.lat]); if (!carroEnMapa) { mkC.addTo(M); carroEnMapa = true; }
-    if (rumbo != null) carroEl.querySelector('.g').setAttribute('transform', 'rotate(' + rumbo + ' 19 19)');
+    if (rumbo != null) { try { mkC.setRotation(rumbo); } catch (e) { carroEl.querySelector('.g').setAttribute('transform', 'rotate(' + rumbo + ' 19 19)'); } }
   }
   function verRuta() {
     var v = S.v; if (!v) return;
@@ -732,6 +735,7 @@
   function empezarSeguimiento() {
     var v = S.v; if (!v || !v.pos) return;
     SEG.ant = null; SEG.sigue = true; SEG.fuera = 0;
+    $('#hoja').classList.add('mini'); ultimaHoja = ''; render();
     var meta = metaViaje(v);
     // Ya conocemos la ruta del viaje (la que vio al pedir): se usa al empezar el taxímetro
     if (v.fase === 'ejecucion' && v.ruta && v.ruta.length > 1) { SEG.ruta = v.ruta; SEG.meta = meta; SEG.recalc = false; SEG.margen = 45; SEG.pedido++; seguir(); }
@@ -752,11 +756,29 @@
     var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
     SEG.falta = falta;
     carro(pos, SEG.rumbo);
-    if (SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], zoom: Math.max(15.5, Math.min(M.getZoom ? M.getZoom() : 16, 17)), duration: 900, padding: relleno() });
+    if (SEG.sigue) {
+      var alto = M.getContainer().clientHeight, abajo = Math.min(Math.round(alto * 0.55), ($('#hoja').offsetHeight || 200) + 40);
+      M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 50, zoom: 16.5, duration: 900, padding: { top: Math.min(140, Math.round(alto * 0.2)), bottom: abajo, left: 20, right: 20 } });
+    }
+    pintarCentrar();
   }
-  function pararSeguimiento() { SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; }
-  // Si el cliente mueve el mapa con los dedos, deja de seguir el carro hasta que toque "centrar"
-  ['dragstart', 'zoomstart'].forEach(function (ev) { try { M.on(ev, function (e) { if (e && e.originalEvent && S.v && S.v.pos) SEG.sigue = false; }); } catch (er) {} });
+  function pararSeguimiento() {
+    SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; SEG.sigue = true; pintarCentrar();
+    $('#hoja').classList.remove('mini'); ultimaHoja = '';
+    try { M.easeTo({ pitch: 0, bearing: 0, duration: 600 }); } catch (e) { }
+  }
+  // "Centrar" aparece cuando el cliente movió el mapa (igual que en la app del conductor)
+  function pintarCentrar() {
+    var b = $('#nav-centrar'); if (!b) return;
+    var activo = !!(S.v && S.v.pos && SEG.ruta);
+    b.hidden = !activo || SEG.sigue;
+    b.style.bottom = (($('#hoja').offsetHeight || 0) + 14) + 'px';
+    $('#b-centrar').style.visibility = activo ? 'hidden' : '';
+  }
+  // Si mueve, acerca o gira el mapa con los dedos, deja de seguir el carro hasta que toque "Centrar"
+  function dejarDeSeguir(e) { if (e && e.originalEvent && S.v && S.v.pos && SEG.ruta && SEG.sigue) { SEG.sigue = false; pintarCentrar(); } }
+  ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
+  $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarCentrar(); seguir(); });
 
   // ---------- Servicios (los mismos del panel) ----------
   function buscarLugares(q) {
@@ -914,6 +936,7 @@
     $('#k-lugares').textContent = S.casa || S.trabajo ? [S.casa ? 'Casa' : '', S.trabajo ? 'Trabajo' : ''].filter(Boolean).join(' · ') : 'Casa y Trabajo';
     $('#k-lugares-sub').textContent = S.casa || S.trabajo ? 'Toca para ver tus lugares guardados' : 'Guarda tus lugares para pedir más rápido';
     yoMk.setLngLat([S.yo.lng, S.yo.lat]);
+    yoEl.style.display = v && v.fase === 'ejecucion' ? 'none' : '';   // ya va dentro del carro: solo se ve el carro
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
     var sec = S.pantalla !== 'inicio' && !enViaje;
     $('#seccion').hidden = !sec; $('#b-centrar').hidden = sec;
