@@ -1794,6 +1794,7 @@
     v.fase = 'ejecucion'; v.llego = true; v.seg = 0; v.metros = 0; v.espera = 0; v.mostradoC = 0; v.ultMostrar = 0; v.inicio = Date.now();
     v.pos = { lat: v.o.lat, lng: v.o.lng }; if (mkO) { mkO.remove(); mkO = null; }
     aviso('Tu viaje empezó. El taxímetro está corriendo.'); render(); empezarSeguimiento();
+    if (SEG.activo && !$('#hoja').classList.contains('mini')) salirNav();   // navegando con el cuadro grande: toca Salir solo
   }
   function finalizar() {
     var v = S.v; if (!v || v.fase !== 'ejecucion') return;
@@ -1968,7 +1969,9 @@
       setTimeout(function () { [hoja, pie].forEach(function (el) { el.style.transition = ''; }); }, 350);
       // El mapa se acomoda a la vez que sube el cuadro (un solo movimiento)
       if (S.v && S.v.pos) {
-        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(300)); }
+        // Con el taxímetro iniciado, agrandar el cuadro toca Salir solo (deja de navegar y sigue al carro con el mapa derecho)
+        if (SEG.activo && S.v.fase === 'ejecucion') salirNav();
+        else if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(300)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 300, padding: rellenoCarro() });
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 300 }); }
       }
