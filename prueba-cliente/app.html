@@ -1053,7 +1053,7 @@
         lista = lista.concat(SUGERIDOS);
       }
       b.mostrada = lista;
-      return '<h2>' + (b.guardar ? (b.guardar === 'casa' ? 'Guardar casa' : 'Guardar trabajo') : '¿A dónde vas?') + '</h2>' +
+      return '<h2>' + (b.guardar ? (b.guardar === 'casa' ? 'Guardar casa' : b.guardar === 'favorito' ? 'Agregar destino frecuente' : 'Guardar trabajo') : '¿A dónde vas?') + '</h2>' +
         '<div class="busca">' + (b.guardar ? '' : '<div class="campo"><span class="pt o"></span><input id="in-o" value="' + esc(b.o ? b.o.nombre : 'Mi ubicación actual') + '" placeholder="Punto de recogida" autocomplete="off"></div>') +
         '<div class="campo"><span class="pt d"></span><input id="in-d" value="' + esc(b.texto || '') + '" placeholder="' + (b.guardar ? 'Busca la dirección' : 'Escribe tu destino') + '" autocomplete="off"></div></div>' +
         (b.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) {
@@ -1221,10 +1221,27 @@
     persona: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>',
     yo: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>',
     avion: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="1.9" stroke-linejoin="round"><path d="M10.2 13.8 4 12.5l-1.5 1.5 6.2 2.8 2.8 6.2 1.5-1.5-1.3-6.2 4.8-4.8 3.3 6.6 1.6-1.6-1.4-8.4 2.4-2.4a1.6 1.6 0 0 0-2.3-2.3l-2.4 2.4-8.4-1.4-1.6 1.6 6.6 3.3z"/></svg>',
+    estrella: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>',
+    mas: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
     cal: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
   };
   function recientes() { var r = leer('aac_recientes', null); return r && r.length ? r : SUGERIDOS.slice(0, 3); }
   // Los destinos a los que más vas (los que más veces pediste; si empatan, el más reciente). Siempre 2: si faltan, se completan con sugeridos.
+  // Inicio: siempre 2. El aeropuerto está fijo; el otro es tu destino frecuente (o el que guardaste, o "Agregar destino").
+  // Si a otro destino vas más veces que al aeropuerto (al menos 3), ese pasa primero y el aeropuerto queda segundo.
+  var AEROPUERTO = SUGERIDOS[1];
+  function destinosInicio() {
+    var r = leer('aac_recientes', []) || [], veces = function (nom) { var x = r.filter(function (y) { return y.nombre === nom; })[0]; return x ? (x.veces || 1) : 0; };
+    var aero = Object.assign({}, AEROPUERTO, { _ic: IC.avion }), vAero = veces(AEROPUERTO.nombre);
+    var otros = r.filter(function (x) { return x.nombre !== AEROPUERTO.nombre; }).sort(function (a, b) { return (b.veces || 1) - (a.veces || 1) || (b.t || 0) - (a.t || 0); });
+    var top = otros[0] && (otros[0].veces || 1) >= 2 ? otros[0] : null, fav = leer('aac_favorito', null), vFav = fav ? veces(fav.nombre) : 0;
+    var seg = null;
+    if (fav && (!top || (top.veces || 1) <= vFav || top.nombre === fav.nombre)) seg = Object.assign({ _ic: IC.estrella }, fav);
+    else if (top) seg = Object.assign({ _ic: IC.reloj }, top);
+    var segRow = seg || { _crear: true };
+    var vSeg = seg ? veces(seg.nombre) : 0;
+    return vSeg >= 3 && vSeg > vAero ? [segRow, aero] : [aero, segRow];
+  }
   function frecuentes(n) {
     var r = (leer('aac_recientes', []) || []).slice().sort(function (a, b) { return (b.veces || 1) - (a.veces || 1) || (b.t || 0) - (a.t || 0); });
     SUGERIDOS.forEach(function (x) { if (r.length < n && !r.some(function (y) { return y.nombre === x.nombre; })) r.push(x); });
@@ -1279,14 +1296,17 @@
   var ultimoInicio = '';
   function pintarInicio() {
     var pf = S.perfil || { nombre: '' };
-    var lista = frecuentes(2).map(function (x) { return Object.assign({ _ic: IC.reloj }, x); });
+    var lista = destinosInicio();
     S.listaInicio = lista;
     var carro = '<svg width="54" height="30" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
     var h = '<div class="u-cab"><div class="u-marca">Auto<span>Amigo</span></div><button class="u-av" data-ir="perfil" aria-label="Mi perfil">' +
       (pf.foto ? '<img src="' + pf.foto + '" alt="">' : esc(iniciales(pf.nombre))) + '</button></div>' +
       '<div class="u-buscar">' + IC.lupa.replace('#101828', '#475467') + '<button class="q" id="u-buscar">¿A dónde vas?</button>' +
         '<button class="u-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + IC.cal + (S.progT ? esc(textoProg(S.progT)) : 'Más tarde') + '</button></div>' +
-      '<div class="u-lista">' + lista.map(function (x, i) { return filaLugar(x, i, x._ic); }).join('') + '</div>' +
+      '<div class="u-lista">' + lista.map(function (x, i) {
+        if (x._crear) return '<button class="u-fila" id="u-crear"><span class="ic">' + IC.mas + '</span><div><b>Agregar destino frecuente</b><small>Guarda el lugar al que más vas y pídelo con un toque</small></div><span class="chev">›</span></button>';
+        return filaLugar(x, i, x._ic);
+      }).join('') + '</div>' +
       '<div><div class="u-tit"><h3>Sugerencias</h3></div><div class="u-sug">' +
         '<button id="u-s-viaje"><span class="dib">' + carro + '</span>Viaje</button>' +
         '<button id="u-s-otra"><span class="dib"><svg width="34" height="34" viewBox="0 0 24 24" fill="#0A0F3C"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 19.5c0-3.8 3-6 6.5-6s6.5 2.2 6.5 6z"/><circle cx="17" cy="9" r="2.8" fill="#E5252A"/><path d="M14.8 13.6c.6-.2 1.4-.3 2.2-.3 2.8 0 5 1.8 5 4.8h-5" fill="#E5252A"/></svg></span>Para otra persona</button>' +
@@ -1399,6 +1419,7 @@
   document.addEventListener('click', function (e) {
     var t = e.target, b;
     if (t.closest('#u-buscar') || t.closest('#u-s-viaje')) { abrirPlan(); return; }
+    if (t.closest('#u-crear')) { abrirBuscar('favorito'); return; }
     if (t.closest('#u-s-otra')) { var no = AASeg.paraOtraPermitido({}); if (no) { aviso(no); return; } abrirPlan({ para: 'otra' }); return; }
     if (t.closest('#u-s-casa') || t.closest('#u-s-trabajo')) {
       var k = t.closest('#u-s-casa') ? 'casa' : 'trabajo';
@@ -1433,6 +1454,7 @@
   document.addEventListener('focusin', function (e) { if (S.busq && (e.target.id === 'in-o' || e.target.id === 'in-d')) S.busq.campo = e.target.id === 'in-o' ? 'o' : 'd'; });
   function elegirLugar(x) {
     var b = S.busq, p = { nombre: x.nombre, ref: x.ref || '', lat: x.lat, lng: x.lng };
+    if (b.guardar === 'favorito') { guardar('aac_favorito', p); aviso('Destino guardado. Te saldrá en el inicio.'); S.busq = null; ultimoInicio = ''; irA('inicio'); return; }
     if (b.guardar) { S[b.guardar] = p; guardar('aac2_' + b.guardar, p); aviso((b.guardar === 'casa' ? 'Casa' : 'Trabajo') + ' guardado.'); S.busq = null; irA('lugares'); return; }
     if (b.campo === 'o') { b.o = p; b.lista = null; b.campo = 'd'; render(); setTimeout(function () { var i = $('#in-d'); if (i) i.focus(); }, 30); return; }
     cotizar(b.o || { nombre: S.yo.nombre, ref: 'Tu ubicación', lat: S.yo.lat, lng: S.yo.lng }, p);
