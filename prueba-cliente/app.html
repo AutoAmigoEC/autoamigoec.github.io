@@ -869,8 +869,8 @@
     while (SEG.paso < SEG.pasos.length - 1 && metrosEntre(pos, { lat: SEG.pasos[SEG.paso].loc[1], lng: SEG.pasos[SEG.paso].loc[0] }) < 20) SEG.paso++;
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
     carro(pos, SEG.rumbo);
-    // Para el cliente el mapa queda derecho (norte arriba) y plano: el que gira es el carro, no el mapa
-    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: 0, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
+    // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
+    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
   }
   function pintarNav() {
