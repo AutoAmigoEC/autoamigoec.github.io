@@ -492,6 +492,31 @@
   .uu-chips{flex:none;display:flex;gap:8px;overflow-x:auto;padding:0 16px 8px;scrollbar-width:none}
   .uu-chips::-webkit-scrollbar{display:none}
   .uu-chips button{flex:none;height:36px;border:0;border-radius:999px;background:#F2F4F7;font:inherit;font-size:14px;font-weight:600;color:var(--texto);padding:0 14px;display:flex;align-items:center;gap:6px}
+  .ua-in{flex:none;margin:2px 16px 8px}
+  .ua-in input{width:100%;height:42px;border:0;border-radius:8px;background:#F2F4F7;font:inherit;font-size:16.5px;color:var(--texto);padding:0 12px;outline:none}
+  .ua-fila{align-items:flex-start}
+  .ua-ic{flex:none;width:48px;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:2px}
+  .ua-ic svg{width:20px;height:20px}
+  .ua-ic small{font-size:11.5px;color:#667085;white-space:nowrap;margin:0!important;display:block!important}
+  .ug-cab{flex:none;padding:48px 12px 4px}
+  .ug-cab button{width:44px;height:44px;border:0;background:none;font-size:30px;line-height:1;color:var(--texto)}
+  .ug-cab h2{margin:2px 6px 6px;font-size:30px;font-weight:800;letter-spacing:-.4px;color:var(--texto)}
+  .ug-fila .ic.azul{background:#E6EEFF}
+  .ug-fila .ic.nar{background:#FEF0E6}
+  .ug-lapiz{flex:none;padding:6px}
+  .ug-lista{padding-bottom:100px}
+  .ug-flota{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);height:46px;border:0;border-radius:999px;background:#fff;box-shadow:0 6px 20px rgba(16,24,40,.16),0 1px 3px rgba(16,24,40,.1);font:inherit;font-size:16px;font-weight:600;color:var(--texto);padding:0 20px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .ue-cuerpo{flex:1;display:flex;flex-direction:column;padding:4px 16px 20px;overflow:auto}
+  .ue-info{background:#EFF4FF;border-radius:12px;padding:12px 14px;font-weight:600;font-size:15.5px;color:var(--texto);line-height:1.35}
+  .ue-et{font-weight:700;font-size:16px;margin:18px 0 8px;color:var(--texto)}
+  #ue-in{height:46px;border:2px solid transparent;border-radius:8px;background:#F2F4F7;font:inherit;font-size:16.5px;padding:0 12px;outline:none;color:var(--texto)}
+  #ue-in:focus{border-color:#101828;background:#fff}
+  .ue-dir{border-top:1px solid #EEF0F4;border-bottom:1px solid #EEF0F4;margin-top:16px;padding:12px 0}
+  .ue-dir b{display:block;font-size:16px}
+  .ue-dir small{display:block;color:var(--gris);font-size:15px;margin-top:2px}
+  .ue-guardar{margin-top:28px;height:52px;border:0;border-radius:10px;background:#101828;color:#fff;font:inherit;font-size:17px;font-weight:700}
+  .ue-guardar:disabled{background:#F2F4F7;color:#B0B6C1}
+  .ue-borrar{margin-top:10px;height:48px;border:0;background:none;color:#D92D20;font:inherit;font-size:16px;font-weight:600}
   .uu-actual .ic{background:#E6EEFF!important}
   .uu-actual .ic i{width:12px;height:12px;border-radius:50%;background:#1570EF;box-shadow:0 0 0 4px rgba(21,112,239,.18)}
   /* Viajes programados */
@@ -1266,29 +1291,87 @@
   // ---------- Elige tu ubicación (de dónde te recogen) ----------
   function abrirUbic() { S.ubic = { texto: '', lista: null, cargando: false }; render(); setTimeout(function () { var i = $('#uu-in'); if (i) i.focus(); }, 80); }
   var ultimoUbic = '';
+  function lugaresG() { return leer('aac_lugares', []) || []; }
+  function textoKm(x) { if (!S.yo || x.lat == null) return ''; var k = distKm(S.yo, x); return (k < 10 ? k.toFixed(1) : Math.round(k)) + ' km'; }
+  function filaUA(x, i, ic) {
+    return '<button class="u-fila ua-fila" data-ua="' + i + '"><span class="ua-ic">' + ic + '<small>' + textoKm(x) + '</small></span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
+  }
+  var IC_LAPIZ = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+  function chico(ic) { return ic.replace('width="20" height="20"', 'width="16" height="16"'); }
   function pintarUbic() {
     if (S.ubic && S.pantalla !== 'inicio') S.ubic = null;
     var U = S.ubic, el = $('#uubic'); el.hidden = !U || !!S.fijar; if (!U) { ultimoUbic = ''; return; }
-    var fav = leer('aac_favorito', null), lista = [];
-    if (U.lista) lista = U.lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
-    else {
-      lista.push({ _actual: true, nombre: 'Ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng });
-      if (S.casa) lista.push(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
-      if (S.trabajo) lista.push(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
-      if (fav) lista.push(Object.assign({ _ic: IC.estrella }, fav));
+    var fav = leer('aac_favorito', null), lista = [], h, sub = U.sub, lug = lugaresG();
+    if (sub && sub.tipo === 'agregar') {
+      // Agregar casa / trabajo / un lugar: escribir la dirección o elegir de la lista
+      if (sub.lista) lista = sub.lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
+      else {
+        var vistos = {}, mete = function (x) { if (!x || vistos[x.nombre]) return; vistos[x.nombre] = 1; lista.push(x); };
+        if (S.casa && sub.para !== 'casa') mete(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
+        if (S.trabajo && sub.para !== 'trabajo') mete(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
+        lug.forEach(function (x) { mete(Object.assign({ _ic: IC.estrella }, x)); });
+        (leer('aac_recientes', []) || []).forEach(function (x) { mete(Object.assign({ _ic: /aeropuerto/i.test(x.nombre) ? IC.avion : IC.reloj }, x)); });
+        SUGERIDOS.forEach(function (x) { mete(Object.assign({ _ic: IC.pin }, x)); });
+        lista = lista.slice(0, 7);
+      }
+      sub.mostrada = lista;
+      var tit = sub.para === 'casa' ? 'Agregar casa' : sub.para === 'trabajo' ? 'Agregar trabajo' : 'Agregar lugar';
+      h = '<div class="up-cab"><button id="ua-atras" aria-label="Atrás">‹</button><b>' + tit + '</b></div>' +
+        '<div class="ua-in"><input id="ua-in" placeholder="Escribe una dirección" autocomplete="off" value="' + esc(sub.texto || '') + '"></div>' +
+        '<div class="up-lista">' + (sub.cargando ? '<div class="vacio">Buscando…</div>' : lista.map(function (x, i) { return filaUA(x, i, x._ic); }).join('') +
+          (sub.lista && !sub.lista.length ? '<div class="vacio">No encontramos ese lugar.</div>' : '') +
+          '<button class="u-fila ua-fila" id="ua-fijar"><span class="ua-ic">' + IC.mapa + '<small></small></span><div><b>Fijar la ubicación en el mapa</b></div></button>') + '</div>';
+    } else if (sub && sub.tipo === 'guardados') {
+      var fila = function (id, ic, b1, b2, cls) { return '<button class="u-fila ug-fila" ' + id + '><span class="ic' + (cls || '') + '">' + ic + '</span><div><b>' + esc(b1) + '</b><small>' + esc(b2) + '</small></div><span class="ug-lapiz">' + IC_LAPIZ + '</span></button>'; };
+      h = '<div class="ug-cab"><button id="ug-atras" aria-label="Atrás">‹</button><h2>Lugares guardados</h2></div>' +
+        '<div class="up-lista ug-lista">' +
+          fila('data-ug="casa"', IC.casa, 'Casa', S.casa ? S.casa.nombre : 'Agrega tu casa', ' azul') +
+          fila('data-ug="trabajo"', IC.trabajo, 'Trabajo', S.trabajo ? S.trabajo.nombre : 'Agrega tu trabajo', ' azul') +
+          lug.map(function (x, i) { return fila('data-ug="' + i + '"', IC.estrella, x.etq, x.nombre, ' nar'); }).join('') +
+          '<button class="u-fila ug-fila" id="ug-mas"><span class="ic">' + IC.mas + '</span><div><b>Agregar un lugar</b></div></button>' +
+        '</div><button class="ug-flota" id="ug-mas2">' + IC.mas.replace(/width="\d+" height="\d+"/, 'width="18" height="18"') + 'Agregar un lugar</button>';
+    } else if (sub && sub.tipo === 'etiqueta') {
+      var listo = (sub.texto || '').trim().length > 0;
+      h = '<div class="up-cab"><button id="ue-atras" aria-label="Atrás">‹</button><b>' + (sub.editar != null ? 'Editar lugar guardado' : 'Agregar un lugar guardado') + '</b></div>' +
+        '<div class="ue-cuerpo"><div class="ue-info">Te saldrá al elegir dónde te recogen y a dónde vas.</div>' +
+        '<label class="ue-et">Nombre del lugar</label><input id="ue-in" placeholder="Ej.: Casa de mi mamá" autocomplete="off" maxlength="40" value="' + esc(sub.texto || '') + '">' +
+        '<div class="ue-dir"><b>Dirección</b><small>' + esc(sub.lugar.nombre) + '</small></div>' +
+        '<button class="ue-guardar" id="ue-guardar"' + (listo ? '' : ' disabled') + '>Guardar lugar</button>' +
+        (sub.editar != null ? '<button class="ue-borrar" id="ue-borrar">Eliminar lugar</button>' : '') + '</div>';
+    } else {
+      if (U.lista) lista = U.lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
+      else {
+        lista.push({ _actual: true, nombre: 'Ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng });
+        lug.forEach(function (x) { lista.push(Object.assign({ _ic: IC.estrella }, x)); });
+        if (fav && !lug.some(function (x) { return x.nombre === fav.nombre; })) lista.push(Object.assign({ _ic: IC.estrella }, fav));
+      }
+      U.mostrada = lista;
+      h = '<div class="up-cab"><button id="uu-atras" aria-label="Atrás">‹</button><b>Elige tu ubicación</b></div>' +
+        '<div class="uu-buscar">' + IC.lupa.replace('#101828', '#475467').replace('width="24" height="24"', 'width="20" height="20"') + '<input id="uu-in" placeholder="Busca una dirección" autocomplete="off" value="' + esc(U.texto) + '"></div>' +
+        '<div class="uu-chips"><button id="uu-casa">' + chico(IC.casa) + (S.casa ? 'Casa' : 'Agregar casa') + '</button>' +
+          '<button id="uu-trabajo">' + chico(IC.trabajo) + (S.trabajo ? 'Trabajo' : 'Agregar trabajo') + '</button>' +
+          '<button id="uu-guardados">' + chico(IC.estrella) + 'Lugares guardados</button></div>' +
+        '<div class="up-lista">' + (U.cargando ? '<div class="vacio">Buscando…</div>' : lista.map(function (x, i) {
+            if (x._actual) return '<button class="u-fila uu-actual" data-uu="' + i + '"><span class="ic"><i></i></span><div><b>Ubicación actual</b><small>' + esc(x.ref) + '</small></div></button>';
+            return filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-uu').replace('<span class="chev">›</span>', '');
+          }).join('') + (!U.lista ? '<button class="u-fila" id="uu-fijar"><span class="ic">' + IC.mapa + '</span><div><b>Fijar la ubicación en el mapa</b></div></button>' : '') +
+          (U.lista && !U.lista.length ? '<div class="vacio">No encontramos ese lugar.</div>' : '')) + '</div>';
     }
-    U.mostrada = lista;
-    var h = '<div class="up-cab"><button id="uu-atras" aria-label="Atrás">‹</button><b>Elige tu ubicación</b></div>' +
-      '<div class="uu-buscar">' + IC.lupa.replace('#101828', '#475467').replace('width="24" height="24"', 'width="20" height="20"') + '<input id="uu-in" placeholder="Busca una dirección" autocomplete="off" value="' + esc(U.texto) + '"></div>' +
-      '<div class="uu-chips"><button id="uu-casa">' + IC.casa.replace('width="20" height="20"', 'width="16" height="16"') + (S.casa ? 'Casa' : 'Agregar casa') + '</button>' +
-        '<button id="uu-trabajo">' + IC.trabajo.replace('width="20" height="20"', 'width="16" height="16"') + (S.trabajo ? 'Trabajo' : 'Agregar trabajo') + '</button>' +
-        '<button data-ir="lugares">' + IC.estrella.replace('width="20" height="20"', 'width="16" height="16"') + 'Lugares guardados</button></div>' +
-      '<div class="up-lista">' + (U.cargando ? '<div class="vacio">Buscando…</div>' : lista.map(function (x, i) {
-          if (x._actual) return '<button class="u-fila uu-actual" data-uu="' + i + '"><span class="ic"><i></i></span><div><b>Ubicación actual</b><small>' + esc(x.ref) + '</small></div></button>';
-          return filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-uu');
-        }).join('') + (!U.lista ? '<button class="u-fila" id="uu-fijar"><span class="ic">' + IC.mapa + '</span><div><b>Fijar la ubicación en el mapa</b><small>Mueve el mapa hasta el punto exacto</small></div></button>' : '') +
-        (U.lista && !U.lista.length ? '<div class="vacio">No encontramos ese lugar.</div>' : '')) + '</div>';
-    if (h !== ultimoUbic) { var foco = document.activeElement && document.activeElement.id; el.innerHTML = h; ultimoUbic = h; if (foco === 'uu-in' && $('#uu-in')) { var f = $('#uu-in'); f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }
+    if (h !== ultimoUbic) {
+      var foco = document.activeElement && document.activeElement.id; el.innerHTML = h; ultimoUbic = h;
+      if (foco && /^(uu|ua|ue)-in$/.test(foco) && $('#' + foco)) { var f = $('#' + foco); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+    }
+  }
+  function abrirSub(sub, foco) { S.ubic.sub = sub; pintarUbic(); if (foco) setTimeout(function () { var i = $('#' + foco); if (i) i.focus(); }, 60); }
+  // Al elegir la dirección en "Agregar casa / trabajo / lugar"
+  function guardarDireccion(x) {
+    var sub = S.ubic.sub, p = { nombre: x.etq ? x.nombre : x.nombre, ref: x.ref || '', lat: x.lat, lng: x.lng };
+    if (sub.para === 'casa' || sub.para === 'trabajo') {
+      S[sub.para] = p; guardar('aac2_' + sub.para, p); ultimoInicio = '';
+      aviso(sub.para === 'casa' ? 'Dirección de casa guardada.' : 'Dirección del trabajo guardada.');
+      S.ubic.sub = sub.volver === 'guardados' ? { tipo: 'guardados' } : null; pintarUbic(); return;
+    }
+    abrirSub({ tipo: 'etiqueta', lugar: p, texto: '' }, 'ue-in');
   }
   function ponerRecogida(x) {
     S.recogida = x && !x._actual ? { nombre: x.etq || x.nombre, ref: x.etq ? x.nombre : (x.ref || ''), lat: x.lat, lng: x.lng } : null;
@@ -1302,6 +1385,17 @@
     if (q.length < 3) { U.lista = null; U.cargando = false; pintarUbic(); return; }
     U.cargando = true; pintarUbic();
     tUbic = setTimeout(function () { buscarLugares(q).then(function (r) { if (S.ubic !== U) return; U.cargando = false; U.lista = r; pintarUbic(); }).catch(function () { U.cargando = false; U.lista = []; pintarUbic(); }); }, 500);
+  });
+  var tUA = null;
+  document.addEventListener('input', function (e) {
+    var U = S.ubic; if (!U || !U.sub) return;
+    var sub = U.sub;
+    if (e.target.id === 'ue-in') { sub.texto = e.target.value; var g = $('#ue-guardar'); if (g) g.disabled = !sub.texto.trim(); ultimoUbic = ''; return; }
+    if (e.target.id !== 'ua-in') return;
+    sub.texto = e.target.value; var q = sub.texto.trim(); clearTimeout(tUA);
+    if (q.length < 3) { sub.lista = null; sub.cargando = false; pintarUbic(); return; }
+    sub.cargando = true; pintarUbic();
+    tUA = setTimeout(function () { buscarLugares(q).then(function (r) { if (U.sub !== sub) return; sub.cargando = false; sub.lista = r; pintarUbic(); }).catch(function () { sub.cargando = false; sub.lista = []; pintarUbic(); }); }, 500);
   });
   // ---------- Viajes programados ----------
   function abrirProgramados() {
@@ -1478,8 +1572,8 @@
   }
   // Fijar la ubicación en el mapa
   var tRev = null;
-  function abrirFijar(paraRecogida) {
-    var P = S.plan; S.fijar = { campo: paraRecogida ? 'o' : (P ? P.campo : 'd'), recogida: !!paraRecogida, lugar: null }; render();
+  function abrirFijar(paraRecogida, cb) {
+    var P = S.plan; S.fijar = { campo: paraRecogida ? 'o' : (P ? P.campo : 'd'), recogida: !!paraRecogida, lugar: null, cb: cb || null }; render();
     $('#pantalla').classList.add('fijando');
     setTimeout(function () { M.resize(); M.jumpTo({ center: [S.yo.lng, S.yo.lat], zoom: 16, bearing: 0, pitch: 0 }); nombrarCentro(); }, 30);
   }
@@ -1488,7 +1582,7 @@
     var l = F.lugar;
     el.innerHTML = '<div class="pin">' + ICONO_PIN(F.campo === 'o' ? '#E5252A' : '#1570EF').replace('width="26" height="32"', 'width="44" height="56"') + '</div>' +
       '<button class="atras" id="uf-atras" aria-label="Atrás">‹</button>' +
-      '<div class="caja"><h3>' + (F.campo === 'o' ? 'Fija tu punto de recogida' : 'Fija tu destino') + '</h3>' +
+      '<div class="caja"><h3>' + (F.cb ? 'Fija la dirección' : F.campo === 'o' ? 'Fija tu punto de recogida' : 'Fija tu destino') + '</h3>' +
       '<div class="lugar">' + IC.pin + '<div><b>' + esc(l ? l.nombre : 'Buscando la dirección…') + '</b><br><small>' + esc(l ? l.ref : '') + '</small></div></div>' +
       '<button class="btn-final" id="uf-ok" style="margin-top:0"' + (l ? '' : ' disabled') + '>Confirmar</button></div>';
   }
@@ -1506,6 +1600,7 @@
   try { M.on('moveend', function () { if (S.fijar) nombrarCentro(); }); } catch (e) {}
   function cerrarFijar(lugar) {
     var F = S.fijar; S.fijar = null; $('#pantalla').classList.remove('fijando'); setTimeout(function () { M.resize(); }, 30);
+    if (F.cb) { if (lugar) F.cb(lugar); else render(); return; }
     if (lugar && F.recogida) { ponerRecogida(lugar); return; }
     if (lugar && S.plan) { S.plan.campo = F.campo; elegirEnPlan(lugar); } else render();
   }
@@ -1519,9 +1614,28 @@
     if (t.closest('#uu-fijar')) { abrirFijar(true); return; }
     if (t.closest('#uu-casa') || t.closest('#uu-trabajo')) {
       var kk = t.closest('#uu-casa') ? 'casa' : 'trabajo';
-      if (S[kk]) { ponerRecogida(Object.assign({ etq: kk === 'casa' ? 'Casa' : 'Trabajo' }, S[kk])); } else { S.ubic = null; abrirBuscar(kk); }
+      if (S[kk]) { ponerRecogida(Object.assign({ etq: kk === 'casa' ? 'Casa' : 'Trabajo' }, S[kk])); } else abrirSub({ tipo: 'agregar', para: kk }, 'ua-in');
       return;
     }
+    if (t.closest('#uu-guardados')) { abrirSub({ tipo: 'guardados' }); return; }
+    if (t.closest('#ua-atras')) { var vv = S.ubic.sub.volver; abrirSub(vv === 'guardados' ? { tipo: 'guardados' } : null); return; }
+    if ((b = t.closest('[data-ua]'))) { guardarDireccion(S.ubic.sub.mostrada[+b.getAttribute('data-ua')]); return; }
+    if (t.closest('#ua-fijar')) { var subF = S.ubic.sub; abrirFijar(false, function (l) { S.ubic.sub = subF; guardarDireccion(l); render(); }); return; }
+    if (t.closest('#ug-atras')) { abrirSub(null); return; }
+    if (t.closest('#ug-mas') || t.closest('#ug-mas2')) { abrirSub({ tipo: 'agregar', para: 'lugar', volver: 'guardados' }, 'ua-in'); return; }
+    if ((b = t.closest('[data-ug]'))) {
+      var q = b.getAttribute('data-ug');
+      if (q === 'casa' || q === 'trabajo') { abrirSub({ tipo: 'agregar', para: q, volver: 'guardados' }, 'ua-in'); return; }
+      var lx = lugaresG()[+q]; abrirSub({ tipo: 'etiqueta', lugar: lx, texto: lx.etq, editar: +q }, 'ue-in'); return;
+    }
+    if (t.closest('#ue-atras')) { var se = S.ubic.sub; abrirSub(se.editar != null ? { tipo: 'guardados' } : { tipo: 'agregar', para: 'lugar', volver: 'guardados' }); return; }
+    if (t.closest('#ue-guardar')) {
+      var su = S.ubic.sub, et = (su.texto || '').trim().replace(/\s+/g, ' '); if (!et) return;
+      var ls = lugaresG(), nuevo = { etq: et, nombre: su.lugar.nombre, ref: su.lugar.ref || '', lat: su.lugar.lat, lng: su.lugar.lng };
+      if (su.editar != null) ls[su.editar] = nuevo; else ls.push(nuevo);
+      guardar('aac_lugares', ls); aviso(su.editar != null ? 'Lugar guardado.' : et + ' se agregó a tus lugares.'); abrirSub({ tipo: 'guardados' }); return;
+    }
+    if (t.closest('#ue-borrar')) { var sb = S.ubic.sub, l2 = lugaresG(); var nb = (l2[sb.editar] || {}).etq; l2.splice(sb.editar, 1); guardar('aac_lugares', l2); aviso((nb || 'Lugar') + ' se eliminó.'); abrirSub({ tipo: 'guardados' }); return; }
     if (t.closest('#u-progs')) { abrirProgramados(); return; }
     if ((b = t.closest('[data-prog-cancelar]'))) { var tt = +b.getAttribute('data-prog-cancelar'); guardar('aac_programados', (leer('aac_programados', []) || []).filter(function (x) { return x.t !== tt; })); aviso('Viaje programado cancelado.'); ultimoInicio = ''; render(); abrirProgramados(); return; }
     if (t.closest('#progs-nuevo')) { S.verProg = false; $('#u-prog').hidden = true; abrirProg(); return; }
