@@ -853,7 +853,7 @@
     // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña)
     ultimaHoja = ''; render(); pintarNav();
     // Al salir, el mapa queda derecho y sigue al carro (igual que la flechita), sin perderlo de vista
-    if (S.v && S.v.pos) { SEG.sigueFuera = true; SEG.esperaHasta = Date.now() + 750; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: 0, pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() }); }
+    if (S.v && S.v.pos) { SEG.sigueFuera = true; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: 0, pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() }); }
     else M.easeTo({ pitch: 0, bearing: 0, duration: 600 });
   }
   // Cada ubicación nueva del carro: avanza las instrucciones, recorta la ruta y recalcula si se sale
@@ -885,8 +885,7 @@
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
     carro(pos, SEG.activo && SEG.sigue && M.getBearing ? M.getBearing() : SEG.rumbo);
     // Flechita antes de "Iniciar": sigue al carro con el mapa derecho, un poco alejado, sin taparlo con la barra de abajo
-    // Mientras termina de alejarse al salir, no se interrumpe; después sigue al carro con el mismo acercamiento final
-    if (!SEG.activo && SEG.sigueFuera && Date.now() >= (SEG.esperaHasta || 0)) M.easeTo({ center: [pos.lng, pos.lat], zoom: 14.8, bearing: 0, pitch: 0, duration: 900, padding: rellenoCarro() });
+    if (!SEG.activo && SEG.sigueFuera) M.easeTo({ center: [pos.lng, pos.lat], duration: 900, padding: rellenoCarro() });
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
     if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
