@@ -565,9 +565,18 @@
   .uplan{position:absolute;inset:0;z-index:40;background:#fff;display:flex;flex-direction:column;animation:entra .15s ease}
   .up-cab{flex:none;display:flex;align-items:center;gap:8px;padding:48px 12px 6px}
   .up-cab button{width:44px;height:44px;border:0;border-radius:50%;background:none;font-size:30px;line-height:1;color:var(--texto)}
-  .up-cab b{flex:1;text-align:center;font-size:18px;margin-right:44px}
+  .up-cab b{flex:1;text-align:center;font-size:21px;font-weight:800;letter-spacing:-.2px;margin-right:44px}
+  .up-cab button,.ug-cab button{display:flex;align-items:center;justify-content:center}
   .up-pills{flex:none;display:flex;gap:8px;padding:6px 18px 12px}
-  .up-pill{height:38px;border:0;border-radius:999px;background:#EEF0F4;font:inherit;font-size:14.5px;font-weight:700;color:var(--texto);padding:0 14px;display:flex;align-items:center;gap:7px}
+  .up-pill{height:40px;border:0;border-radius:999px;background:#F2F4F7;font:inherit;font-size:15.5px;font-weight:600;color:var(--texto);padding:0 14px;display:flex;align-items:center;gap:7px}
+  .up-pill .cv{margin-left:2px}
+  .up-chips{flex:none;display:flex;gap:8px;overflow-x:auto;padding:12px 18px 2px;scrollbar-width:none}
+  .up-chips::-webkit-scrollbar{display:none}
+  .up-chip{flex:none;height:40px;border:1px solid #E4E7EC;border-radius:12px;background:#fff;font:inherit;font-size:15px;font-weight:600;color:var(--texto);padding:0 12px 0 5px;display:flex;align-items:center;gap:8px}
+  .up-chip>span{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .up-chip>span.azul{background:#E6EEFF}
+  .up-chip>span.gris{background:#F2F4F7}
+  .ua-ic .redondo{width:36px;height:36px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center}
   .up-pill.on{background:var(--navy);color:#fff}
   .up-campos{flex:none;margin:0 18px;border:2px solid var(--texto);border-radius:16px;display:flex;gap:12px;padding:6px 12px;position:relative}
   .up-campos .linea{display:flex;flex-direction:column;align-items:center;padding:18px 0}
@@ -578,6 +587,7 @@
   .up-campos input{height:46px;border:0;outline:none;font:inherit;font-size:16.5px;background:none;color:var(--texto);padding:0 2px}
   .up-campos input:first-child{border-bottom:1px solid var(--linea)}
   .up-campos input.act{font-weight:700}
+  #up-o{font-weight:700}
   .up-lista{flex:1;overflow:auto;padding:8px 18px 24px}
   .up-lista .vacio{padding:24px 4px;color:var(--gris);text-align:center}
   /* Fijar la ubicación en el mapa */
@@ -1293,9 +1303,10 @@
   var ultimoUbic = '';
   function lugaresG() { return leer('aac_lugares', []) || []; }
   function textoKm(x) { if (!S.yo || x.lat == null) return ''; var k = distKm(S.yo, x); return (k < 10 ? k.toFixed(1) : Math.round(k)) + ' km'; }
-  function filaUA(x, i, ic) {
-    return '<button class="u-fila ua-fila" data-ua="' + i + '"><span class="ua-ic">' + ic + '<small>' + textoKm(x) + '</small></span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
+  function filaUA(x, i, ic, attr) {
+    return '<button class="u-fila ua-fila" ' + (attr || 'data-ua') + '="' + i + '"><span class="ua-ic">' + ic + '<small>' + textoKm(x) + '</small></span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
   }
+  var IC_FLECHA = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>';
   var IC_LAPIZ = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
   function chico(ic) { return ic.replace('width="20" height="20"', 'width="16" height="16"'); }
   function pintarUbic() {
@@ -1316,14 +1327,14 @@
       }
       sub.mostrada = lista;
       var tit = sub.para === 'casa' ? 'Agregar casa' : sub.para === 'trabajo' ? 'Agregar trabajo' : 'Agregar lugar';
-      h = '<div class="up-cab"><button id="ua-atras" aria-label="Atrás">‹</button><b>' + tit + '</b></div>' +
+      h = '<div class="up-cab"><button id="ua-atras" aria-label="Atrás">' + IC_FLECHA + '</button><b>' + tit + '</b></div>' +
         '<div class="ua-in"><input id="ua-in" placeholder="Escribe una dirección" autocomplete="off" value="' + esc(sub.texto || '') + '"></div>' +
         '<div class="up-lista">' + (sub.cargando ? '<div class="vacio">Buscando…</div>' : lista.map(function (x, i) { return filaUA(x, i, x._ic); }).join('') +
           (sub.lista && !sub.lista.length ? '<div class="vacio">No encontramos ese lugar.</div>' : '') +
           '<button class="u-fila ua-fila" id="ua-fijar"><span class="ua-ic">' + IC.mapa + '<small></small></span><div><b>Fijar la ubicación en el mapa</b></div></button>') + '</div>';
     } else if (sub && sub.tipo === 'guardados') {
       var fila = function (id, ic, b1, b2, cls) { return '<button class="u-fila ug-fila" ' + id + '><span class="ic' + (cls || '') + '">' + ic + '</span><div><b>' + esc(b1) + '</b><small>' + esc(b2) + '</small></div><span class="ug-lapiz">' + IC_LAPIZ + '</span></button>'; };
-      h = '<div class="ug-cab"><button id="ug-atras" aria-label="Atrás">‹</button><h2>Lugares guardados</h2></div>' +
+      h = '<div class="ug-cab"><button id="ug-atras" aria-label="Atrás">' + IC_FLECHA + '</button><h2>Lugares guardados</h2></div>' +
         '<div class="up-lista ug-lista">' +
           fila('data-ug="casa"', IC.casa, 'Casa', S.casa ? S.casa.nombre : 'Agrega tu casa', ' azul') +
           fila('data-ug="trabajo"', IC.trabajo, 'Trabajo', S.trabajo ? S.trabajo.nombre : 'Agrega tu trabajo', ' azul') +
@@ -1332,7 +1343,7 @@
         '</div><button class="ug-flota" id="ug-mas2">' + IC.mas.replace(/width="\d+" height="\d+"/, 'width="18" height="18"') + 'Agregar un lugar</button>';
     } else if (sub && sub.tipo === 'etiqueta') {
       var listo = (sub.texto || '').trim().length > 0;
-      h = '<div class="up-cab"><button id="ue-atras" aria-label="Atrás">‹</button><b>' + (sub.editar != null ? 'Editar lugar guardado' : 'Agregar un lugar guardado') + '</b></div>' +
+      h = '<div class="up-cab"><button id="ue-atras" aria-label="Atrás">' + IC_FLECHA + '</button><b>' + (sub.editar != null ? 'Editar lugar guardado' : 'Agregar un lugar guardado') + '</b></div>' +
         '<div class="ue-cuerpo"><div class="ue-info">Te saldrá al elegir dónde te recogen y a dónde vas.</div>' +
         '<label class="ue-et">Nombre del lugar</label><input id="ue-in" placeholder="Ej.: Casa de mi mamá" autocomplete="off" maxlength="40" value="' + esc(sub.texto || '') + '">' +
         '<div class="ue-dir"><b>Dirección</b><small>' + esc(sub.lugar.nombre) + '</small></div>' +
@@ -1346,7 +1357,7 @@
         if (fav && !lug.some(function (x) { return x.nombre === fav.nombre; })) lista.push(Object.assign({ _ic: IC.estrella }, fav));
       }
       U.mostrada = lista;
-      h = '<div class="up-cab"><button id="uu-atras" aria-label="Atrás">‹</button><b>Elige tu ubicación</b></div>' +
+      h = '<div class="up-cab"><button id="uu-atras" aria-label="Atrás">' + IC_FLECHA + '</button><b>Elige tu ubicación</b></div>' +
         '<div class="uu-buscar">' + IC.lupa.replace('#101828', '#475467').replace('width="24" height="24"', 'width="20" height="20"') + '<input id="uu-in" placeholder="Busca una dirección" autocomplete="off" value="' + esc(U.texto) + '"></div>' +
         '<div class="uu-chips"><button id="uu-casa">' + chico(IC.casa) + (S.casa ? 'Casa' : 'Agregar casa') + '</button>' +
           '<button id="uu-trabajo">' + chico(IC.trabajo) + (S.trabajo ? 'Trabajo' : 'Agregar trabajo') + '</button>' +
@@ -1369,6 +1380,7 @@
     if (sub.para === 'casa' || sub.para === 'trabajo') {
       S[sub.para] = p; guardar('aac2_' + sub.para, p); ultimoInicio = '';
       aviso(sub.para === 'casa' ? 'Dirección de casa guardada.' : 'Dirección del trabajo guardada.');
+      if (sub.volver !== 'guardados' && S.ubic.desdePlan) { S.ubic = null; ultimoPlan = ''; render(); return; }
       S.ubic.sub = sub.volver === 'guardados' ? { tipo: 'guardados' } : null; pintarUbic(); return;
     }
     abrirSub({ tipo: 'etiqueta', lugar: p, texto: '' }, 'ue-in');
@@ -1516,25 +1528,31 @@
     el.hidden = !P || !!S.fijar; if (!P) { ultimoPlan = ''; return; }
     var lista = P.lista, base = !lista;
     if (base) {
-      lista = [];
+      lista = []; var vistos = {}, mete = function (x) { if (!x || vistos[x.nombre]) return; vistos[x.nombre] = 1; lista.push(x); };
       if (P.campo === 'o') lista.push({ nombre: 'Mi ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng, _ic: IC.yo, _yo: true });
-      if (S.casa) lista.push(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
-      if (S.trabajo) lista.push(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
-      lista = lista.concat(recientes().map(function (x) { return Object.assign({ _ic: IC.reloj }, x); }));
+      lugaresG().forEach(function (x) { mete(Object.assign({ _ic: IC.estrella }, x)); });
+      var fav = leer('aac_favorito', null); if (fav) mete(Object.assign({ _ic: IC.estrella }, fav));
+      recientes().forEach(function (x) { mete(Object.assign({ _ic: /aeropuerto/i.test(x.nombre) ? IC.avion : IC.pin }, x)); });
+      lista = lista.slice(0, 8);
     } else lista = lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
     P.mostrada = lista;
     var noOtra = AASeg.paraOtraPermitido({});
-    var h = '<div class="up-cab"><button id="up-atras" aria-label="Atrás">‹</button><b>Planifica tu viaje</b></div>' +
-      '<div class="up-pills"><button class="up-pill' + (S.progT ? ' on' : '') + '" id="up-cuando">' + IC.reloj.replace(/#101828/g, 'currentColor').replace('width="20" height="20"', 'width="16" height="16"') + esc(textoProg(S.progT)) + ' ▾</button>' +
-      '<button class="up-pill' + (P.para === 'otra' ? ' on' : '') + '" id="up-para">' + IC.persona + (P.para === 'otra' ? 'Para otra persona' : 'Para mí') + ' ▾</button></div>' +
+    var flechita = '<svg class="cv" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    var reloj = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    var perso = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>';
+    var chip = function (id, ic, txt, cls) { return '<button class="up-chip" id="' + id + '"><span class="' + cls + '">' + ic + '</span>' + txt + '</button>'; };
+    var h = '<div class="up-cab"><button id="up-atras" aria-label="Atrás">' + IC_FLECHA + '</button><b>Planifica tu viaje</b></div>' +
+      '<div class="up-pills"><button class="up-pill' + (S.progT ? ' on' : '') + '" id="up-cuando">' + reloj + esc(S.progT ? textoProg(S.progT) : 'Recoger ahora') + flechita + '</button>' +
+      '<button class="up-pill' + (P.para === 'otra' ? ' on' : '') + '" id="up-para">' + perso + (P.para === 'otra' ? 'Para otra persona' : 'Para mí') + flechita + '</button></div>' +
       '<div class="up-campos"><div class="linea"><i></i><em></em><i class="cuadro"></i></div><div class="ins">' +
         '<input id="up-o" class="' + (P.campo === 'o' ? 'act' : '') + '" placeholder="Punto de recogida" autocomplete="off" value="' + esc(P.campo === 'o' ? P.textoO : (P.o ? P.o.nombre : (S.recogida ? S.recogida.nombre : 'Mi ubicación actual'))) + '">' +
         '<input id="up-d" class="' + (P.campo === 'd' ? 'act' : '') + '" placeholder="¿A dónde vas?" autocomplete="off" value="' + esc(P.campo === 'd' ? P.texto : (P.d ? P.d.nombre : '')) + '">' +
       '</div></div>' +
       (P.para === 'otra' && noOtra ? '<div style="margin:10px 18px 0" class="smotivo">' + esc(noOtra) + '</div>' : '') +
+      (base ? '<div class="up-chips">' + chip('up-casa', chico(IC.casa), S.casa ? 'Casa' : 'Agregar casa', 'azul') + chip('up-trabajo', chico(IC.trabajo), S.trabajo ? 'Trabajo' : 'Agregar trabajo', 'azul') + chip('up-guardados', chico(IC.estrella), 'Lugares guardados', 'gris') + '</div>' : '') +
       '<div class="up-lista">' +
-        (base ? '<button class="u-fila" id="up-fijar"><span class="ic">' + IC.mapa + '</span><div><b>Fijar la ubicación en el mapa</b><small>Mueve el mapa hasta el punto exacto</small></div></button>' : '') +
-        (P.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) { return filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-up-lugar'); }).join('') : '<div class="vacio">No encontramos ese lugar. Prueba con otro nombre (urbanización, centro comercial, avenida).</div>') +
+        (P.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) { return x._yo ? filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-up-lugar').replace('<span class="chev">›</span>', '') : filaUA(x, i, x._ic, 'data-up-lugar'); }).join('') : '<div class="vacio">No encontramos ese lugar. Prueba con otro nombre (urbanización, centro comercial, avenida).</div>') +
+        (base ? '<button class="u-fila ua-fila" id="up-fijar"><span class="ua-ic"><span class="redondo">' + IC.pin + '</span><small></small></span><div><b>Fijar la ubicación en el mapa</b></div></button>' : '') +
       '</div>';
     if (h !== ultimoPlan) {
       var foco = document.activeElement && document.activeElement.id, pos = foco && $('#' + foco) ? $('#' + foco).selectionStart : null;
@@ -1618,10 +1636,11 @@
       return;
     }
     if (t.closest('#uu-guardados')) { abrirSub({ tipo: 'guardados' }); return; }
+    if (t.closest('#ua-atras') && S.ubic.desdePlan && S.ubic.sub.volver !== 'guardados') { S.ubic = null; ultimoPlan = ''; render(); return; }
     if (t.closest('#ua-atras')) { var vv = S.ubic.sub.volver; abrirSub(vv === 'guardados' ? { tipo: 'guardados' } : null); return; }
     if ((b = t.closest('[data-ua]'))) { guardarDireccion(S.ubic.sub.mostrada[+b.getAttribute('data-ua')]); return; }
     if (t.closest('#ua-fijar')) { var subF = S.ubic.sub; abrirFijar(false, function (l) { S.ubic.sub = subF; guardarDireccion(l); render(); }); return; }
-    if (t.closest('#ug-atras')) { abrirSub(null); return; }
+    if (t.closest('#ug-atras')) { if (S.ubic.desdePlan) { S.ubic = null; ultimoPlan = ''; render(); return; } abrirSub(null); return; }
     if (t.closest('#ug-mas') || t.closest('#ug-mas2')) { abrirSub({ tipo: 'agregar', para: 'lugar', volver: 'guardados' }, 'ua-in'); return; }
     if ((b = t.closest('[data-ug]'))) {
       var q = b.getAttribute('data-ug');
@@ -1657,6 +1676,12 @@
     }
     if ((b = t.closest('[data-up-lugar]'))) { elegirEnPlan(S.plan.mostrada[+b.getAttribute('data-up-lugar')]); return; }
     if (t.closest('#up-fijar')) { abrirFijar(); return; }
+    if (t.closest('#up-casa') || t.closest('#up-trabajo')) {
+      var kp = t.closest('#up-casa') ? 'casa' : 'trabajo';
+      if (S[kp]) { elegirEnPlan(Object.assign({ etq: kp === 'casa' ? 'Casa' : 'Trabajo' }, S[kp])); return; }
+      S.ubic = { texto: '', lista: null, desdePlan: true }; abrirSub({ tipo: 'agregar', para: kp }, 'ua-in'); return;
+    }
+    if (t.closest('#up-guardados')) { S.ubic = { texto: '', lista: null, desdePlan: true }; abrirSub({ tipo: 'guardados' }); return; }
     if (t.closest('#uf-atras')) { cerrarFijar(null); return; }
     if (t.closest('#uf-ok')) { if (S.fijar && S.fijar.lugar) cerrarFijar(S.fijar.lugar); return; }
   });
