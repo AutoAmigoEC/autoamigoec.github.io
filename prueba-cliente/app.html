@@ -468,7 +468,7 @@
   .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
 
   /* ---------- Inicio (estilo de las apps de transporte: solo viajes) ---------- */
-  .uinicio{position:absolute;inset:0;z-index:31;background:#fff;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 130px;display:flex;flex-direction:column;gap:22px}
+  .uinicio{position:absolute;inset:0;z-index:31;background:#fff;overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 130px;display:flex;flex-direction:column;gap:22px}
   .uinicio[hidden],.uplan[hidden]{display:none}
   .con-uinicio .barra{z-index:32}
   .uinicio>*{flex:none}
@@ -554,7 +554,7 @@
   .u-tit{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .u-tit h3{margin:0;font-size:20px;font-weight:800}
   .u-tit h3 .ir{display:inline-flex;width:20px;height:20px;border-radius:50%;border:1.5px solid #E4E7EC;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-left:6px;vertical-align:3px;border-width:1px;color:var(--texto)}
-  .u-sug{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x pan-y;margin:0 -18px;padding:2px 18px 4px;scrollbar-width:none}
+  .u-sug{display:flex;gap:6px;overflow-x:auto;margin:0 -18px;padding:2px 18px 4px;scrollbar-width:none}
   .u-sug::-webkit-scrollbar{display:none}
   .u-sug button{flex:none;width:76px;border:0;background:none;padding:0;font:inherit;font-size:13.5px;font-weight:500;color:var(--texto);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;line-height:1.2}
   .u-sug button .dib{width:68px;height:68px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center}
@@ -634,13 +634,6 @@
   .ufijar .caja h3{margin:0;font-size:19px}
   .ufijar .caja .lugar{display:flex;gap:10px;align-items:center;background:#F6F7FB;border-radius:14px;padding:12px}
   .ufijar .caja .lugar b{display:block}.ufijar .caja .lugar small{color:var(--gris)}
-  /* En el celular: la pantalla queda quieta (los controles de la prueba solo salen al tocar ⚙ Prueba) */
-  @media (max-width:560px){
-    html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-x pan-y}
-    .escena{height:100%;overflow:hidden}
-    .controles{display:none}
-    .controles.abierto{display:flex;max-height:calc(100svh - 170px);overflow:auto}
-  }
 </style>
 </head>
 <body>
@@ -1983,11 +1976,6 @@
   }
   if (!S.perfil || !S.perfil.cedula) registrar();
   saludo(); setInterval(saludo, 30000);
-  // La pantalla queda fija como una app: sin acercar con dos dedos ni con doble toque (eso solo en el mapa)
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (!(e.target.closest && e.target.closest('#mapa'))) e.preventDefault(); }, { passive: false }); });
-  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1 && !(e.target.closest && e.target.closest('#mapa'))) e.preventDefault(); }, { passive: false });
-  var ultimoToque = 0;
-  document.addEventListener('touchend', function (e) { var ahora = Date.now(); if (ahora - ultimoToque < 300 && !(e.target.closest && e.target.closest('#mapa, input, textarea, select'))) e.preventDefault(); ultimoToque = ahora; }, { passive: false });
   render();
 })();
 </script>
