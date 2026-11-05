@@ -744,10 +744,16 @@
     var v = S.v; if (!v) return;
     var b = new maplibregl.LngLatBounds();
     [v.o, v.d, v.pos].filter(Boolean).forEach(function (p) { b.extend([p.lng, p.lat]); });
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600 });
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600, bearing: 0, pitch: 0 });
   }
   function centrar() {
-    if (S.v && S.v.pos) { if (SEG.activo) { SEG.sigue = true; seguir(); } else M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: 0, pitch: 0, zoom: Math.max(M.getZoom(), 15), duration: 600 }); return; }   // en el viaje: va al carro
+    if (S.v && S.v.pos) {   // en el viaje: va al carro, de frente, y lo sigue
+      if (SEG.activo) { SEG.sigue = true; seguir(); return; }
+      SEG.sigueFuera = true;
+      if (M.getZoom() < 15) M.easeTo({ zoom: 15.5, duration: 300 });
+      if (SEG.ruta) seguir(); else M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: SEG.rumbo, pitch: 0, duration: 600 });
+      return;
+    }
     M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
   }
   function rumboEntre(a, b) {
@@ -760,7 +766,7 @@
   // Cada ubicación nueva del conductor: el carro avanza por la calle, la ruta que ya pasó se borra,
   // se muestra la siguiente instrucción (gira a la derecha…) y si se va por otra calle se recalcula la ruta.
   // Con "Iniciar" el mapa sigue al carro igual que en la navegación del conductor; con "Salir" vuelve a la vista normal.
-  var SEG = window.__SEG = { activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
+  var SEG = window.__SEG = { sigueFuera: false, activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
   var DIRS = { 'right': 'a la derecha', 'left': 'a la izquierda', 'slight right': 'ligeramente a la derecha', 'slight left': 'ligeramente a la izquierda', 'sharp right': 'cerrado a la derecha', 'sharp left': 'cerrado a la izquierda', 'straight': 'recto', 'uturn': 'en U' };
   var GIROS = { 'straight': 0, 'slight right': 35, 'right': 90, 'sharp right': 135, 'uturn': 180, 'sharp left': -135, 'left': -90, 'slight left': -35 };
   var ORD = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
@@ -831,12 +837,12 @@
     rutaSeg(v.pos, metaViaje(v));
   }
   function pararSeguimiento(salir) {
-    SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; SEG.pasos = [];
+    SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; SEG.pasos = []; SEG.sigueFuera = false;
     if (salir && SEG.activo) salirNav(); else pintarNav();
   }
   function iniciarNav() {
     if (!S.v || !S.v.pos) return;
-    SEG.activo = true; SEG.sigue = true;
+    SEG.activo = true; SEG.sigue = true; SEG.sigueFuera = false;
     $('#hoja').classList.add('mini');
     if (!SEG.ruta && !SEG.recalc) rutaSeg(S.v.pos, metaViaje(S.v));
     ultimaHoja = ''; render(); seguir();
@@ -876,7 +882,10 @@
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
     while (SEG.paso < SEG.pasos.length - 1 && metrosEntre(pos, { lat: SEG.pasos[SEG.paso].loc[1], lng: SEG.pasos[SEG.paso].loc[0] }) < 20) SEG.paso++;
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
-    carro(pos, SEG.activo && SEG.sigue && M.getBearing ? M.getBearing() : SEG.rumbo);
+    var siguiendo = (SEG.activo && SEG.sigue) || SEG.sigueFuera;
+    carro(pos, siguiendo && M.getBearing ? M.getBearing() : SEG.rumbo);
+    // Flechita antes de "Iniciar": sigue al carro de frente (mapa plano, sin la barra de instrucciones)
+    if (!SEG.activo && SEG.sigueFuera) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, duration: 900, padding: relleno() });
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
     if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
@@ -918,11 +927,15 @@
     bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
   }
   // Si mueves o acercas el mapa con los dedos, deja de seguir el carro hasta que toques "Centrar"
-  function dejarDeSeguir(e) { if (SEG.activo && e && e.originalEvent && SEG.sigue) { SEG.sigue = false; pintarNav(); } }
+  function dejarDeSeguir(e) {
+    if (!e || !e.originalEvent) return;
+    if (SEG.sigueFuera) { SEG.sigueFuera = false; if (S.v && S.v.pos) carro(S.v.pos, SEG.rumbo); }
+    if (SEG.activo && SEG.sigue) { SEG.sigue = false; pintarNav(); }
+  }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
   $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); });
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba (no se ve de lado al doblar)
-  try { M.on('move', function () { if (SEG.activo && SEG.sigue && carroEnMapa) { try { mkC.setRotation(M.getBearing()); } catch (e) {} } }); } catch (er) {}
+  try { M.on('move', function () { if (((SEG.activo && SEG.sigue) || SEG.sigueFuera) && carroEnMapa) { try { mkC.setRotation(M.getBearing()); } catch (e) {} } }); } catch (er) {}
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
 
@@ -1311,7 +1324,7 @@
   });
   $('#b-centrar').addEventListener('click', centrar);
   $('#b-brujula').addEventListener('click', function () { M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });   // vuelve el mapa derecho
-  $('#b-ruta').addEventListener('click', verRuta);
+  $('#b-ruta').addEventListener('click', function () { SEG.sigueFuera = false; verRuta(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'in-d' && S.busq && S.busq.mostrada && S.busq.mostrada.length && S.busq.lista) elegirLugar(S.busq.mostrada[0]); });
 
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
