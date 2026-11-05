@@ -739,7 +739,7 @@
   // Cada ubicación nueva del conductor: el carro avanza por la calle, la ruta que ya pasó se borra,
   // se muestra la siguiente instrucción (gira a la derecha…) y si se va por otra calle se recalcula la ruta.
   // Con "Iniciar" el mapa sigue al carro igual que en la navegación del conductor; con "Salir" vuelve a la vista normal.
-  var SEG = window.__SEG = { activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
+  var SEG = window.__SEG = { zoom: 15.8, activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
   var DIRS = { 'right': 'a la derecha', 'left': 'a la izquierda', 'slight right': 'ligeramente a la derecha', 'slight left': 'ligeramente a la izquierda', 'sharp right': 'cerrado a la derecha', 'sharp left': 'cerrado a la izquierda', 'straight': 'recto', 'uturn': 'en U' };
   var GIROS = { 'straight': 0, 'slight right': 35, 'right': 90, 'sharp right': 135, 'uturn': 180, 'sharp left': -135, 'left': -90, 'slight left': -35 };
   var ORD = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
@@ -848,7 +848,7 @@
     while (SEG.paso < SEG.pasos.length - 1 && metrosEntre(pos, { lat: SEG.pasos[SEG.paso].loc[1], lng: SEG.pasos[SEG.paso].loc[0] }) < 20) SEG.paso++;
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
     carro(pos, SEG.rumbo);
-    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 55, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
+    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 55, zoom: SEG.zoom, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
   }
   function pintarNav() {
@@ -890,6 +890,8 @@
   // Si mueves o acercas el mapa con los dedos, deja de seguir el carro hasta que toques "Centrar"
   function dejarDeSeguir(e) { if (SEG.activo && e && e.originalEvent && SEG.sigue) { SEG.sigue = false; pintarNav(); } }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
+  // Si acerca o aleja con los dedos, "Centrar" respeta ese acercamiento
+  try { M.on('zoomend', function (e) { if (SEG.activo && e && e.originalEvent) SEG.zoom = Math.max(13, Math.min(18, M.getZoom())); }); } catch (er) {}
   $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); });
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
