@@ -927,6 +927,12 @@
     mkC.setLngLat([p.lng, p.lat]); if (!carroEnMapa) { mkC.addTo(M); carroEnMapa = true; }
     if (rumbo != null) { try { mkC.setRotation(rumbo); } catch (e) { carroEl.querySelector('.g').setAttribute('transform', 'rotate(' + rumbo + ' 19 19)'); } }
   }
+  // Antes del taxímetro: el carro y tu punto de recogida siempre juntos a la vista; el mapa se va acercando despacito mientras el carro llega
+  function vistaRecogida(dur) {
+    var v = S.v; if (!v || !v.pos || !v.o) return;
+    var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, duration: dur });
+  }
   function verRuta() {
     var v = S.v; if (!v) return;
     var b = new maplibregl.LngLatBounds();
@@ -1073,6 +1079,7 @@
     carro(pos, SEG.activo && SEG.sigue && M.getBearing ? M.getBearing() : SEG.rumbo);
     // Flechita antes de "Iniciar": sigue al carro con el mapa derecho, un poco alejado, sin taparlo con la barra de abajo
     if (!SEG.activo && SEG.sigueFuera) M.easeTo({ center: [pos.lng, pos.lat], duration: 900, padding: rellenoCarro() });
+    else if (!SEG.activo && SEG.autoFit !== false && v.fase === 'aceptada') vistaRecogida(900);
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
     if (SEG.activo && SEG.sigue) M.easeTo(vistaNav(900));
     pintarNav();
@@ -1124,7 +1131,7 @@
   // Si mueves o acercas el mapa con los dedos, deja de seguir el carro hasta que toques "Centrar"
   function dejarDeSeguir(e) {
     if (!e || !e.originalEvent) return;
-    SEG.sigueFuera = false;
+    SEG.sigueFuera = false; SEG.autoFit = false;
     if (SEG.activo && SEG.sigue) { SEG.sigue = false; pintarNav(); }
   }
   // Espacio libre del mapa: arriba las pastillas, abajo la hoja y la barra de minutos (el carro queda en el medio de lo que se ve)
@@ -1783,6 +1790,7 @@
     var a = Math.random() * Math.PI * 2;
     v.cond = c; v.fase = 'aceptada'; v.llego = false; v.pos = { lat: v.o.lat + Math.sin(a) * 0.011, lng: v.o.lng + Math.cos(a) * 0.011 };
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
+    SEG.autoFit = true;
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
   }
   function llego() {
@@ -1797,6 +1805,7 @@
     v.fase = 'ejecucion'; v.llego = true; v.seg = 0; v.metros = 0; v.espera = 0; v.mostradoC = 0; v.ultMostrar = 0; v.inicio = Date.now();
     v.pos = { lat: v.o.lat, lng: v.o.lng }; if (mkO) { mkO.remove(); mkO = null; }
     aviso('Tu viaje empezó. El taxímetro está corriendo.'); render(); empezarSeguimiento();
+    if (!SEG.activo) { SEG.sigueFuera = true; M.easeTo({ center: [v.pos.lng, v.pos.lat], bearing: 0, pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() }); }
   }
   function finalizar() {
     var v = S.v; if (!v || v.fase !== 'ejecucion') return;
@@ -1946,7 +1955,7 @@
   });
   $('#b-centrar').addEventListener('click', centrar);
   $('#b-brujula').addEventListener('click', function () { M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });   // vuelve el mapa derecho
-  $('#b-ruta').addEventListener('click', function () { SEG.sigueFuera = false; verRuta(); });
+  $('#b-ruta').addEventListener('click', function () { SEG.sigueFuera = false; SEG.autoFit = false; verRuta(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'in-d' && S.busq && S.busq.mostrada && S.busq.mostrada.length && S.busq.lista) elegirLugar(S.busq.mostrada[0]); });
 
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
@@ -1958,7 +1967,7 @@
       setTimeout(function () {
         ultimaHoja = ''; render();
         // El mapa se acomoda al espacio libre: el carro y el punto de recogida quedan a la vista
-        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else verRuta(); }
+        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(600); } else verRuta(); }
       }, 20);
     }
     function agrandar() {
@@ -1973,6 +1982,7 @@
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
     }
