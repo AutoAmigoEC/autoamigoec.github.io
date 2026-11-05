@@ -876,7 +876,7 @@
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
     while (SEG.paso < SEG.pasos.length - 1 && metrosEntre(pos, { lat: SEG.pasos[SEG.paso].loc[1], lng: SEG.pasos[SEG.paso].loc[0] }) < 20) SEG.paso++;
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
-    carro(pos, SEG.rumbo);
+    carro(pos, SEG.activo && SEG.sigue && M.getBearing ? M.getBearing() : SEG.rumbo);
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
     if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
@@ -921,6 +921,8 @@
   function dejarDeSeguir(e) { if (SEG.activo && e && e.originalEvent && SEG.sigue) { SEG.sigue = false; pintarNav(); } }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
   $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); });
+  // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba (no se ve de lado al doblar)
+  try { M.on('move', function () { if (SEG.activo && SEG.sigue && carroEnMapa) { try { mkC.setRotation(M.getBearing()); } catch (e) {} } }); } catch (er) {}
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
 
