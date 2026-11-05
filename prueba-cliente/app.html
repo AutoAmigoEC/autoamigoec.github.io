@@ -1967,13 +1967,13 @@
       var sube = hoja.offsetHeight - antes, pie = $('#nav-pie');
       [hoja, pie].forEach(function (el) { el.style.transition = 'none'; el.style.transform = 'translateY(' + sube + 'px)'; });
       void hoja.offsetHeight;
-      [hoja, pie].forEach(function (el) { el.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; });
-      setTimeout(function () { [hoja, pie].forEach(function (el) { el.style.transition = ''; }); }, 350);
+      [hoja, pie].forEach(function (el) { el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; });
+      setTimeout(function () { [hoja, pie].forEach(function (el) { el.style.transition = ''; }); }, 500);
       // El mapa se acomoda a la vez que sube el cuadro (un solo movimiento)
       if (S.v && S.v.pos) {
-        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(300)); }
-        else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 300, padding: rellenoCarro() });
-        else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 300 }); }
+        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
+        else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
+        else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
     }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
