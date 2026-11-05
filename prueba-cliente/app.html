@@ -579,6 +579,7 @@
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Hacen lo que haría el conductor desde su app. La búsqueda de lugares, la ruta y el precio estimado son reales (mismo cálculo del panel).</p>
+    <button class="prin" id="sim-aprobar" style="background:var(--verde)">Aprobar y seguir (saltar la verificación de cara)</button>
     <button class="prin" id="sim-acepta">Un conductor acepta</button>
     <button id="sim-llego">El conductor llegó</button>
     <button id="sim-inicia">El conductor inicia el taxímetro</button>
@@ -602,7 +603,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="seguridad.js?v=3"></script>
+<script src="seguridad.js?v=4"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
@@ -1300,6 +1301,10 @@
   $('#sim-borrar').addEventListener('click', function () { ['aac2_perfil', 'aac_cuenta', 'aac2_viajes', 'aac2_casa', 'aac2_trabajo'].forEach(function (k) { guardar(k, null); }); location.reload(); });
   $('#sim-hora').addEventListener('change', function (e) { AASeg.prueba.hora = e.target.value === '' ? null : +e.target.value; if (S.v) { ultimaHoja = ''; render(); } });
   $('#sim-zona').addEventListener('change', function (e) { AASeg.prueba.zona = e.target.checked; if (S.v) { ultimaHoja = ''; render(); } });
+  $('#sim-aprobar').addEventListener('click', function () {
+    if (AASeg.aprobarPrueba()) { $('#controles').classList.remove('abierto'); aviso('Aprobado para la prueba.'); }
+    else aviso('Funciona cuando te está pidiendo la cédula o la foto de tu cara.');
+  });
   $('#sim-celular').addEventListener('change', function (e) { AASeg.prueba.celularNuevo = e.target.checked; });
   $('#btn-prueba').addEventListener('click', function () { $('#controles').classList.toggle('abierto'); });
 

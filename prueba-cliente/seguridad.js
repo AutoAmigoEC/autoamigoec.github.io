@@ -247,6 +247,7 @@
         G.analizando = '';
         if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz y toma otra.'; pintar(); return; }
         var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
+        if (!pf.descriptor) { pf.descriptor = desc; guardar('aac_cuenta', pf); }   // cuenta de prueba aprobada sin cara: esta foto queda como su cara
         var ok = distancia(desc, pf.descriptor) <= UMBRAL && (!pf.descCedula || distancia(desc, pf.descCedula) <= UMBRAL_CEDULA);
         if (!ok) { ir('selfieMal'); return; }
         if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
@@ -276,6 +277,16 @@
     paraOtraPermitido: function (v) { if (esNoche()) return 'De noche solo puede pedir el dueño de la cuenta.'; if (enZonaRiesgo(v)) return 'En zonas de riesgo solo puede pedir el dueño de la cuenta.'; return ''; },
     motivos: motivos, esNoche: esNoche, cedulaValida: cedulaValida, prueba: PRUEBA,
     cuenta: function () { return leer('aac_cuenta', null); },
-    atras: function () { if (!G.paso) return false; cerrar(); return true; }
+    atras: function () { if (!G.paso) return false; cerrar(); return true; },
+    // Solo en el link de prueba: aprueba la verificación que esté en pantalla y sigue (sin crear la cuenta otra vez)
+    aprobarPrueba: function () {
+      if (!G.paso) return false;
+      var al = G.al;
+      if (['selfieIntro', 'selfie', 'selfieOk', 'selfieMal'].indexOf(G.paso) >= 0) { cerrar(); if (al) al(G.perfil); return true; }
+      var perfil = { nombre: G.d.nombre && G.d.nombre.split(' ').length > 1 ? G.d.nombre : 'Cliente de Prueba', cedula: cedulaValida(G.d.cedula || '') ? G.d.cedula : '0926687856',
+        tel: /^09\d{8}$/.test(G.d.tel || '') ? G.d.tel : '0991234567', descriptor: G.fotos.descriptor || null, descCedula: G.fotos.descCedula || null,
+        fotoCedula: G.fotos.cedula || null, foto: G.fotos.cara || null, celular: idCelular(), creado: Date.now(), acepto: Date.now(), prueba: true };
+      guardar('aac_cuenta', perfil); cerrar(); if (al) al(perfil); return true;
+    }
   };
 })();
