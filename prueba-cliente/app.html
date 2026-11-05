@@ -331,7 +331,7 @@
   .controles button,.controles select{height:42px;border-radius:12px;border:1px solid var(--linea);background:#fff;font-weight:600;font-size:14px;padding:0 10px}
   .controles button.prin{background:var(--navy);color:#fff;border:0}
   .controles label{font-size:13px;font-weight:600;color:#344054;display:flex;flex-direction:column;gap:5px}
-  .btn-prueba{display:none;position:fixed;right:12px;bottom:100px;z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .btn-prueba{display:none;position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
   @media (max-width:560px){.controles.abierto{position:fixed;left:12px;right:12px;bottom:150px;width:auto;z-index:100}}
 
   /* ---------- App del cliente (mismo estilo de la app del conductor) ---------- */
@@ -365,6 +365,70 @@
   .ingreso .lema{margin:4px 0 auto;color:#C9CDE6;font-size:17px}
   .ingreso label{font-size:13px;font-weight:700;color:#C9CDE6;margin-bottom:6px}
   .ingreso input{height:54px;border:0;border-radius:16px;padding:0 16px;font:inherit;font-size:16px;margin-bottom:14px;outline:none;color:var(--texto)}
+
+  /* ---------- Seguridad: crear cuenta, cédula, cara y foto antes de pedir ---------- */
+  .seg{position:absolute;inset:0;z-index:85;background:#fff;display:flex;flex-direction:column;animation:entra .18s ease}
+  .seg.azul{background:linear-gradient(160deg,#1B2370,#0A0F3C 55%,#090145);color:#fff}
+  .seg.negro{background:#000}
+  .seg .scab{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:44px 16px 8px}
+  .seg .scab b{font-size:17px;color:var(--navy)}
+  .seg .satras{width:42px;height:42px;border-radius:12px;border:0;background:var(--suave);font-size:28px;line-height:1;color:var(--texto)}
+  .seg .scab span{width:42px}
+  .seg .scuerpo{flex:1;overflow:auto;padding:8px 20px 24px;display:flex;flex-direction:column;gap:12px}
+  .seg h2{margin:0;font-size:24px;line-height:1.2;color:var(--texto)}
+  .seg p{margin:0;color:var(--gris);font-size:15px;line-height:1.45}
+  .seg .c{text-align:center}
+  .seg .slbl{font-size:13px;font-weight:700;color:#344054;margin:4px 0 -6px}
+  .seg .sent{height:54px;border:1.5px solid var(--linea);border-radius:16px;padding:0 16px;font:inherit;font-size:17px;outline:none;color:var(--texto);background:#fff}
+  .seg .sent:focus{border-color:var(--navy)}
+  .seg .sbtn{flex:none;height:58px;border:0;border-radius:18px;background:var(--navy);color:#fff;font:inherit;font-size:17px;font-weight:800;width:100%;cursor:pointer}
+  .seg .sbtn.rojo{background:var(--rojo)}.seg .sbtn.verde{background:var(--verde)}
+  .seg .sbtn.claro{background:var(--suave);color:var(--texto)}
+  .seg.azul .sbtn.claro{background:rgba(255,255,255,.14);color:#fff}
+  .seg .sfila{display:flex;gap:10px;width:100%}.seg .sfila .sbtn{flex:1}
+  .seg .smotivo{background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .seg .sgrande{width:86px;height:86px;border-radius:50%;margin:20px auto 4px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;background:var(--verde);flex:none}
+  .seg .sgrande.mal{background:var(--rojo)}
+  .seg .sgrande.espera{background:var(--navy)}
+  .seg .sgrande.espera::before{content:'';width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  .seg .slista{border:1px solid var(--linea);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  .seg .slista b{font-size:15.5px}.seg .slista p{font-size:13.5px;margin-top:2px}
+  .seg .sacepto{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;color:#344054}
+  .seg .sacepto input{width:22px;height:22px;flex:none;margin:1px 0 0;accent-color:var(--navy)}
+  .seg .schips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .seg .schips span{background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:700}
+  .seg .sbien{flex:1;display:flex;flex-direction:column;gap:12px;padding:60px 24px 32px}
+  .seg .sbien .logo{font-size:46px;font-weight:800;letter-spacing:-1.2px;margin-top:auto}
+  .seg .sbien .logo span{color:var(--rojo)}
+  .seg .sbien .lema{margin:0 0 auto;color:#C9CDE6;font-size:17px}
+  /* Cámara a pantalla completa (igual que en la app del conductor) */
+  .seg .vcf{position:absolute;inset:0;background:#000;overflow:hidden}
+  .seg .vcf video,.seg .vcf .vfoto{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .seg .vcf video.espejo{transform:scaleX(-1)}
+  .seg .vcf-top{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:flex-start;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 40px) 16px 28px;background:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,0));color:#fff}
+  .seg .vcf-tit{flex:1;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .seg .vcf-tit small{font-size:12.5px;font-weight:700;opacity:.85}
+  .seg .vcf-tit b{font-size:21px;line-height:1.2}
+  .seg .vcf-tit span{font-size:14px;line-height:1.4;opacity:.92}
+  .seg .vcf-x{flex:none;margin-left:auto;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:19px;cursor:pointer}
+  .seg .vcf-error{position:absolute;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 150px);z-index:3;background:#FDECEC;color:#B42318;border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;line-height:1.4}
+  .seg .vcf-indica{position:absolute;left:50%;top:58%;transform:translateX(-50%);z-index:3;background:rgba(16,24,40,.8);color:#fff;border-radius:999px;padding:12px 20px;font-weight:800;font-size:18px;white-space:nowrap}
+  .seg .vcf-marco{position:absolute;left:8%;right:8%;top:32%;bottom:32%;border:3px dashed rgba(255,255,255,.85);border-radius:18px;z-index:1}
+  .seg .vcf-bot{position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 16px calc(env(safe-area-inset-bottom,0px) + 24px);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72))}
+  .seg .vcf-bot .sbtn.claro{background:rgba(255,255,255,.92)}
+  .seg .disparo{width:78px;height:78px;border-radius:50%;border:5px solid #fff;background:transparent;padding:0;cursor:pointer;position:relative}
+  .seg .disparo::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:transform .1s}
+  .seg .disparo:active::after{transform:scale(.88)}
+  .seg .vcf-txt{color:#fff;font-size:15px}
+  .seg .vcf-espera{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
+  /* Pedir para otra persona */
+  .otra{margin-top:12px;border:1.5px solid var(--linea);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .otra .fila-o{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px}
+  .otra .fila-o input{width:22px;height:22px;accent-color:var(--navy);margin:0}
+  .otra small{color:var(--gris);font-size:13px;line-height:1.4}
+  .otra.no{opacity:.6}
+  .otra .entrada{margin:0}
+  .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
 </style>
 </head>
 <body>
@@ -478,6 +542,7 @@
 
     <div class="fin" id="fin" hidden></div>
     <div class="confirmar" id="confirmar" hidden><div class="caja"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></svg></div><h3>¿Estás seguro de cancelar el viaje?</h3><p id="confirmar-txt"></p><div class="b"><button class="no" id="c-no">No, seguir con el viaje</button><button class="si" id="c-si">Sí, cancelar viaje</button></div></div></div>
+    <div class="seg" id="seg" hidden></div>
     <div class="aviso" id="aviso" hidden></div>
   </div></div>
 
@@ -496,6 +561,10 @@
       </select></label>
     <label>Mapa
       <select id="sim-modo"><option value="">Según la hora (como en la app)</option><option value="dia">Forzar día</option><option value="noche">Forzar noche</option></select></label>
+    <label>Hora para la seguridad
+      <select id="sim-hora"><option value="">La hora real</option><option value="10">De día (10:00)</option><option value="22">De noche (22:00)</option></select></label>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="sim-zona"> El viaje es en zona de riesgo</label>
+    <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="sim-celular"> Estoy en otro celular</label>
     <button id="sim-borrar">Empezar de nuevo (borrar mis datos)</button>
   </div>
   <button class="btn-prueba" id="btn-prueba">⚙ Prueba</button>
@@ -503,6 +572,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
+<script src="seguridad.js?v=1"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
@@ -513,7 +583,7 @@
   function leer(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
   function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   var S = {
-    perfil: leer('aac2_perfil', null), viajes: leer('aac2_viajes', null), casa: leer('aac2_casa', null), trabajo: leer('aac2_trabajo', null),
+    perfil: leer('aac_cuenta', null), viajes: leer('aac2_viajes', null), casa: leer('aac2_casa', null), trabajo: leer('aac2_trabajo', null),
     yo: { lat: -2.10442, lng: -79.86173, nombre: 'Isla Mocolí' }, carro: '#F4F5F7', pantalla: 'inicio', menu: false,
     v: null, fin: null, busq: null
   };
@@ -690,7 +760,8 @@
     if (p === 'perfil') {
       var pf = S.perfil || { nombre: '', tel: '' };
       return '<h2>Mi perfil</h2><div class="recargar" style="margin-top:0"><h3>Tus datos</h3><p>Así te verá el conductor.</p>' +
-        '<label class="lbl" for="p-nombre">Nombre</label><input class="entrada" id="p-nombre" value="' + esc(pf.nombre) + '">' +
+        '<label class="lbl" for="p-nombre">Nombre (de tu cédula)</label><input class="entrada" id="p-nombre" value="' + esc(pf.nombre) + '" disabled>' +
+        '<label class="lbl">Cédula</label><input class="entrada" value="' + esc(pf.cedula ? pf.cedula.slice(0, 2) + '••••••' + pf.cedula.slice(-2) : '') + '" disabled>' +
         '<label class="lbl" for="p-tel">Celular</label><input class="entrada" id="p-tel" inputmode="tel" value="' + esc(pf.tel) + '">' +
         '<button class="btn-azul" id="b-guardar-perfil">Guardar</button></div>';
     }
@@ -711,6 +782,16 @@
     return '<div class="puntos">' + o + d + '</div>';
   }
   var CHIP_EST = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>';
+  // Viaje para otra persona: el conductor lo sabe. De noche o en zonas de riesgo no se permite.
+  function otraHTML(v) {
+    var no = AASeg.paraOtraPermitido(v);
+    if (no && v.otra) v.otra = null;
+    return '<div class="otra solo-grande' + (no ? ' no' : '') + '"><label class="fila-o"><input type="checkbox" id="b-otra"' + (v.otra ? ' checked' : '') + (no ? ' disabled' : '') + '> El viaje es para otra persona</label>' +
+      (no ? '<small>' + esc(no) + '</small>' : v.otra ? '<input class="entrada" id="in-otra-nombre" placeholder="Nombre y apellido de quien viaja" value="' + esc(v.otra.nombre || '') + '">' +
+        '<input class="entrada" id="in-otra-tel" inputmode="tel" maxlength="10" placeholder="Celular de quien viaja (09…)" value="' + esc(v.otra.tel || '') + '">' +
+        '<small>El conductor verá que el viaje es para esta persona. Tú sigues siendo el responsable del viaje.</small>' : '<small>Si no viajas tú, márcalo. Así el conductor sabe quién se va a subir.</small>') + '</div>';
+  }
+  function paraOtraTxt(v) { return v.otra ? '<span class="para-otra">Viaje para ' + esc(v.otra.nombre) + '</span>' : ''; }
   function hojaHTML() {
     var v = S.v, h = '<button class="tirador" aria-label="Deslizar"></button>';
     if (v.fase === 'cotizar') {
@@ -721,6 +802,7 @@
         '<div class="chip"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg></b><small>Efectivo</small></div>' +
         '<button class="chip' + (v.equipaje ? ' on' : '') + '" id="b-equipaje"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a1 1 0 0 1 1 1v2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a1 1 0 0 1 1-1zm1 3h4V5h-4z"/></svg>' + (v.equipaje ? 'Sí' : 'No') + '</b><small>Equipaje grande</small></button></div>' +
         '<input class="entrada solo-grande" id="in-ref" placeholder="Referencia: ej. casa blanca, garita 2" value="' + esc(v.ref || '') + '" style="margin-top:12px">' +
+        otraHTML(v) +
         '<div class="botones"><button class="btn-gris" id="b-volver">Cancelar</button><button class="btn-acep" id="b-confirmar"' + (v.km ? '' : ' disabled') + '>Pedir AutoAmigo</button></div>';
       return h;
     }
@@ -728,7 +810,7 @@
       h += '<span class="etiqueta">Buscando unidad</span>' +
         '<div class="datos"><div><div class="km">' + v.km.toFixed(1) + ' km</div><div class="min">Ofreciendo tu viaje a la unidad más cercana…</div></div>' +
         '<div class="valor"><span class="ruedita gira"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="18" fill="none" stroke="#E4E7EC" stroke-width="4"/><circle cx="21" cy="21" r="18" fill="none" stroke="#E5252A" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="80"/></svg></span></div></div>' +
-        puntosHTML(v) + '<button class="btn-cancelar" id="b-cancelar">Cancelar viaje</button>';
+        paraOtraTxt(v) + puntosHTML(v) + '<button class="btn-cancelar" id="b-cancelar">Cancelar viaje</button>';
       return h;
     }
     var c = v.cond, enCurso = v.fase === 'ejecucion';
@@ -745,7 +827,7 @@
     h += '<div class="chips"><div class="chip"><b style="font-size:16px;letter-spacing:.5px">' + esc(c.placa) + '</b><small>Placa</small></div>' +
       '<div class="chip"><b style="font-size:15px">' + esc(c.carro.split(' ').slice(-1)[0]) + '</b><small>' + esc(c.carro.split(' ')[0]) + ' · ' + esc(c.color) + '</small></div>' +
       '<div class="chip"><b>' + esc(c.u) + '</b><small>Unidad</small></div></div>';
-    h += '<div class="solo-grande">' + puntosHTML(v) + '</div>';
+    h += '<div class="solo-grande">' + paraOtraTxt(v) + puntosHTML(v) + '</div>';
     if (enCurso) {
       h += '<div class="taxi solo-grande"><div><div class="t">TAXÍMETRO</div><div class="i">' + (v.metros / 1000).toFixed(2) + ' km · ' + mmss(v.espera) + ' detenido' +
         (v.mostradoC < CFG.minimaC ? '<br>Mínimo a cobrar ' + dineroC(CFG.minimaC) : '') + '</div></div><div class="v">' + dineroC(v.mostradoC) + '</div></div>';
@@ -824,8 +906,9 @@
       if (!S.v) return; var km = distKm(o, d); S.v.km = km; S.v.min = minutos(km); S.v.estC = estimadoC(km); render();
     });
   }
+  function guardarOtra() { if (S.v && S.v.otra && $('#in-otra-nombre')) { S.v.otra.nombre = $('#in-otra-nombre').value.trim().replace(/\s+/g, ' '); S.v.otra.tel = $('#in-otra-tel').value.replace(/\D/g, '').slice(0, 10); } }
   function pedir() {
-    var v = S.v; v.ref = ($('#in-ref') || {}).value || ''; v.fase = 'buscando'; render();
+    var v = S.v; if (!v) return; v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
     clearTimeout(S.tAcepta); S.tAcepta = setTimeout(aceptar, 6000);
   }
   function aceptar() {
@@ -939,7 +1022,20 @@
     if ((b = t.closest('[data-guardar]'))) { abrirBuscar(b.getAttribute('data-guardar')); return; }
     if (t.closest('#b-equipaje')) { S.v.equipaje = !S.v.equipaje; S.v.ref = $('#in-ref').value; render(); return; }
     if (t.closest('#b-volver')) { S.v = null; puntos(null); render(); return; }
-    if (t.closest('#b-confirmar')) { pedir(); return; }
+    if (t.closest('#b-otra')) {
+      guardarOtra();
+      S.v.otra = t.checked ? (S.v.otra || { nombre: '', tel: '' }) : null; S.v.ref = $('#in-ref').value; render(); return;
+    }
+    if (t.closest('#b-confirmar')) {
+      guardarOtra(); S.v.ref = $('#in-ref').value;
+      if (S.v.otra) {
+        var no = AASeg.paraOtraPermitido(S.v); if (no) { S.v.otra = null; render(); aviso(no); return; }
+        if (S.v.otra.nombre.split(' ').filter(Boolean).length < 2) { aviso('Escribe el nombre y apellido de quien viaja.'); return; }
+        if (!/^09\d{8}$/.test(S.v.otra.tel)) { aviso('Escribe el celular de quien viaja (10 dígitos, empieza con 09).'); return; }
+      }
+      AASeg.antesDePedir(S.v, S.perfil, S.viajes.length, function () { pedir(); });
+      return;
+    }
     if (t.closest('#b-cancelar')) {
       $('#confirmar-txt').textContent = S.v.fase === 'buscando' ? 'Todavía no hay una unidad asignada a tu viaje.' : 'La unidad ' + S.v.cond.u + ' ya va en camino hacia ti.';
       $('#confirmar').hidden = false; return;
@@ -948,8 +1044,11 @@
     if (t.closest('#c-si')) { $('#confirmar').hidden = true; cancelar(); return; }
     if (t.closest('#b-compartir')) { aviso('En la app real se envía un enlace para que tu familia vea tu viaje en vivo.'); return; }
     if ((b = t.closest('[data-accion]'))) { aviso(b.getAttribute('data-accion') === 'central' ? 'En la app real llama a la central.' : 'En la app real abre WhatsApp con la central.'); return; }
-    if (t.closest('#b-guardar-perfil')) { S.perfil = { nombre: $('#p-nombre').value.trim() || S.perfil.nombre, tel: $('#p-tel').value.trim() || S.perfil.tel }; guardar('aac2_perfil', S.perfil); aviso('Datos guardados.'); render(); return; }
-    if (t.closest('#salir')) { S.perfil = null; guardar('aac2_perfil', null); S.menu = false; render(); $('#ingreso').hidden = false; return; }
+    if (t.closest('#b-guardar-perfil')) {
+      var nt = $('#p-tel').value.replace(/\D/g, ''); if (!/^09\d{8}$/.test(nt)) { aviso('Escribe tu celular de 10 dígitos (empieza con 09).'); return; }
+      S.perfil.tel = nt; guardar('aac_cuenta', S.perfil); aviso('Datos guardados.'); render(); return;
+    }
+    if (t.closest('#salir')) { S.perfil = null; S.menu = false; render(); registrar(); return; }
     if (t.closest('#b-ingresar')) {
       var n = $('#ing-nombre').value.trim(), tel = $('#ing-tel').value.replace(/\D/g, '');
       if (n.length < 3) { aviso('Escribe tu nombre y apellido.'); return; }
@@ -979,7 +1078,10 @@
   $('#sim-fin').addEventListener('click', function () { if (S.v && S.v.fase === 'ejecucion') finalizar(); else aviso('Funciona durante el viaje.'); });
   $('#sim-color').addEventListener('change', function () { S.carroForzado = this.value; $('#carro').innerHTML = carroSVG(this.value); if (S.v && S.v.cond) S.v.cond.hex = this.value; });
   $('#sim-modo').addEventListener('change', function () { MapaAA.forzarModo(this.value || null); });
-  $('#sim-borrar').addEventListener('click', function () { ['aac2_perfil', 'aac2_viajes', 'aac2_casa', 'aac2_trabajo'].forEach(function (k) { guardar(k, null); }); location.reload(); });
+  $('#sim-borrar').addEventListener('click', function () { ['aac2_perfil', 'aac_cuenta', 'aac2_viajes', 'aac2_casa', 'aac2_trabajo'].forEach(function (k) { guardar(k, null); }); location.reload(); });
+  $('#sim-hora').addEventListener('change', function (e) { AASeg.prueba.hora = e.target.value === '' ? null : +e.target.value; if (S.v) { ultimaHoja = ''; render(); } });
+  $('#sim-zona').addEventListener('change', function (e) { AASeg.prueba.zona = e.target.checked; if (S.v) { ultimaHoja = ''; render(); } });
+  $('#sim-celular').addEventListener('change', function (e) { AASeg.prueba.celularNuevo = e.target.checked; });
   $('#btn-prueba').addEventListener('click', function () { $('#controles').classList.toggle('abierto'); });
 
   // Ubicación real del celular (si está en Guayaquil); si no, la de prueba
@@ -990,7 +1092,13 @@
   }, function () {}, { enableHighAccuracy: true, timeout: 8000 });
 
   $('#carro').innerHTML = carroSVG(S.carro);
-  if (!S.perfil) $('#ingreso').hidden = false;
+  function registrar() {
+    AASeg.registro(function (p) {
+      if (!S.perfil || S.perfil.cedula !== p.cedula) { S.viajes = []; guardar('aac2_viajes', []); }   // cuenta nueva: sin viajes todavía
+      S.perfil = p; render(); aviso('¡Bienvenido, ' + p.nombre.split(' ')[0] + '!');
+    });
+  }
+  if (!S.perfil || !S.perfil.cedula) registrar();
   saludo(); setInterval(saludo, 30000);
   render();
 })();
