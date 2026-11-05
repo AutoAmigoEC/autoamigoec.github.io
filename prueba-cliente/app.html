@@ -850,7 +850,7 @@
     if (!SEG.activo) return;
     SEG.activo = false;
     try { mkC.setRotation && mkC.setRotation(SEG.rumbo); } catch (e) {}
-    $('#hoja').classList.remove('mini');
+    // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña)
     M.easeTo({ pitch: 0, bearing: 0, duration: 600 });
     ultimaHoja = ''; render(); pintarNav(); setTimeout(verRuta, 650);
   }
