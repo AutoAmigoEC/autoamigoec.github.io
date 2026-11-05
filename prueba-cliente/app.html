@@ -187,13 +187,6 @@
   .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta,.hoja-grande #b-centrar{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s ease,visibility 0s linear .25s}
   /* Navegando con el cuadro abierto: el recuadro de la instrucción sube casi hasta arriba */
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
-  /* Con el taxímetro iniciado y el cuadro abierto: la instrucción más pequeña y un toque más arriba */
-  .taxi-on.navegando.hoja-grande .nav-top{top:4px;padding:8px 12px;border-radius:16px;gap:10px}
-  .taxi-on.navegando.hoja-grande .nav-top .ic{width:40px;height:40px;border-radius:11px}
-  .taxi-on.navegando.hoja-grande .nav-top .ic svg{width:24px;height:24px}
-  .taxi-on.navegando.hoja-grande .nav-top .dist{font-size:19px}
-  .taxi-on.navegando.hoja-grande .nav-top .txt{font-size:13.5px;margin-top:2px}
-  .taxi-on.navegando.hoja-grande .nav-top .calle{font-size:12px;margin-top:1px}
   .hoja-grande .hoja{max-height:66%}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
@@ -1084,16 +1077,15 @@
   }
   // Cámara de la navegación: con el cuadro abierto se aleja un poco (15.5) para ver avanzar la flecha en el espacio libre
   function vistaNav(dur) {
-    var pos = S.v.pos, gr = $('#pantalla').classList.contains('hoja-grande'), tx = gr && S.v.fase === 'ejecucion';
-    return { center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: tx ? 14.5 : gr ? 15.5 : 17, duration: dur,
-      padding: { top: tx ? 75 : gr ? 100 : 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
+    var pos = S.v.pos, gr = $('#pantalla').classList.contains('hoja-grande');
+    return { center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
+      padding: { top: gr ? 100 : 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
   }
   function pintarNav() {
     var p = $('#pantalla'), v = S.v, conUnidad = !!(v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion'));
     p.classList.toggle('navegando', SEG.activo && conUnidad);
     p.classList.toggle('con-carrera', conUnidad && !SEG.activo);
     p.classList.toggle('hoja-grande', conUnidad && !$('#hoja').classList.contains('mini'));
-    p.classList.toggle('taxi-on', !!(v && v.fase === 'ejecucion'));
     carroEl.classList.toggle('flecha', SEG.activo && conUnidad);
     if (!conUnidad) { $('#nav-centrar').hidden = true; return; }
     var aRec = v.fase !== 'ejecucion';
