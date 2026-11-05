@@ -1224,9 +1224,16 @@
     cal: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
   };
   function recientes() { var r = leer('aac_recientes', null); return r && r.length ? r : SUGERIDOS.slice(0, 3); }
+  // Los destinos a los que más vas (los que más veces pediste; si empatan, el más reciente). Siempre 2: si faltan, se completan con sugeridos.
+  function frecuentes(n) {
+    var r = (leer('aac_recientes', []) || []).slice().sort(function (a, b) { return (b.veces || 1) - (a.veces || 1) || (b.t || 0) - (a.t || 0); });
+    SUGERIDOS.forEach(function (x) { if (r.length < n && !r.some(function (y) { return y.nombre === x.nombre; })) r.push(x); });
+    return r.slice(0, n);
+  }
   function guardarReciente(p) {
-    var r = (leer('aac_recientes', []) || []).filter(function (x) { return x.nombre !== p.nombre; });
-    r.unshift({ nombre: p.nombre, ref: p.ref || '', lat: p.lat, lng: p.lng }); guardar('aac_recientes', r.slice(0, 8));
+    var r = leer('aac_recientes', []) || [], antes = r.filter(function (x) { return x.nombre === p.nombre; })[0];
+    r = r.filter(function (x) { return x.nombre !== p.nombre; });
+    r.unshift({ nombre: p.nombre, ref: p.ref || '', lat: p.lat, lng: p.lng, veces: ((antes && antes.veces) || 0) + 1, t: Date.now() }); guardar('aac_recientes', r.slice(0, 20));
   }
   function filaLugar(x, i, ic) {
     if (ic === IC.reloj && /aeropuerto|airport/i.test(x.nombre)) ic = IC.avion;
@@ -1271,10 +1278,8 @@
   document.addEventListener('change', function (e) { if (e.target.id === 'prog-hora' && S.prog) S.prog.hora = +e.target.value; });
   var ultimoInicio = '';
   function pintarInicio() {
-    var pf = S.perfil || { nombre: '' }, lista = [];
-    if (S.casa) lista.push(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
-    if (S.trabajo) lista.push(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
-    lista = lista.concat(recientes().slice(0, S.casa || S.trabajo ? 2 : 3).map(function (x) { return Object.assign({ _ic: IC.reloj }, x); }));
+    var pf = S.perfil || { nombre: '' };
+    var lista = frecuentes(2).map(function (x) { return Object.assign({ _ic: IC.reloj }, x); });
     S.listaInicio = lista;
     var carro = '<svg width="54" height="30" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
     var h = '<div class="u-cab"><div class="u-marca">Auto<span>Amigo</span></div><button class="u-av" data-ir="perfil" aria-label="Mi perfil">' +
