@@ -461,6 +461,8 @@
   .otra .entrada{margin:0}
   .nav-centrar{position:absolute;left:12px;z-index:7;height:44px;padding:0 16px 0 12px;border:0;border-radius:999px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
   .nav-centrar[hidden]{display:none}
+  .brujula{right:16px}
+  .brujula[hidden]{display:none}
   .etiqueta.recalc{background:#B54708;margin-top:12px;margin-left:6px}
   .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
 </style>
@@ -511,6 +513,7 @@
     <!-- Mapa -->
     <div class="mapa-caja" id="mapa-caja">
       <div id="mapa"></div>
+      <button class="redondo brujula" id="b-brujula" hidden aria-label="Poner el mapa derecho"><svg width="26" height="26" viewBox="0 0 24 24" id="brujula-aguja"><path d="M12 2 15 12H9z" fill="#E5252A"/><path d="M12 22 9 12h6z" fill="#D0D5DD"/></svg></button>
       <button class="redondo" id="b-centrar" style="right:16px;bottom:16px" aria-label="Mi ubicación">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg></button>
       <div class="nav-top" id="nav-top"><div class="ic" id="nav-ic"></div><div style="min-width:0;flex:1"><div class="dist" id="nav-dist"></div><div class="txt" id="nav-txt"></div><div class="calle" id="nav-calle"></div></div></div>
@@ -691,6 +694,16 @@
   // ---------- Mapa ----------
   var M = MapaAA.crear('mapa', [S.yo.lat, S.yo.lng], 14.5);
   function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
+  // Movimientos con los dedos como en Google Maps: girar con dos dedos, inclinar deslizando dos dedos hacia arriba
+  try { M.touchZoomRotate.enableRotation(); M.touchPitch.enable(); M.dragRotate.enable(); } catch (e) {}
+  function pintarBrujula() {
+    var b = $('#b-brujula'); if (!b) return;
+    var br = M.getBearing ? M.getBearing() : 0, pt = M.getPitch ? M.getPitch() : 0;
+    b.hidden = Math.abs(br) < 1 && pt < 1;
+    $('#brujula-aguja').style.transform = 'rotate(' + (-br) + 'deg)';
+    b.style.bottom = (parseFloat($('#b-centrar').style.bottom || '16') + 58) + 'px';
+  }
+  try { M.on('rotate', pintarBrujula); M.on('pitch', pintarBrujula); M.on('moveend', pintarBrujula); } catch (e) {}
   var yoEl = document.createElement('div'); yoEl.className = 'yo'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div>';
   var yoMk = new maplibregl.Marker({ element: yoEl }).setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
   function pinV(color) {
@@ -1080,6 +1093,7 @@
     var conUnidad = v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion');
     if (conUnidad) px += ($('#nav-pie').offsetHeight || 0) + 10;
     $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px';
+    pintarBrujula();
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
   }
 
@@ -1286,6 +1300,7 @@
     }
   });
   $('#b-centrar').addEventListener('click', centrar);
+  $('#b-brujula').addEventListener('click', function () { M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });   // vuelve el mapa derecho
   $('#b-ruta').addEventListener('click', verRuta);
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'in-d' && S.busq && S.busq.mostrada && S.busq.mostrada.length && S.busq.lista) elegirLugar(S.busq.mostrada[0]); });
 
