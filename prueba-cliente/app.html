@@ -183,6 +183,15 @@
   .taxi .v{color:#1A5CE0;font-weight:800;font-size:34px;letter-spacing:-.8px}
   .exacta{margin-top:10px;background:#FEF6DD;border-radius:14px;padding:12px 14px;font-size:14.5px}
   .btn-final{margin-top:14px;width:100%;height:60px;border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:18px;box-shadow:0 8px 20px rgba(10,15,60,.25)}
+  /* Cuadro del conductor abierto: arriba solo el mapa (como Uber); al achicarlo vuelve todo */
+  .hoja-grande .arriba-v,.hoja-grande .nav-pie,.hoja-grande #b-ruta,.hoja-grande #b-centrar,.hoja-grande #b-brujula{display:none!important}
+  .hoja-grande .ham-v{top:50px}
+  .hoja-grande .hoja{max-height:66%}
+  .h-eta{display:flex;align-items:center;gap:10px;background:#ECFDF3;border-radius:16px;padding:10px 10px 10px 14px;margin:2px 0 12px}
+  .h-eta .eta{flex:1;min-width:0}
+  .h-eta .eta b{font-size:19px;font-weight:800;color:#079455}
+  .h-eta .eta small{display:block;color:var(--gris);font-size:13px;font-weight:600}
+  .h-eta button{flex:none;height:44px;padding:0 16px;border:0;border-radius:14px;background:#12B76A;color:#fff;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -896,7 +905,8 @@
   function relleno() {
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
-    return viaje ? { top: 130, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
+    var gr = $('#pantalla').classList.contains('hoja-grande');
+    return viaje ? { top: gr ? 70 : 130, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
   }
   function ponerRuta(coords) {
     listo(function () {
@@ -1073,6 +1083,9 @@
     var p = $('#pantalla'), v = S.v, conUnidad = !!(v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion'));
     p.classList.toggle('navegando', SEG.activo && conUnidad);
     p.classList.toggle('con-carrera', conUnidad && !SEG.activo);
+    p.classList.toggle('hoja-grande', conUnidad && !SEG.activo && !$('#hoja').classList.contains('mini'));
+    var av = $('#aviso'); if (av) av.style.bottom = p.classList.contains('hoja-grande') ? (($('#hoja').offsetHeight || 0) + 12) + 'px' : '';
+    if (av) av.style.top = p.classList.contains('hoja-grande') ? 'auto' : '';
     carroEl.classList.toggle('flecha', SEG.activo && conUnidad);
     if (!conUnidad) { $('#nav-centrar').hidden = true; return; }
     var aRec = v.fase !== 'ejecucion';
@@ -1083,6 +1096,7 @@
       $('#nav-min').textContent = v.llego && aRec ? 'Llegó' : mn + ' min';
       $('#nav-info').textContent = (v.llego && aRec ? 'Tu unidad te espera afuera' : km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino'));
       $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+      if ($('#h-min')) { $('#h-min').textContent = $('#nav-min').textContent; $('#h-info').textContent = $('#nav-info').textContent; }
       return;
     }
     var top = $('#nav-top');
@@ -1114,6 +1128,7 @@
   // Espacio libre del mapa: arriba las pastillas, abajo la hoja y la barra de minutos (el carro queda en el medio de lo que se ve)
   function rellenoCarro() {
     var alto = M.getContainer().clientHeight, abajo = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 40;
+    if ($('#pantalla').classList.contains('hoja-grande')) return { top: 70, bottom: Math.min(Math.round(alto * 0.72), ($('#hoja').offsetHeight || 0) + 30), left: 40, right: 40 };
     return { top: Math.min(170, Math.round(alto * 0.22)), bottom: Math.min(Math.round(alto * 0.62), abajo), left: 40, right: 40 };
   }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
@@ -1238,6 +1253,7 @@
     }
     var c = v.cond, enCurso = v.fase === 'ejecucion';
     var tel = c.tel.replace(/\D/g, '').replace(/^0/, '593');
+    if (v.pos) h += '<div class="h-eta solo-grande"><div class="eta"><b id="h-min"></b><small id="h-info"></small></div><button id="b-nav2" class="iniciar"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Iniciar</button></div>';
     h += '<div class="cliente"><div class="foto-c">' + iniciales(c.nombre) + '</div><div class="nom"><b>' + esc(c.nombre) + '</b>' +
       '<small>' + c.calif.toFixed(1) + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg><i></i>Unidad ' + esc(c.u) + '</small></div>' +
       '<a class="circ" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></a>' +
@@ -1883,6 +1899,7 @@
   // ---------- Clics ----------
   document.addEventListener('click', function (e) {
     var t = e.target, b;
+    if (t.closest('#b-nav2')) { iniciarNav(); return; }
     if (t.closest('#ham') || t.closest('#ham-v')) { S.menu = !S.menu; render(); return; }
     if (t.closest('#velo')) { S.menu = false; render(); return; }
     if ((b = t.closest('[data-ir]'))) { if (S.v && b.getAttribute('data-ir') !== 'inicio') { aviso('Termina o cancela tu viaje para salir de esta pantalla.'); S.menu = false; render(); return; } irA(b.getAttribute('data-ir')); return; }
@@ -1935,7 +1952,14 @@
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
   (function () {
     var y0 = null, hoja = $('#hoja');
-    function poner(mini) { hoja.classList.toggle('mini', mini); setTimeout(function () { ultimaHoja = ''; render(); }, 20); }
+    function poner(mini) {
+      hoja.classList.toggle('mini', mini);
+      setTimeout(function () {
+        ultimaHoja = ''; render();
+        // El mapa se acomoda al espacio que queda libre (carro y punto de recogida a la vista)
+        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else verRuta(); }
+      }, 20);
+    }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
     hoja.addEventListener('pointerup', function (e) {
       if (y0 == null) return; var dy = e.clientY - y0; y0 = null;
