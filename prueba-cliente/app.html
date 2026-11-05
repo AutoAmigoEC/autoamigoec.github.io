@@ -735,7 +735,6 @@
   function empezarSeguimiento() {
     var v = S.v; if (!v || !v.pos) return;
     SEG.ant = null; SEG.sigue = true; SEG.fuera = 0;
-    $('#hoja').classList.add('mini'); ultimaHoja = ''; render();
     var meta = metaViaje(v);
     // Ya conocemos la ruta del viaje (la que vio al pedir): se usa al empezar el taxímetro
     if (v.fase === 'ejecucion' && v.ruta && v.ruta.length > 1) { SEG.ruta = v.ruta; SEG.meta = meta; SEG.recalc = false; SEG.margen = 45; SEG.pedido++; seguir(); }
@@ -757,15 +756,14 @@
     SEG.falta = falta;
     carro(pos, SEG.rumbo);
     if (SEG.sigue) {
-      var alto = M.getContainer().clientHeight, abajo = Math.min(Math.round(alto * 0.55), ($('#hoja').offsetHeight || 200) + 40);
-      M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 50, zoom: 16.5, duration: 900, padding: { top: Math.min(140, Math.round(alto * 0.2)), bottom: abajo, left: 20, right: 20 } });
+      // El mapa queda derecho, como antes: solo se mueve para que el carro no se salga de la vista
+      var alto = M.getContainer().clientHeight, abajo = Math.min(Math.round(alto * 0.6), ($('#hoja').offsetHeight || 200) + 30);
+      M.easeTo({ center: [pos.lng, pos.lat], duration: 900, padding: { top: Math.min(130, Math.round(alto * 0.2)), bottom: abajo, left: 30, right: 30 } });
     }
     pintarCentrar();
   }
   function pararSeguimiento() {
     SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; SEG.sigue = true; pintarCentrar();
-    $('#hoja').classList.remove('mini'); ultimaHoja = '';
-    try { M.easeTo({ pitch: 0, bearing: 0, duration: 600 }); } catch (e) { }
   }
   // "Centrar" aparece cuando el cliente movió el mapa (igual que en la app del conductor)
   function pintarCentrar() {
@@ -773,11 +771,11 @@
     var activo = !!(S.v && S.v.pos && SEG.ruta);
     b.hidden = !activo || SEG.sigue;
     b.style.bottom = (($('#hoja').offsetHeight || 0) + 14) + 'px';
-    $('#b-centrar').style.visibility = activo ? 'hidden' : '';
   }
   // Si mueve, acerca o gira el mapa con los dedos, deja de seguir el carro hasta que toque "Centrar"
   function dejarDeSeguir(e) { if (e && e.originalEvent && S.v && S.v.pos && SEG.ruta && SEG.sigue) { SEG.sigue = false; pintarCentrar(); } }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
+  ['touchstart', 'mousedown', 'wheel'].forEach(function (ev) { M.getContainer().addEventListener(ev, function () { dejarDeSeguir({ originalEvent: true }); }, { passive: true }); });
   $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarCentrar(); seguir(); });
 
   // ---------- Servicios (los mismos del panel) ----------
@@ -936,7 +934,7 @@
     $('#k-lugares').textContent = S.casa || S.trabajo ? [S.casa ? 'Casa' : '', S.trabajo ? 'Trabajo' : ''].filter(Boolean).join(' · ') : 'Casa y Trabajo';
     $('#k-lugares-sub').textContent = S.casa || S.trabajo ? 'Toca para ver tus lugares guardados' : 'Guarda tus lugares para pedir más rápido';
     yoMk.setLngLat([S.yo.lng, S.yo.lat]);
-    yoEl.style.display = v && v.fase === 'ejecucion' ? 'none' : '';   // ya va dentro del carro: solo se ve el carro
+    yoEl.style.display = v && v.cond ? 'none' : '';   // con unidad asignada: se ven el carro y el punto de recogida, no el punto verde
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
     var sec = S.pantalla !== 'inicio' && !enViaje;
     $('#seccion').hidden = !sec; $('#b-centrar').hidden = sec;
