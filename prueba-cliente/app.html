@@ -576,6 +576,40 @@
   .up-chip>span{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
   .up-chip>span.azul{background:#E6EEFF}
   .up-chip>span.gris{background:#F2F4F7}
+  /* Planifica tu viaje: medidas y letra como Uber */
+  .uplan{color:#000}
+  .uplan .up-cab{padding:44px 14px 4px}
+  .uplan .up-cab b{font-size:26px;font-weight:700;letter-spacing:-.6px;color:#000}
+  .uplan .up-pills{padding:10px 16px 18px;gap:9px}
+  .uplan .up-pill{height:41px;font-size:19px;font-weight:600;color:#000;background:#F3F3F3;padding:0 14px;gap:7px;white-space:nowrap;flex:none}
+  .uplan .up-pill svg{width:18px;height:18px}
+  .uplan .up-pill .cv{width:11px;height:11px;margin-left:4px}
+  .uplan .up-campos{margin:0 16px;border:2px solid #000;border-radius:14px;padding:2px 12px 2px 14px}
+  .uplan .up-campos .linea{padding:14px 0}
+  .uplan .up-campos .linea i{width:14px;height:14px;box-sizing:border-box;border:3.5px solid #000;border-radius:50%;background:radial-gradient(circle,#000 0 2.2px,#fff 2.6px)}
+  .uplan .up-campos .linea i.cuadro{border-radius:3px;background:radial-gradient(circle,#000 0 2.2px,#fff 2.6px)}
+  .uplan .up-campos .linea em{width:2px;background:#000}
+  .uplan .up-campos input{height:42px;font-size:20px;font-weight:600;color:#000}
+  .uplan .up-campos input::placeholder{color:#6B6B6B;font-weight:500}
+  .uplan .up-campos input:first-child{border-bottom:1px solid #E2E2E2}
+  .uplan .up-chips{padding:12px 16px 4px;gap:8px}
+  .uplan .up-chip{height:39px;border-radius:12px;border:1px solid #E2E2E2;font-size:19px;font-weight:600;color:#000;padding:0 12px 0 4px;gap:8px}
+  .uplan .up-chip>span{width:29px;height:29px;border-radius:8px}
+  .uplan .up-chip>span svg{width:17px;height:17px}
+  .uplan .up-chip>span.azul{background:#EAF1FD}
+  .uplan .up-chip>span.gris{background:#F3F3F3}
+  .uplan .up-lista{padding:4px 0 24px}
+  .uplan .ua-fila{padding:0;gap:0;border-bottom:0;align-items:stretch}
+  .uplan .ua-fila .ua-ic{width:56px;padding-top:13px;gap:4px}
+  .uplan .ua-fila .ua-ic svg{width:20px;height:20px}
+  .uplan .ua-fila .ua-ic small{font-size:16.5px;color:#6B6B6B;font-weight:500;max-width:54px;overflow:hidden;text-overflow:ellipsis}
+  .uplan .ua-fila>div{padding:12px 16px 12px 0;border-bottom:1px solid #E8E8E8}
+  .uplan .ua-fila b{font-size:20.5px;font-weight:600;color:#000;line-height:1.25;-webkit-line-clamp:1}
+  .uplan .ua-fila small{font-size:19px;font-weight:500;color:#6B6B6B;margin-top:2px;-webkit-line-clamp:1}
+  .uplan .up-fijar .ua-ic{padding-top:0;justify-content:center}
+  .uplan .up-fijar>div{display:flex;align-items:center;min-height:74px;padding-top:0;padding-bottom:0}
+  .uplan .ua-ic .circ{width:40px;height:40px;border-radius:50%;background:#F3F3F3;display:flex;align-items:center;justify-content:center}
+  .uplan .ua-ic .circ svg{width:19px;height:19px}
   .ua-ic .redondo{width:36px;height:36px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center}
   .up-pill.on{background:var(--navy);color:#fff}
   .up-campos{flex:none;margin:0 18px;border:2px solid var(--texto);border-radius:16px;display:flex;gap:12px;padding:6px 12px;position:relative}
@@ -1307,6 +1341,13 @@
     return '<button class="u-fila ua-fila" ' + (attr || 'data-ua') + '="' + i + '"><span class="ua-ic">' + ic + '<small>' + textoKm(x) + '</small></span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
   }
   var IC_FLECHA = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>';
+  var ICO = (function () { var a = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+    return { estrella: a + '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>',
+      reloj: a + '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+      pin: a + '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
+      casa: a.replace('#000', '#1570EF') + '<path d="M4 11l8-6.5 8 6.5V20h-5.5v-5h-5v5H4z"/></svg>',
+      trabajo: a.replace('#000', '#1570EF') + '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5h6v2M3.5 12.5h17"/></svg>',
+      yo: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#1570EF"/><circle cx="12" cy="12" r="8.5" fill="none" stroke="#1570EF" stroke-opacity=".3" stroke-width="3"/></svg>' }; })();
   var IC_LAPIZ = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
   function chico(ic) { return ic.replace('width="20" height="20"', 'width="16" height="16"'); }
   function pintarUbic() {
@@ -1529,12 +1570,12 @@
     var lista = P.lista, base = !lista;
     if (base) {
       lista = []; var vistos = {}, mete = function (x) { if (!x || vistos[x.nombre]) return; vistos[x.nombre] = 1; lista.push(x); };
-      if (P.campo === 'o') lista.push({ nombre: 'Mi ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng, _ic: IC.yo, _yo: true });
-      lugaresG().forEach(function (x) { mete(Object.assign({ _ic: IC.estrella }, x)); });
-      var fav = leer('aac_favorito', null); if (fav) mete(Object.assign({ _ic: IC.estrella }, fav));
-      recientes().forEach(function (x) { mete(Object.assign({ _ic: /aeropuerto/i.test(x.nombre) ? IC.avion : IC.pin }, x)); });
+      if (P.campo === 'o') lista.push({ nombre: 'Mi ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng, _ic: ICO.yo, _yo: true });
+      lugaresG().forEach(function (x) { mete(Object.assign({ _ic: ICO.estrella }, x)); });
+      var fav = leer('aac_favorito', null); if (fav) mete(Object.assign({ _ic: ICO.estrella }, fav));
+      recientes().forEach(function (x) { mete(Object.assign({ _ic: ICO.reloj }, x)); });
       lista = lista.slice(0, 8);
-    } else lista = lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
+    } else lista = lista.map(function (x) { return Object.assign({ _ic: ICO.pin }, x); });
     P.mostrada = lista;
     var noOtra = AASeg.paraOtraPermitido({});
     var flechita = '<svg class="cv" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
@@ -1549,10 +1590,10 @@
         '<input id="up-d" class="' + (P.campo === 'd' ? 'act' : '') + '" placeholder="¿A dónde vas?" autocomplete="off" value="' + esc(P.campo === 'd' ? P.texto : (P.d ? P.d.nombre : '')) + '">' +
       '</div></div>' +
       (P.para === 'otra' && noOtra ? '<div style="margin:10px 18px 0" class="smotivo">' + esc(noOtra) + '</div>' : '') +
-      (base ? '<div class="up-chips">' + chip('up-casa', chico(IC.casa), S.casa ? 'Casa' : 'Agregar casa', 'azul') + chip('up-trabajo', chico(IC.trabajo), S.trabajo ? 'Trabajo' : 'Agregar trabajo', 'azul') + chip('up-guardados', chico(IC.estrella), 'Lugares guardados', 'gris') + '</div>' : '') +
+      (base ? '<div class="up-chips">' + chip('up-casa', ICO.casa, S.casa ? 'Casa' : 'Agregar casa', 'azul') + chip('up-trabajo', ICO.trabajo, S.trabajo ? 'Trabajo' : 'Agregar trabajo', 'azul') + chip('up-guardados', ICO.estrella, 'Lugares guardados', 'gris') + '</div>' : '') +
       '<div class="up-lista">' +
-        (P.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) { return x._yo ? filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-up-lugar').replace('<span class="chev">›</span>', '') : filaUA(x, i, x._ic, 'data-up-lugar'); }).join('') : '<div class="vacio">No encontramos ese lugar. Prueba con otro nombre (urbanización, centro comercial, avenida).</div>') +
-        (base ? '<button class="u-fila ua-fila" id="up-fijar"><span class="ua-ic"><span class="redondo">' + IC.pin + '</span><small></small></span><div><b>Fijar la ubicación en el mapa</b></div></button>' : '') +
+        (P.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) { return filaUA(x, i, x._ic, 'data-up-lugar'); }).join('') : '<div class="vacio">No encontramos ese lugar. Prueba con otro nombre (urbanización, centro comercial, avenida).</div>') +
+        (base ? '<button class="u-fila ua-fila up-fijar" id="up-fijar"><span class="ua-ic"><span class="circ">' + ICO.pin + '</span></span><div><b>Fijar la ubicación en el mapa</b></div></button>' : '') +
       '</div>';
     if (h !== ultimoPlan) {
       var foco = document.activeElement && document.activeElement.id, pos = foco && $('#' + foco) ? $('#' + foco).selectionStart : null;
