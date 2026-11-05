@@ -190,6 +190,8 @@
   /* Con el taxímetro iniciado y el cuadro completo: sin el recuadro de la instrucción */
   .taxi-on.navegando.hoja-grande .nav-top{display:none!important}
   .hoja-grande .hoja{max-height:66%}
+  /* Con el taxímetro iniciado: al achicar el cuadro, lo de arriba aparece suave */
+  .taxi-on:not(.hoja-grande) .arriba-v,.taxi-on:not(.hoja-grande) .ham-v,.taxi-on:not(.hoja-grande) #b-ruta,.taxi-on:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -1965,12 +1967,26 @@
     var y0 = null, hoja = $('#hoja');
     function poner(mini) {
       if (!mini && hoja.classList.contains('mini')) { agrandar(); return; }
+      if (mini && !hoja.classList.contains('mini') && S.v && S.v.fase === 'ejecucion') { achicarSuave(); return; }
       hoja.classList.toggle('mini', mini);
       setTimeout(function () {
         ultimaHoja = ''; render();
         // El mapa se acomoda al espacio libre: el carro y el punto de recogida quedan a la vista
         if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(600); } else verRuta(); }
       }, 20);
+    }
+    // Con el taxímetro iniciado: achicar también es suave (el cuadro baja deslizándose y el mapa se mueve con calma)
+    function achicarSuave() {
+      var antes = hoja.offsetHeight;
+      hoja.classList.add('mini'); ultimaHoja = ''; render();
+      var despues = hoja.offsetHeight, baja = antes - despues, pie = $('#nav-pie');
+      hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
+      pie.style.transition = 'none'; pie.style.transform = 'translateY(' + (-baja) + 'px)';
+      void hoja.offsetHeight;
+      hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
+      pie.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; pie.style.transform = '';
+      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; pie.style.transition = ''; }, 500);
+      if (S.v && S.v.pos && !SEG.activo && SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
     }
     function agrandar() {
       var antes = hoja.offsetHeight;
