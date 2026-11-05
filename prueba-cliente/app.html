@@ -465,6 +465,62 @@
   .brujula[hidden]{display:none}
   .etiqueta.recalc{background:#B54708;margin-top:12px;margin-left:6px}
   .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
+
+  /* ---------- Inicio (estilo de las apps de transporte: solo viajes) ---------- */
+  .uinicio{position:absolute;inset:0;z-index:31;background:#fff;overflow:auto;padding:52px 18px 110px;display:flex;flex-direction:column;gap:22px}
+  .uinicio[hidden],.uplan[hidden]{display:none}
+  .con-uinicio .barra{z-index:32}
+  .uinicio>*{flex:none}
+  .u-cab{display:flex;align-items:center;justify-content:space-between}
+  .u-marca{font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--navy)}.u-marca span{color:var(--rojo)}
+  .u-av{width:42px;height:42px;border-radius:50%;border:0;background:var(--navy);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+  .u-av img{width:100%;height:100%;object-fit:cover}
+  .u-buscar{display:flex;align-items:center;gap:12px;height:60px;border:0;border-radius:999px;background:#EEF0F4;padding:0 20px;font:inherit;font-size:19px;font-weight:700;color:var(--texto);text-align:left;width:100%}
+  .u-buscar svg{flex:none}
+  .u-lista{display:flex;flex-direction:column}
+  .u-fila{display:flex;align-items:center;gap:14px;padding:12px 0;border:0;background:none;font:inherit;text-align:left;width:100%;color:var(--texto);border-bottom:1px solid #EEF0F4}
+  .u-fila:last-child{border-bottom:0}
+  .u-fila .ic{width:40px;height:40px;border-radius:50%;background:#EEF0F4;display:flex;align-items:center;justify-content:center;flex:none}
+  .u-fila b{display:block;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .u-fila small{display:block;color:var(--gris);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .u-fila>div{min-width:0;flex:1}
+  .u-tit{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .u-tit h3{margin:0;font-size:20px;font-weight:800}
+  .u-sug{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .u-sug button{border:0;background:#EEF0F4;border-radius:16px;padding:12px 4px 10px;font:inherit;font-size:13px;font-weight:700;color:var(--texto);display:flex;flex-direction:column;align-items:center;gap:6px}
+  .u-sug button .dib{height:40px;display:flex;align-items:center;justify-content:center}
+  .u-promo{border-radius:20px;background:linear-gradient(135deg,#141A52,#0A0F3C);color:#fff;padding:18px;display:flex;align-items:center;gap:14px}
+  .u-promo b{display:block;font-size:17px}.u-promo small{display:block;color:#C9CDE6;font-size:13.5px;line-height:1.4;margin-top:3px}
+  .u-promo .esc{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex:none;font-size:30px}
+  /* Planifica tu viaje */
+  .uplan{position:absolute;inset:0;z-index:40;background:#fff;display:flex;flex-direction:column;animation:entra .15s ease}
+  .up-cab{flex:none;display:flex;align-items:center;gap:8px;padding:48px 12px 6px}
+  .up-cab button{width:44px;height:44px;border:0;border-radius:50%;background:none;font-size:30px;line-height:1;color:var(--texto)}
+  .up-cab b{flex:1;text-align:center;font-size:18px;margin-right:44px}
+  .up-pills{flex:none;display:flex;gap:8px;padding:6px 18px 12px}
+  .up-pill{height:38px;border:0;border-radius:999px;background:#EEF0F4;font:inherit;font-size:14.5px;font-weight:700;color:var(--texto);padding:0 14px;display:flex;align-items:center;gap:7px}
+  .up-pill.on{background:var(--navy);color:#fff}
+  .up-campos{flex:none;margin:0 18px;border:2px solid var(--texto);border-radius:16px;display:flex;gap:12px;padding:6px 12px;position:relative}
+  .up-campos .linea{display:flex;flex-direction:column;align-items:center;padding:18px 0}
+  .up-campos .linea i{display:block;width:9px;height:9px;border-radius:50%;background:var(--texto)}
+  .up-campos .linea i.cuadro{border-radius:2px}
+  .up-campos .linea em{display:block;width:2px;flex:1;background:var(--texto);margin:4px 0}
+  .up-campos .ins{flex:1;display:flex;flex-direction:column}
+  .up-campos input{height:46px;border:0;outline:none;font:inherit;font-size:16.5px;background:none;color:var(--texto);padding:0 2px}
+  .up-campos input:first-child{border-bottom:1px solid var(--linea)}
+  .up-campos input.act{font-weight:700}
+  .up-lista{flex:1;overflow:auto;padding:8px 18px 24px}
+  .up-lista .vacio{padding:24px 4px;color:var(--gris);text-align:center}
+  /* Fijar la ubicación en el mapa */
+  .fijando .mapa-caja{position:absolute;inset:0;margin:0;z-index:36}
+  .ufijar{position:absolute;inset:0;z-index:37;pointer-events:none}
+  .ufijar[hidden]{display:none}
+  .ufijar .pin{position:absolute;left:50%;top:calc(50% - 60px);transform:translate(-50%,-100%);filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+  .ufijar .atras{pointer-events:auto;position:absolute;left:14px;top:48px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:28px;line-height:1}
+  .ufijar .caja{pointer-events:auto;position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px 26px;box-shadow:0 -8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column;gap:12px}
+  .ufijar .caja h3{margin:0;font-size:19px}
+  .ufijar .caja .lugar{display:flex;gap:10px;align-items:center;background:#F6F7FB;border-radius:14px;padding:12px}
+  .ufijar .caja .lugar b{display:block}.ufijar .caja .lugar small{color:var(--gris)}
 </style>
 </head>
 <body>
@@ -539,6 +595,12 @@
       <button data-ir="perfil"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>Perfil</button>
     </nav>
 
+    <!-- Inicio (estilo de las apps de transporte) -->
+    <div class="uinicio" id="uinicio" hidden></div>
+    <!-- Planifica tu viaje -->
+    <div class="uplan" id="uplan" hidden></div>
+    <!-- Fijar en el mapa -->
+    <div class="ufijar" id="ufijar" hidden></div>
     <!-- Secciones -->
     <div class="seccion" id="seccion" hidden><div class="cuerpo" id="seccion-cuerpo"></div></div>
 
@@ -1102,6 +1164,9 @@
     yoMk.setLngLat([S.yo.lng, S.yo.lat]);
     yoEl.style.display = v && v.cond ? 'none' : '';   // con unidad asignada: se ven el carro y el punto de recogida, no el punto verde
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
+    var enInicio = S.pantalla === 'inicio' && !enViaje && !S.fijar;
+    $('#uinicio').hidden = !enInicio; p.classList.toggle('con-uinicio', enInicio); if (enInicio) pintarInicio();
+    pintarPlan(); pintarFijar();
     var sec = S.pantalla !== 'inicio' && !enViaje;
     $('#seccion').hidden = !sec; $('#b-centrar').hidden = sec;
     if (sec) { var hs = seccionHTML(S.pantalla); if (hs !== ultimaSec) { var foco = document.activeElement && document.activeElement.id; $('#seccion-cuerpo').innerHTML = hs; ultimaSec = hs; if (foco && $('#' + foco)) { var el = $('#' + foco); el.focus(); el.setSelectionRange && el.setSelectionRange(el.value.length, el.value.length); } } } else ultimaSec = '';
@@ -1125,6 +1190,168 @@
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
   }
 
+
+  // ---------- Inicio y "Planifica tu viaje" (como las apps de transporte, solo viajes) ----------
+  var IC = {
+    lupa: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+    reloj: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    casa: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg>',
+    trabajo: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M9 4h6a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4V5a1 1 0 0 1 1-1zm1 3h4V6h-4z"/></svg>',
+    pin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+    mapa: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linejoin="round"><path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>',
+    persona: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>',
+    yo: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>'
+  };
+  function recientes() { var r = leer('aac_recientes', null); return r && r.length ? r : SUGERIDOS.slice(0, 3); }
+  function guardarReciente(p) {
+    var r = (leer('aac_recientes', []) || []).filter(function (x) { return x.nombre !== p.nombre; });
+    r.unshift({ nombre: p.nombre, ref: p.ref || '', lat: p.lat, lng: p.lng }); guardar('aac_recientes', r.slice(0, 8));
+  }
+  function filaLugar(x, i, ic) {
+    return '<button class="u-fila" data-u-lugar="' + i + '"><span class="ic">' + ic + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
+  }
+  var ultimoInicio = '';
+  function pintarInicio() {
+    var pf = S.perfil || { nombre: '' }, lista = [];
+    if (S.casa) lista.push(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
+    if (S.trabajo) lista.push(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
+    lista = lista.concat(recientes().slice(0, S.casa || S.trabajo ? 2 : 3).map(function (x) { return Object.assign({ _ic: IC.reloj }, x); }));
+    S.listaInicio = lista;
+    var carro = '<svg width="54" height="30" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
+    var h = '<div class="u-cab"><div class="u-marca">Auto<span>Amigo</span></div><button class="u-av" data-ir="perfil" aria-label="Mi perfil">' +
+      (pf.foto ? '<img src="' + pf.foto + '" alt="">' : esc(iniciales(pf.nombre))) + '</button></div>' +
+      '<button class="u-buscar" id="u-buscar">' + IC.lupa + '¿A dónde vas?</button>' +
+      '<div class="u-lista">' + lista.map(function (x, i) { return filaLugar(x, i, x._ic); }).join('') + '</div>' +
+      '<div><div class="u-tit"><h3>Sugerencias</h3></div><div class="u-sug">' +
+        '<button id="u-s-viaje"><span class="dib">' + carro + '</span>Viaje</button>' +
+        '<button id="u-s-otra"><span class="dib"><svg width="34" height="34" viewBox="0 0 24 24" fill="#0A0F3C"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 19.5c0-3.8 3-6 6.5-6s6.5 2.2 6.5 6z"/><circle cx="17" cy="9" r="2.8" fill="#E5252A"/><path d="M14.8 13.6c.6-.2 1.4-.3 2.2-.3 2.8 0 5 1.8 5 4.8h-5" fill="#E5252A"/></svg></span>Para otra persona</button>' +
+        '<button id="u-s-casa"><span class="dib"><svg width="32" height="32" viewBox="0 0 24 24" fill="#0A0F3C"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg></span>Casa</button>' +
+        '<button id="u-s-trabajo"><span class="dib"><svg width="32" height="32" viewBox="0 0 24 24" fill="#0A0F3C"><path d="M9 4h6a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4V5a1 1 0 0 1 1-1zm1 3h4V6h-4z"/></svg></span>Trabajo</button>' +
+      '</div></div>' +
+      '<div class="u-promo"><span class="esc">🛡️</span><div><b>Viaja tranquilo</b><small>Todos nuestros conductores verifican su identidad, su camisa y su carro antes de cada turno.</small></div></div>' +
+      '<div class="u-promo" style="background:#F6F7FB;color:var(--texto)"><span class="esc" style="background:#fff">🚕</span><div><b>Taxímetro justo</b><small style="color:var(--gris)">Pagas lo que marca el taxímetro, en efectivo. Sin tarifas sorpresa.</small></div></div>';
+    if (h !== ultimoInicio) { $('#uinicio').innerHTML = h; ultimoInicio = h; }
+  }
+  // Planifica tu viaje
+  function abrirPlan(opc) {
+    opc = opc || {};
+    S.plan = { o: null, d: null, campo: 'd', texto: '', textoO: '', lista: null, para: opc.para || 'yo', cargando: false };
+    render(); setTimeout(function () { var i = $('#up-d'); if (i) i.focus(); }, 80);
+  }
+  function cerrarPlan() { S.plan = null; render(); }
+  var ultimoPlan = '';
+  function pintarPlan() {
+    var P = S.plan, el = $('#uplan');
+    el.hidden = !P || !!S.fijar; if (!P) { ultimoPlan = ''; return; }
+    var lista = P.lista, base = !lista;
+    if (base) {
+      lista = [];
+      if (P.campo === 'o') lista.push({ nombre: 'Mi ubicación actual', ref: S.yo.nombre || '', lat: S.yo.lat, lng: S.yo.lng, _ic: IC.yo, _yo: true });
+      if (S.casa) lista.push(Object.assign({ etq: 'Casa', _ic: IC.casa }, S.casa));
+      if (S.trabajo) lista.push(Object.assign({ etq: 'Trabajo', _ic: IC.trabajo }, S.trabajo));
+      lista = lista.concat(recientes().map(function (x) { return Object.assign({ _ic: IC.reloj }, x); }));
+    } else lista = lista.map(function (x) { return Object.assign({ _ic: IC.pin }, x); });
+    P.mostrada = lista;
+    var noOtra = AASeg.paraOtraPermitido({});
+    var h = '<div class="up-cab"><button id="up-atras" aria-label="Atrás">‹</button><b>Planifica tu viaje</b></div>' +
+      '<div class="up-pills"><span class="up-pill">' + IC.reloj.replace(/#101828/g, 'currentColor').replace('width="20" height="20"', 'width="16" height="16"') + 'Ahora</span>' +
+      '<button class="up-pill' + (P.para === 'otra' ? ' on' : '') + '" id="up-para">' + IC.persona + (P.para === 'otra' ? 'Para otra persona' : 'Para mí') + ' ▾</button></div>' +
+      '<div class="up-campos"><div class="linea"><i></i><em></em><i class="cuadro"></i></div><div class="ins">' +
+        '<input id="up-o" class="' + (P.campo === 'o' ? 'act' : '') + '" placeholder="Punto de recogida" autocomplete="off" value="' + esc(P.campo === 'o' ? P.textoO : (P.o ? P.o.nombre : 'Mi ubicación actual')) + '">' +
+        '<input id="up-d" class="' + (P.campo === 'd' ? 'act' : '') + '" placeholder="¿A dónde vas?" autocomplete="off" value="' + esc(P.campo === 'd' ? P.texto : (P.d ? P.d.nombre : '')) + '">' +
+      '</div></div>' +
+      (P.para === 'otra' && noOtra ? '<div style="margin:10px 18px 0" class="smotivo">' + esc(noOtra) + '</div>' : '') +
+      '<div class="up-lista">' +
+        (base ? '<button class="u-fila" id="up-fijar"><span class="ic">' + IC.mapa + '</span><div><b>Fijar la ubicación en el mapa</b><small>Mueve el mapa hasta el punto exacto</small></div></button>' : '') +
+        (P.cargando ? '<div class="vacio">Buscando…</div>' : lista.length ? lista.map(function (x, i) { return filaLugar(x, i, x._ic).replace('data-u-lugar', 'data-up-lugar'); }).join('') : '<div class="vacio">No encontramos ese lugar. Prueba con otro nombre (urbanización, centro comercial, avenida).</div>') +
+      '</div>';
+    if (h !== ultimoPlan) {
+      var foco = document.activeElement && document.activeElement.id, pos = foco && $('#' + foco) ? $('#' + foco).selectionStart : null;
+      el.innerHTML = h; ultimoPlan = h;
+      if (foco && $('#' + foco)) { var f = $('#' + foco); f.focus(); try { f.setSelectionRange(pos, pos); } catch (e) {} }
+    }
+  }
+  var tPlan = null;
+  document.addEventListener('input', function (e) {
+    var P = S.plan; if (!P || (e.target.id !== 'up-d' && e.target.id !== 'up-o')) return;
+    P.campo = e.target.id === 'up-o' ? 'o' : 'd';
+    if (P.campo === 'o') P.textoO = e.target.value; else P.texto = e.target.value;
+    var q = e.target.value.trim(); clearTimeout(tPlan);
+    if (q.length < 3) { P.lista = null; P.cargando = false; pintarPlan(); return; }
+    P.cargando = true; pintarPlan();
+    tPlan = setTimeout(function () { buscarLugares(q).then(function (r) { if (S.plan !== P) return; P.cargando = false; P.lista = r; pintarPlan(); }).catch(function () { P.cargando = false; P.lista = []; pintarPlan(); }); }, 500);
+  });
+  document.addEventListener('focusin', function (e) {
+    var P = S.plan; if (!P || (e.target.id !== 'up-d' && e.target.id !== 'up-o')) return;
+    var c = e.target.id === 'up-o' ? 'o' : 'd'; if (P.campo === c) return;
+    P.campo = c; P.lista = null; P.cargando = false;
+    if (c === 'o') P.textoO = ''; else P.texto = P.d ? P.d.nombre : '';
+    pintarPlan(); setTimeout(function () { var i = $('#up-' + c); if (i) { i.focus(); if (c === 'o') i.select(); } }, 20);
+  });
+  function elegirEnPlan(x) {
+    var P = S.plan, p = { nombre: x._yo ? (S.yo.nombre || 'Mi ubicación') : x.nombre, ref: x._yo ? 'Tu ubicación' : (x.ref || ''), lat: x.lat, lng: x.lng };
+    if (P.campo === 'o') { P.o = x._yo ? null : p; P.campo = 'd'; P.lista = null; P.texto = P.d ? P.d.nombre : ''; pintarPlan(); setTimeout(function () { var i = $('#up-d'); if (i) i.focus(); }, 30); if (!P.d) return; }
+    else P.d = p;
+    if (!P.d) return;
+    var o = P.o || { nombre: S.yo.nombre, ref: 'Tu ubicación', lat: S.yo.lat, lng: S.yo.lng }, para = P.para;
+    guardarReciente(P.d); S.plan = null; ultimoInicio = '';
+    cotizar(o, P.d);
+    if (para === 'otra' && S.v && !AASeg.paraOtraPermitido(S.v)) { S.v.otra = { nombre: '', tel: '' }; ultimaHoja = ''; render(); }
+  }
+  // Fijar la ubicación en el mapa
+  var tRev = null;
+  function abrirFijar() {
+    var P = S.plan; S.fijar = { campo: P ? P.campo : 'd', lugar: null }; render();
+    $('#pantalla').classList.add('fijando');
+    setTimeout(function () { M.resize(); M.jumpTo({ center: [S.yo.lng, S.yo.lat], zoom: 16, bearing: 0, pitch: 0 }); nombrarCentro(); }, 30);
+  }
+  function pintarFijar() {
+    var F = S.fijar, el = $('#ufijar'); el.hidden = !F; if (!F) return;
+    var l = F.lugar;
+    el.innerHTML = '<div class="pin">' + ICONO_PIN(F.campo === 'o' ? '#E5252A' : '#1570EF').replace('width="26" height="32"', 'width="44" height="56"') + '</div>' +
+      '<button class="atras" id="uf-atras" aria-label="Atrás">‹</button>' +
+      '<div class="caja"><h3>' + (F.campo === 'o' ? 'Fija tu punto de recogida' : 'Fija tu destino') + '</h3>' +
+      '<div class="lugar">' + IC.pin + '<div><b>' + esc(l ? l.nombre : 'Buscando la dirección…') + '</b><br><small>' + esc(l ? l.ref : '') + '</small></div></div>' +
+      '<button class="btn-final" id="uf-ok" style="margin-top:0"' + (l ? '' : ' disabled') + '>Confirmar</button></div>';
+  }
+  function nombrarCentro() {
+    if (!S.fijar) return;
+    var c = M.getCenter(); S.fijar.lugar = null; pintarFijar(); clearTimeout(tRev);
+    tRev = setTimeout(function () {
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&zoom=17&accept-language=es&lat=' + c.lat + '&lon=' + c.lng)
+        .then(function (r) { return r.json(); }).then(function (j) {
+          if (!S.fijar) return; var p = (j.display_name || '').split(',');
+          S.fijar.lugar = { nombre: (j.address && (j.address.road || j.address.neighbourhood || j.address.suburb)) || p[0] || 'Punto en el mapa', ref: p.slice(1, 3).join(',').trim(), lat: c.lat, lng: c.lng }; pintarFijar();
+        }).catch(function () { if (!S.fijar) return; S.fijar.lugar = { nombre: 'Punto en el mapa', ref: c.lat.toFixed(5) + ', ' + c.lng.toFixed(5), lat: c.lat, lng: c.lng }; pintarFijar(); });
+    }, 450);
+  }
+  try { M.on('moveend', function () { if (S.fijar) nombrarCentro(); }); } catch (e) {}
+  function cerrarFijar(lugar) {
+    var F = S.fijar; S.fijar = null; $('#pantalla').classList.remove('fijando'); setTimeout(function () { M.resize(); }, 30);
+    if (lugar && S.plan) { S.plan.campo = F.campo; elegirEnPlan(lugar); } else render();
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target, b;
+    if (t.closest('#u-buscar') || t.closest('#u-s-viaje')) { abrirPlan(); return; }
+    if (t.closest('#u-s-otra')) { var no = AASeg.paraOtraPermitido({}); if (no) { aviso(no); return; } abrirPlan({ para: 'otra' }); return; }
+    if (t.closest('#u-s-casa') || t.closest('#u-s-trabajo')) {
+      var k = t.closest('#u-s-casa') ? 'casa' : 'trabajo';
+      if (S[k]) { var x = S[k]; guardarReciente(x); cotizar({ nombre: S.yo.nombre, ref: 'Tu ubicación', lat: S.yo.lat, lng: S.yo.lng }, { nombre: x.nombre, ref: x.ref || '', lat: x.lat, lng: x.lng }); }
+      else abrirBuscar(k);
+      return;
+    }
+    if ((b = t.closest('[data-u-lugar]'))) { var y = S.listaInicio[+b.getAttribute('data-u-lugar')]; guardarReciente(y); cotizar({ nombre: S.yo.nombre, ref: 'Tu ubicación', lat: S.yo.lat, lng: S.yo.lng }, { nombre: y.nombre, ref: y.ref || '', lat: y.lat, lng: y.lng }); return; }
+    if (t.closest('#up-atras')) { cerrarPlan(); return; }
+    if (t.closest('#up-para')) {
+      var P = S.plan; if (P.para === 'otra') { P.para = 'yo'; pintarPlan(); return; }
+      var no2 = AASeg.paraOtraPermitido({}); if (no2) { aviso(no2); return; }
+      P.para = 'otra'; pintarPlan(); aviso('Al confirmar, escribe el nombre y el celular de quien viaja.'); return;
+    }
+    if ((b = t.closest('[data-up-lugar]'))) { elegirEnPlan(S.plan.mostrada[+b.getAttribute('data-up-lugar')]); return; }
+    if (t.closest('#up-fijar')) { abrirFijar(); return; }
+    if (t.closest('#uf-atras')) { cerrarFijar(null); return; }
+    if (t.closest('#uf-ok')) { if (S.fijar && S.fijar.lugar) cerrarFijar(S.fijar.lugar); return; }
+  });
   // ---------- Pedir un viaje ----------
   function abrirBuscar(guardarComo) { S.busq = { texto: '', lista: null, guardar: guardarComo || null, o: null }; irA('buscar'); setTimeout(function () { var i = $('#in-d'); if (i) i.focus(); }, 60); }
   var tBusq = null;
@@ -1286,7 +1513,7 @@
     if (t.closest('#ham') || t.closest('#ham-v')) { S.menu = !S.menu; render(); return; }
     if (t.closest('#velo')) { S.menu = false; render(); return; }
     if ((b = t.closest('[data-ir]'))) { if (S.v && b.getAttribute('data-ir') !== 'inicio') { aviso('Termina o cancela tu viaje para salir de esta pantalla.'); S.menu = false; render(); return; } irA(b.getAttribute('data-ir')); return; }
-    if (t.closest('#b-pedir')) { abrirBuscar(); return; }
+    if (t.closest('#b-pedir')) { abrirPlan(); return; }
     if (t.closest('#campana')) { irA('notificaciones'); return; }
     if (t.closest('#b-ubic')) { centrar(); return; }
     if ((b = t.closest('[data-lugar]'))) { elegirLugar(S.busq.mostrada[+b.getAttribute('data-lugar')]); return; }
