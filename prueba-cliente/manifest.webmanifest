@@ -1,0 +1,14 @@
+{
+ "name": "AutoAmigo Cliente (prueba)",
+ "short_name": "AA Cliente",
+ "start_url": "app.html",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "portrait",
+ "background_color": "#0A0F3C",
+ "theme_color": "#0A0F3C",
+ "icons": [
+  { "src": "../app/img/icono-192.png", "sizes": "192x192", "type": "image/png" },
+  { "src": "../app/img/icono-512.png", "sizes": "512x512", "type": "image/png" }
+ ]
+}

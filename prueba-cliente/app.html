@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- Instalable en la pantalla de inicio (pantalla completa, igual que la app del conductor) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../app/img/icono-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AA Cliente">
+<meta name="theme-color" content="#0A0F3C">
 <title>AutoAmigo Cliente · Prueba de pantallas</title>
 <link rel="icon" href="../logo.png">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
@@ -692,7 +700,7 @@
   }
   var carroEl = document.createElement('div'); carroEl.className = 'carro-mapa';
   carroEl.innerHTML = '<svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="18" fill="#fff" stroke="#E4E7EC"/><g class="g"><rect x="12" y="6" width="14" height="26" rx="5" fill="#0A0F3C"/><rect x="14" y="10" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="14" y="23" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="12.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="22.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/></g></svg><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
-  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map' }), carroEnMapa = false;
+  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map', pitchAlignment: 'viewport' }), carroEnMapa = false;
   function relleno() {
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
@@ -739,7 +747,7 @@
   // Cada ubicación nueva del conductor: el carro avanza por la calle, la ruta que ya pasó se borra,
   // se muestra la siguiente instrucción (gira a la derecha…) y si se va por otra calle se recalcula la ruta.
   // Con "Iniciar" el mapa sigue al carro igual que en la navegación del conductor; con "Salir" vuelve a la vista normal.
-  var SEG = window.__SEG = { zoom: 15.8, activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
+  var SEG = window.__SEG = { activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: 0, llego: false, falta: 0 };
   var DIRS = { 'right': 'a la derecha', 'left': 'a la izquierda', 'slight right': 'ligeramente a la derecha', 'slight left': 'ligeramente a la izquierda', 'sharp right': 'cerrado a la derecha', 'sharp left': 'cerrado a la izquierda', 'straight': 'recto', 'uturn': 'en U' };
   var GIROS = { 'straight': 0, 'slight right': 35, 'right': 90, 'sharp right': 135, 'uturn': 180, 'sharp left': -135, 'left': -90, 'slight left': -35 };
   var ORD = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
@@ -848,7 +856,7 @@
     while (SEG.paso < SEG.pasos.length - 1 && metrosEntre(pos, { lat: SEG.pasos[SEG.paso].loc[1], lng: SEG.pasos[SEG.paso].loc[0] }) < 20) SEG.paso++;
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
     carro(pos, SEG.rumbo);
-    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 55, zoom: SEG.zoom, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
+    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 55, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
     pintarNav();
   }
   function pintarNav() {
@@ -890,8 +898,6 @@
   // Si mueves o acercas el mapa con los dedos, deja de seguir el carro hasta que toques "Centrar"
   function dejarDeSeguir(e) { if (SEG.activo && e && e.originalEvent && SEG.sigue) { SEG.sigue = false; pintarNav(); } }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  // Si acerca o aleja con los dedos, "Centrar" respeta ese acercamiento
-  try { M.on('zoomend', function (e) { if (SEG.activo && e && e.originalEvent) SEG.zoom = Math.max(13, Math.min(18, M.getZoom())); }); } catch (er) {}
   $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); });
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
