@@ -475,14 +475,30 @@
   .u-marca{font-size:28px;font-weight:800;letter-spacing:-.8px;color:var(--navy)}.u-marca span{color:var(--rojo)}
   .u-av{width:42px;height:42px;border-radius:50%;border:0;background:var(--navy);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
   .u-av img{width:100%;height:100%;object-fit:cover}
-  .u-buscar{display:flex;align-items:center;gap:12px;height:60px;border:0;border-radius:999px;background:#EEF0F4;padding:0 20px;font:inherit;font-size:19px;font-weight:700;color:var(--texto);text-align:left;width:100%}
+  .u-buscar{display:flex;align-items:center;gap:12px;height:66px;border:1.5px solid #E4E7EC;border-radius:999px;background:#fff;box-shadow:0 4px 14px rgba(16,24,40,.08);padding:0 8px 0 20px;width:100%}
   .u-buscar svg{flex:none}
-  .u-lista{display:flex;flex-direction:column}
-  .u-fila{display:flex;align-items:center;gap:14px;padding:12px 0;border:0;background:none;font:inherit;text-align:left;width:100%;color:var(--texto);border-bottom:1px solid #EEF0F4}
+  .u-buscar .q{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:20px;font-weight:600;color:#475467;text-align:left;height:100%;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .u-tarde{flex:none;height:48px;border:0;border-radius:999px;background:#F2F4F7;font:inherit;font-size:15px;font-weight:700;color:var(--texto);padding:0 14px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .u-tarde.on{background:var(--navy);color:#fff}
+  .u-lista{display:flex;flex-direction:column;border:1.5px solid #E4E7EC;border-radius:20px;padding:0 0 0 14px;background:#fff}
+  .u-fila{display:flex;align-items:center;gap:14px;padding:16px 14px 16px 0;border:0;background:none;font:inherit;text-align:left;width:100%;color:var(--texto);border-bottom:1px solid #EEF0F4}
   .u-fila:last-child{border-bottom:0}
-  .u-fila .ic{width:40px;height:40px;border-radius:50%;background:#EEF0F4;display:flex;align-items:center;justify-content:center;flex:none}
-  .u-fila b{display:block;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .u-fila small{display:block;color:var(--gris);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .u-fila .ic{width:44px;height:44px;border-radius:12px;background:#F2F4F7;display:flex;align-items:center;justify-content:center;flex:none}
+  .u-fila b{display:block;font-size:17.5px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .u-fila small{display:block;color:var(--gris);font-size:15px;line-height:1.3;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .u-fila .chev{flex:none;color:#98A2B3;font-size:22px}
+  .up-lista .u-fila{padding-right:0}
+  .up-lista .u-fila .chev{display:none}
+  /* Programar (más tarde) */
+  .u-hojita{position:absolute;inset:0;z-index:45;background:rgba(10,15,60,.45);display:flex;align-items:flex-end;animation:entra .15s ease}
+  .u-hojita[hidden]{display:none}
+  .u-hojita .caja{width:100%;background:#fff;border-radius:24px 24px 0 0;padding:22px 18px 28px;display:flex;flex-direction:column;gap:12px}
+  .u-hojita h3{margin:0;font-size:22px}
+  .u-hojita p{margin:0;color:var(--gris);font-size:14.5px}
+  .u-hojita .dias{display:flex;gap:8px;overflow:auto}
+  .u-hojita .dias button{flex:none;border:1.5px solid var(--linea);background:#fff;border-radius:14px;padding:10px 14px;font:inherit;font-weight:700;font-size:15px;color:var(--texto)}
+  .u-hojita .dias button.on{border-color:var(--navy);background:var(--navy);color:#fff}
+  .u-hojita select{height:54px;border:1.5px solid var(--linea);border-radius:14px;font:inherit;font-size:18px;font-weight:700;padding:0 14px;background:#fff;color:var(--texto)}
   .u-fila>div{min-width:0;flex:1}
   .u-tit{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .u-tit h3{margin:0;font-size:20px;font-weight:800}
@@ -601,6 +617,8 @@
     <div class="uplan" id="uplan" hidden></div>
     <!-- Fijar en el mapa -->
     <div class="ufijar" id="ufijar" hidden></div>
+    <!-- Programar un viaje para más tarde -->
+    <div class="u-hojita" id="u-prog" hidden></div>
     <!-- Secciones -->
     <div class="seccion" id="seccion" hidden><div class="cuerpo" id="seccion-cuerpo"></div></div>
 
@@ -1108,7 +1126,8 @@
         '<button class="chip' + (v.equipaje ? ' on' : '') + '" id="b-equipaje"><b><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6a1 1 0 0 1 1 1v2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a1 1 0 0 1 1-1zm1 3h4V5h-4z"/></svg>' + (v.equipaje ? 'Sí' : 'No') + '</b><small>Equipaje grande</small></button></div>' +
         '<input class="entrada solo-grande" id="in-ref" placeholder="Referencia: ej. casa blanca, garita 2" value="' + esc(v.ref || '') + '" style="margin-top:12px">' +
         otraHTML(v) +
-        '<div class="botones"><button class="btn-gris" id="b-volver">Cancelar</button><button class="btn-acep" id="b-confirmar"' + (v.km ? '' : ' disabled') + '>Pedir AutoAmigo</button></div>';
+        (v.programado ? '<span class="para-otra" style="background:#E6EEFF;color:var(--navy)">Programado: ' + esc(textoProg(v.programado)) + '</span>' : '') +
+        '<div class="botones"><button class="btn-gris" id="b-volver">Cancelar</button><button class="btn-acep" id="b-confirmar"' + (v.km ? '' : ' disabled') + '>' + (v.programado ? 'Programar viaje' : 'Pedir AutoAmigo') + '</button></div>';
       return h;
     }
     if (v.fase === 'buscando') {
@@ -1200,7 +1219,9 @@
     pin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
     mapa: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="2" stroke-linejoin="round"><path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>',
     persona: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg>',
-    yo: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>'
+    yo: '<svg width="20" height="20" viewBox="0 0 24 24" fill="#101828"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>',
+    avion: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#101828" stroke-width="1.9" stroke-linejoin="round"><path d="M10.2 13.8 4 12.5l-1.5 1.5 6.2 2.8 2.8 6.2 1.5-1.5-1.3-6.2 4.8-4.8 3.3 6.6 1.6-1.6-1.4-8.4 2.4-2.4a1.6 1.6 0 0 0-2.3-2.3l-2.4 2.4-8.4-1.4-1.6 1.6 6.6 3.3z"/></svg>',
+    cal: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
   };
   function recientes() { var r = leer('aac_recientes', null); return r && r.length ? r : SUGERIDOS.slice(0, 3); }
   function guardarReciente(p) {
@@ -1208,8 +1229,46 @@
     r.unshift({ nombre: p.nombre, ref: p.ref || '', lat: p.lat, lng: p.lng }); guardar('aac_recientes', r.slice(0, 8));
   }
   function filaLugar(x, i, ic) {
-    return '<button class="u-fila" data-u-lugar="' + i + '"><span class="ic">' + ic + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div></button>';
+    if (ic === IC.reloj && /aeropuerto|airport/i.test(x.nombre)) ic = IC.avion;
+    return '<button class="u-fila" data-u-lugar="' + i + '"><span class="ic">' + ic + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="chev">›</span></button>';
   }
+  // ---------- Programar un viaje para más tarde ----------
+  function textoProg(pr) {
+    if (!pr) return 'Ahora';
+    var d = new Date(pr), hoy = new Date(), man = new Date(); man.setDate(hoy.getDate() + 1);
+    var dia = d.toDateString() === hoy.toDateString() ? 'Hoy' : d.toDateString() === man.toDateString() ? 'Mañana' : d.getDate() + '/' + (d.getMonth() + 1);
+    return dia + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  function abrirProg() {
+    var ahora = Date.now(), base = new Date(ahora + 30 * 60000); base.setMinutes(Math.ceil(base.getMinutes() / 15) * 15, 0, 0);
+    S.prog = S.prog || { dia: 0, hora: base.getHours() * 60 + base.getMinutes() };
+    pintarProg();
+  }
+  function pintarProg() {
+    var el = $('#u-prog'), P = S.prog; el.hidden = !P; if (!P) return;
+    var dias = []; for (var k = 0; k < 7; k++) { var d = new Date(); d.setDate(d.getDate() + k); dias.push(k === 0 ? 'Hoy' : k === 1 ? 'Mañana' : ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.getDay()] + ' ' + d.getDate()); }
+    var min = P.dia === 0 ? (function () { var b = new Date(Date.now() + 30 * 60000); return b.getHours() * 60 + Math.ceil(b.getMinutes() / 15) * 15; })() : 0;
+    if (P.hora < min) P.hora = min;
+    var ops = ''; for (var m = min; m < 24 * 60; m += 15) ops += '<option value="' + m + '"' + (m === P.hora ? ' selected' : '') + '>' + Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0') + '</option>';
+    el.innerHTML = '<div class="caja"><h3>Programa tu viaje</h3><p>Elige el día y la hora en que quieres que te recojan. Puedes programarlo con al menos 30 minutos de anticipación.</p>' +
+      '<div class="dias">' + dias.map(function (t, k) { return '<button data-prog-dia="' + k + '" class="' + (k === P.dia ? 'on' : '') + '">' + t + '</button>'; }).join('') + '</div>' +
+      (ops ? '<select id="prog-hora">' + ops + '</select>' : '<p>Ya no quedan horas para hoy. Elige otro día.</p>') +
+      '<button class="btn-final" id="prog-ok" style="margin-top:4px"' + (ops ? '' : ' disabled') + '>Siguiente</button>' +
+      (S.progT ? '<button class="btn-gris" id="prog-ahora" style="height:52px">Pedir para ahora</button>' : '<button class="btn-gris" id="prog-no" style="height:52px">Cancelar</button>') + '</div>';
+  }
+  function cuandoProg() { var P = S.prog, d = new Date(); d.setDate(d.getDate() + P.dia); d.setHours(Math.floor(P.hora / 60), P.hora % 60, 0, 0); return d.getTime(); }
+  document.addEventListener('click', function (e) {
+    var t = e.target, b;
+    if (t.closest('#u-tarde') || t.closest('#up-cuando')) { abrirProg(); return; }
+    if ((b = t.closest('[data-prog-dia]'))) { S.prog.dia = +b.getAttribute('data-prog-dia'); pintarProg(); return; }
+    if (t.closest('#prog-ok')) {
+      S.prog.hora = +$('#prog-hora').value; S.progT = cuandoProg(); var plan = S.plan; S.prog = null; pintarProg();
+      if (plan) { ultimoPlan = ''; pintarPlan(); } else abrirPlan(); ultimoInicio = ''; render(); return;
+    }
+    if (t.closest('#prog-ahora')) { S.progT = null; S.prog = null; pintarProg(); ultimoPlan = ''; ultimoInicio = ''; render(); return; }
+    if (t.closest('#prog-no') || t.id === 'u-prog') { S.prog = null; pintarProg(); return; }
+  });
+  document.addEventListener('change', function (e) { if (e.target.id === 'prog-hora' && S.prog) S.prog.hora = +e.target.value; });
   var ultimoInicio = '';
   function pintarInicio() {
     var pf = S.perfil || { nombre: '' }, lista = [];
@@ -1220,7 +1279,8 @@
     var carro = '<svg width="54" height="30" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
     var h = '<div class="u-cab"><div class="u-marca">Auto<span>Amigo</span></div><button class="u-av" data-ir="perfil" aria-label="Mi perfil">' +
       (pf.foto ? '<img src="' + pf.foto + '" alt="">' : esc(iniciales(pf.nombre))) + '</button></div>' +
-      '<button class="u-buscar" id="u-buscar">' + IC.lupa + '¿A dónde vas?</button>' +
+      '<div class="u-buscar">' + IC.lupa.replace('#101828', '#475467') + '<button class="q" id="u-buscar">¿A dónde vas?</button>' +
+        '<button class="u-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + IC.cal + (S.progT ? esc(textoProg(S.progT)) : 'Más tarde') + '</button></div>' +
       '<div class="u-lista">' + lista.map(function (x, i) { return filaLugar(x, i, x._ic); }).join('') + '</div>' +
       '<div><div class="u-tit"><h3>Sugerencias</h3></div><div class="u-sug">' +
         '<button id="u-s-viaje"><span class="dib">' + carro + '</span>Viaje</button>' +
@@ -1254,7 +1314,7 @@
     P.mostrada = lista;
     var noOtra = AASeg.paraOtraPermitido({});
     var h = '<div class="up-cab"><button id="up-atras" aria-label="Atrás">‹</button><b>Planifica tu viaje</b></div>' +
-      '<div class="up-pills"><span class="up-pill">' + IC.reloj.replace(/#101828/g, 'currentColor').replace('width="20" height="20"', 'width="16" height="16"') + 'Ahora</span>' +
+      '<div class="up-pills"><button class="up-pill' + (S.progT ? ' on' : '') + '" id="up-cuando">' + IC.reloj.replace(/#101828/g, 'currentColor').replace('width="20" height="20"', 'width="16" height="16"') + esc(textoProg(S.progT)) + ' ▾</button>' +
       '<button class="up-pill' + (P.para === 'otra' ? ' on' : '') + '" id="up-para">' + IC.persona + (P.para === 'otra' ? 'Para otra persona' : 'Para mí') + ' ▾</button></div>' +
       '<div class="up-campos"><div class="linea"><i></i><em></em><i class="cuadro"></i></div><div class="ins">' +
         '<input id="up-o" class="' + (P.campo === 'o' ? 'act' : '') + '" placeholder="Punto de recogida" autocomplete="off" value="' + esc(P.campo === 'o' ? P.textoO : (P.o ? P.o.nombre : 'Mi ubicación actual')) + '">' +
@@ -1296,6 +1356,7 @@
     var o = P.o || { nombre: S.yo.nombre, ref: 'Tu ubicación', lat: S.yo.lat, lng: S.yo.lng }, para = P.para;
     guardarReciente(P.d); S.plan = null; ultimoInicio = '';
     cotizar(o, P.d);
+    if (S.v && S.progT) { S.v.programado = S.progT; ultimaHoja = ''; render(); }
     if (para === 'otra' && S.v && !AASeg.paraOtraPermitido(S.v)) { S.v.otra = { nombre: '', tel: '' }; ultimaHoja = ''; render(); }
   }
   // Fijar la ubicación en el mapa
@@ -1384,7 +1445,12 @@
   }
   function guardarOtra() { if (S.v && S.v.otra && $('#in-otra-nombre')) { S.v.otra.nombre = $('#in-otra-nombre').value.trim().replace(/\s+/g, ' '); S.v.otra.tel = $('#in-otra-tel').value.replace(/\D/g, '').slice(0, 10); } }
   function pedir() {
-    var v = S.v; if (!v) return; v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
+    var v = S.v; if (!v) return;
+    if (v.programado) {
+      var pr = leer('aac_programados', []) || []; pr.push({ t: v.programado, o: v.o, d: v.d, otra: v.otra || null }); guardar('aac_programados', pr);
+      aviso('Tu viaje quedó programado para ' + textoProg(v.programado) + '. Te avisaremos cuando la unidad vaya en camino.');
+      S.progT = null; S.v = null; puntos(null); ultimoInicio = ''; render(); return;
+    } v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
     clearTimeout(S.tAcepta); S.tAcepta = setTimeout(aceptar, 6000);
   }
   function aceptar() {
