@@ -188,7 +188,8 @@
   /* Navegando con el cuadro abierto: el recuadro de la instrucción sube casi hasta arriba */
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   /* Con el taxímetro iniciado y el cuadro completo: sin el recuadro de la instrucción */
-  .taxi-on.navegando.hoja-grande .nav-top{display:none!important}
+  .taxi-on.navegando.hoja-grande .nav-top{opacity:0;transform:translateY(-18px);visibility:hidden;pointer-events:none;transition:opacity .3s ease,transform .3s ease,top .3s ease,visibility 0s linear .3s}
+  .taxi-on.navegando .nav-top{transition:opacity .25s ease,transform .25s ease}
   .hoja-grande .hoja{max-height:66%}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
