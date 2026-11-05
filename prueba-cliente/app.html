@@ -747,7 +747,7 @@
     M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600 });
   }
   function centrar() {
-    if (S.v && S.v.pos) { if (SEG.activo) { SEG.sigue = true; seguir(); } else M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 }); return; }   // en el viaje: va al carro
+    if (S.v && S.v.pos) { if (SEG.activo) { SEG.sigue = true; seguir(); } else M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: 0, pitch: 0, zoom: Math.max(M.getZoom(), 15), duration: 600 }); return; }   // en el viaje: va al carro
     M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
   }
   function rumboEntre(a, b) {
@@ -860,7 +860,15 @@
       if (mejor > SEG.margen) { SEG.fuera++; if (SEG.fuera >= 2) { rutaSeg(pos, metaViaje(v), true); return; } }
       else { SEG.fuera = 0; if (mejor < 45) SEG.margen = 45; }
     }
-    if (pr.i < SEG.ruta.length - 1 && metrosEntre(pos, { lat: SEG.ruta[pr.i + 1][1], lng: SEG.ruta[pr.i + 1][0] }) > 2 && (!SEG.ant || SEG.rumbo === 0)) SEG.rumbo = rumboEntre(pos, { lat: SEG.ruta[pr.i + 1][1], lng: SEG.ruta[pr.i + 1][0] });
+    // Hacia dónde va: la dirección de la calle unos 25 m más adelante en la ruta (no salta de lado en las esquinas ni con el GPS)
+    if (mejor < 30) {
+      var ad = { lat: pr.pt.lat, lng: pr.pt.lng }, falta25 = 25;
+      for (var q = pr.i + 1; q < SEG.ruta.length && falta25 > 0; q++) {
+        var nx = { lat: SEG.ruta[q][1], lng: SEG.ruta[q][0] }, dq = metrosEntre(ad, nx);
+        if (dq >= falta25) { var fq = falta25 / dq; ad = { lat: ad.lat + (nx.lat - ad.lat) * fq, lng: ad.lng + (nx.lng - ad.lng) * fq }; falta25 = 0; } else { ad = nx; falta25 -= dq; }
+      }
+      if (metrosEntre(pos, ad) > 3) SEG.rumbo = rumboEntre(pr.pt, ad);
+    }
     var resto = [[pos.lng, pos.lat]].concat(SEG.ruta.slice(pr.i + 1));
     ponerRuta(resto);
     var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
