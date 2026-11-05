@@ -740,6 +740,14 @@
     mkC.setLngLat([p.lng, p.lat]); if (!carroEnMapa) { mkC.addTo(M); carroEnMapa = true; }
     if (rumbo != null) { try { mkC.setRotation(rumbo); } catch (e) { carroEl.querySelector('.g').setAttribute('transform', 'rotate(' + rumbo + ' 19 19)'); } }
   }
+  function verRecorrido() {
+    var v = S.v; if (!v || !v.pos) { M.easeTo({ pitch: 0, bearing: 0, duration: 600 }); return; }
+    var b = new maplibregl.LngLatBounds();
+    b.extend([v.pos.lng, v.pos.lat]);
+    var meta = v.fase === 'ejecucion' ? v.d : v.o; b.extend([meta.lng, meta.lat]);
+    if (SEG.ruta) { var pr = proyectar(v.pos, SEG.ruta); SEG.ruta.slice(pr.i + 1).forEach(function (c) { b.extend(c); }); }
+    M.fitBounds(b, { padding: rellenoCarro(), maxZoom: 15.5, duration: 700, bearing: 0, pitch: 0 });
+  }
   function verRuta() {
     var v = S.v; if (!v) return;
     var b = new maplibregl.LngLatBounds();
@@ -852,9 +860,8 @@
     try { mkC.setRotation && mkC.setRotation(SEG.rumbo); } catch (e) {}
     // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña)
     ultimaHoja = ''; render(); pintarNav();
-    // Al salir, el mapa queda derecho y sigue al carro (igual que la flechita), sin perderlo de vista
-    if (S.v && S.v.pos) { SEG.sigueFuera = true; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: 0, pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() }); }
-    else M.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+    // Al salir: el mapa derecho, alejado, mostrando todo el recorrido que falta con el carro a la vista
+    verRecorrido();
   }
   // Cada ubicación nueva del carro: avanza las instrucciones, recorta la ruta y recalcula si se sale
   function seguir() {
