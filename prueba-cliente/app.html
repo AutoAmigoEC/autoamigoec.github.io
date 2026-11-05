@@ -503,9 +503,11 @@
   .u-fila>div{min-width:0;flex:1}
   .u-tit{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .u-tit h3{margin:0;font-size:20px;font-weight:800}
-  .u-sug{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .u-sug button{border:0;background:#EEF0F4;border-radius:16px;padding:12px 4px 10px;font:inherit;font-size:13px;font-weight:700;color:var(--texto);display:flex;flex-direction:column;align-items:center;gap:6px}
-  .u-sug button .dib{height:40px;display:flex;align-items:center;justify-content:center}
+  .u-tit h3 .ir{display:inline-flex;width:30px;height:30px;border-radius:50%;border:1.5px solid #E4E7EC;align-items:center;justify-content:center;font-size:18px;font-weight:700;margin-left:8px;vertical-align:4px;color:var(--texto)}
+  .u-sug{display:flex;gap:14px;overflow-x:auto;margin:0 -18px;padding:2px 18px 4px;scrollbar-width:none}
+  .u-sug::-webkit-scrollbar{display:none}
+  .u-sug button{flex:none;width:84px;border:0;background:none;padding:0;font:inherit;font-size:14.5px;font-weight:600;color:var(--texto);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;line-height:1.2}
+  .u-sug button .dib{width:84px;height:84px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center}
   .u-promo{border-radius:20px;background:linear-gradient(135deg,#141A52,#0A0F3C);color:#fff;padding:18px;display:flex;align-items:center;gap:14px}
   .u-promo b{display:block;font-size:17px}.u-promo small{display:block;color:#C9CDE6;font-size:13.5px;line-height:1.4;margin-top:3px}
   .u-promo .esc{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex:none;font-size:30px}
@@ -1299,7 +1301,7 @@
     var pf = S.perfil || { nombre: '' };
     var lista = destinosInicio();
     S.listaInicio = lista;
-    var carro = '<svg width="54" height="30" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
+    var carro = '<svg width="62" height="34" viewBox="0 0 220 104">' + carroSVG('#F4F5F7').replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</svg>';
     var h = '<div class="u-cab"><div class="u-marca">Auto<span>Amigo</span></div><button class="u-av" data-ir="perfil" aria-label="Mi perfil">' +
       (pf.foto ? '<img src="' + pf.foto + '" alt="">' : esc(iniciales(pf.nombre))) + '</button></div>' +
       '<div class="u-buscar">' + IC.lupa.replace('#101828', '#475467') + '<button class="q" id="u-buscar">¿A dónde vas?</button>' +
@@ -1308,8 +1310,9 @@
         if (x._crear) return '<button class="u-fila" id="u-crear"><span class="ic">' + IC.mas + '</span><div><b>Agregar destino frecuente</b><small>Guarda el lugar al que más vas y pídelo con un toque</small></div><span class="chev">›</span></button>';
         return filaLugar(x, i, x._ic);
       }).join('') + '</div>' +
-      '<div><div class="u-tit"><h3>Para ti</h3></div><div class="u-sug">' +
+      '<div><div class="u-tit"><h3>Para ti<span class="ir">›</span></h3></div><div class="u-sug">' +
         '<button id="u-s-viaje"><span class="dib">' + carro + '</span>Viaje</button>' +
+        '<button id="u-s-reservar"><span class="dib"><svg width="40" height="40" viewBox="0 0 40 40"><rect x="5" y="8" width="30" height="27" rx="5" fill="#fff" stroke="#0A0F3C" stroke-width="2.4"/><rect x="5" y="8" width="30" height="9" rx="4" fill="#E5252A"/><path d="M12 4v8M28 4v8" stroke="#0A0F3C" stroke-width="2.6" stroke-linecap="round"/><circle cx="14" cy="24" r="2" fill="#0A0F3C"/><circle cx="20" cy="24" r="2" fill="#0A0F3C"/><circle cx="26" cy="24" r="2" fill="#0A0F3C"/><circle cx="14" cy="30" r="2" fill="#0A0F3C"/><circle cx="20" cy="30" r="2" fill="#1570EF"/></svg></span>Reservar</button>' +
         '<button id="u-s-otra"><span class="dib"><svg width="34" height="34" viewBox="0 0 24 24" fill="#0A0F3C"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 19.5c0-3.8 3-6 6.5-6s6.5 2.2 6.5 6z"/><circle cx="17" cy="9" r="2.8" fill="#E5252A"/><path d="M14.8 13.6c.6-.2 1.4-.3 2.2-.3 2.8 0 5 1.8 5 4.8h-5" fill="#E5252A"/></svg></span>Para otra persona</button>' +
         '<button id="u-s-casa"><span class="dib"><svg width="32" height="32" viewBox="0 0 24 24" fill="#0A0F3C"><path d="M12 3 3 10.5V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-9.5z"/></svg></span>Casa</button>' +
         '<button id="u-s-trabajo"><span class="dib"><svg width="32" height="32" viewBox="0 0 24 24" fill="#0A0F3C"><path d="M9 4h6a1 1 0 0 1 1 1v2h4a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4V5a1 1 0 0 1 1-1zm1 3h4V6h-4z"/></svg></span>Trabajo</button>' +
@@ -1421,6 +1424,7 @@
     var t = e.target, b;
     if (t.closest('#u-buscar') || t.closest('#u-s-viaje')) { abrirPlan(); return; }
     if (t.closest('#u-crear')) { abrirBuscar('favorito'); return; }
+    if (t.closest('#u-s-reservar')) { abrirProg(); return; }
     if (t.closest('#u-s-otra')) { var no = AASeg.paraOtraPermitido({}); if (no) { aviso(no); return; } abrirPlan({ para: 'otra' }); return; }
     if (t.closest('#u-s-casa') || t.closest('#u-s-trabajo')) {
       var k = t.closest('#u-s-casa') ? 'casa' : 'trabajo';
