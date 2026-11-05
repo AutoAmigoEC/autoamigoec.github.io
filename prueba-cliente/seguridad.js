@@ -1,9 +1,10 @@
 /* AutoAmigo Cliente · Seguridad (cuidar a los conductores)
  *
- * 1) Crear cuenta: datos + número de cédula válido + foto de la cédula + cara EN VIVO (parpadeo).
- *    La cara se compara con la foto de la cédula DENTRO del teléfono. Si no coincide, no se crea la cuenta.
+ * 1) Crear cuenta (rápido, para no perder clientes): datos + número de cédula válido + UNA foto de su cara.
  * 2) Antes de pedir, si el viaje es de riesgo (de noche, zona de riesgo, cuenta nueva o celular nuevo):
  *    selfie rápida con la cámara completa, comparada con la cara de su registro.
+ *    La PRIMERA vez que pide de noche o a una zona de riesgo, además la foto de su cédula: la cara de la cédula
+ *    tiene que coincidir con la suya (dentro del teléfono). Desde ahí su cuenta queda "verificada".
  * 3) La cuenta queda atada a este celular: en otro teléfono se vuelve a pedir la cara.
  * 4) Términos: el dueño de la cuenta es responsable de lo que pase con ella.
  */
@@ -33,8 +34,6 @@
   }
   function leerCara(c) { return faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.35 })).withFaceLandmarks().withFaceDescriptor(); }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
-  function d2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-  function ear(o) { return (d2(o[1], o[5]) + d2(o[2], o[4])) / (2 * d2(o[0], o[3])); }
 
   // ---------- Cédula de Ecuador: dígito verificador ----------
   function cedulaValida(c) {
@@ -80,7 +79,7 @@
       : '<button class="disparo" data-s="' + o.disparo + '" aria-label="Tomar foto"></button>');
     return '<div class="vcf" id="scam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
       '<div class="vcf-top">' + (G.analizando ? '' : '<div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
-      '<button class="vcf-x" data-s="' + (o.cerrar || 'atras') + '" aria-label="Cerrar">✕</button></div>' +
+      (/^(cancelarPedido|atras)$/.test(o.cerrar || 'atras') ? '<button class="vcf-x" data-s="' + (o.cerrar || 'atras') + '"' : '<button class="vcf-x" data-s="ir" data-a="' + o.cerrar + '"') + ' aria-label="Cerrar">✕</button></div>' +
       (o.indica ? '<div class="vcf-indica" id="sindica">' + esc(o.indica) + '</div>' : '') +
       (G.error ? '<div class="vcf-error">' + esc(G.error) + '</div>' : '') +
       '<div class="vcf-bot">' + abajo + '</div></div>';
@@ -92,7 +91,7 @@
   function cerrar() { G.paso = null; pintar(); }
 
   function tarjeta(cuerpo, titulo, atras) {
-    return '<div class="scab">' + (atras ? '<button class="satras" data-s="' + atras + '" aria-label="Atrás">‹</button>' : '<span></span>') + '<b>' + esc(titulo || '') + '</b><span></span></div><div class="scuerpo">' + cuerpo + '</div>';
+    return '<div class="scab">' + (atras ? '<button class="satras" data-s="ir" data-a="' + atras + '" aria-label="Atrás">‹</button>' : '<span></span>') + '<b>' + esc(titulo || '') + '</b><span></span></div><div class="scuerpo">' + cuerpo + '</div>';
   }
   function pintar() {
     var el = $('#seg'); if (!el) return;
@@ -112,45 +111,36 @@
         '<label class="slbl" for="s-cedula">Número de cédula</label><input class="sent" id="s-cedula" inputmode="numeric" maxlength="10" value="' + esc(d.cedula || '') + '" placeholder="10 dígitos">' +
         '<label class="slbl" for="s-tel">Número de celular</label><input class="sent" id="s-tel" inputmode="tel" maxlength="10" autocomplete="tel" value="' + esc(d.tel || '') + '" placeholder="Ej. 0991234567">' +
         '<button class="sbtn" data-s="datosOk">Continuar</button>', 'Crear mi cuenta', 'bienvenida');
-    } else if (p === 'porque') {
-      el.className = 'seg';
-      h = tarjeta('<div class="sgrande">🪪</div><h2 class="c">Verificamos que seas tú</h2>' +
-        '<p class="c">Así cuidamos a nuestros conductores y a ti. Se hace una sola vez y toma un minuto.</p>' +
-        '<div class="slista"><div><b>1. Foto de tu cédula</b><p>El frente, que se lea bien y se vea tu foto.</p></div>' +
-        '<div><b>2. Tu cara en vivo</b><p>Te pediremos parpadear. Tu cara se compara con la de tu cédula dentro de tu teléfono.</p></div></div>' +
-        '<button class="sbtn" data-s="ir" data-a="cedula">Empezar</button>', 'Crear mi cuenta', 'datos');
     } else if (p === 'cedula') {
       el.className = 'seg negro';
       cam = G.prev ? null : false;
-      h = camaraHTML({ paso: 'Paso 1 de 2', titulo: 'Frente de tu cédula', ayuda: 'Pon tu cédula dentro del recuadro. Sin reflejos.', marco: !G.prev, foto: G.prev, cerrar: 'porque',
+      h = camaraHTML({ paso: 'Una sola vez', titulo: 'Frente de tu cédula', ayuda: 'Para pedir de noche o a zonas de riesgo verificamos tu cédula. Ponla dentro del recuadro, sin reflejos.', marco: !G.prev, foto: G.prev, cerrar: 'cancelarPedido',
         abajo: G.prev && !G.analizando ? '<div class="sfila"><button class="sbtn claro" data-s="repetir">Repetir</button><button class="sbtn" data-s="usarCedula">Usar foto</button></div>' : null, disparo: 'fotoCedula' });
     } else if (p === 'cara') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
-      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu cara en vivo', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, cerrar: 'cedula',
-        indica: G.vivo ? (G.vivo === 1 ? 'Mira de frente' : 'Ahora parpadea') : null,
-        abajo: G.prev ? null : (G.vivo ? '<b class="vcf-txt">Mantente frente a la cámara</b>' : '<button class="sbtn" data-s="vivo">Empezar</button>') });
-    } else if (p === 'noCoincide') {
+      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara' });
+    } else if (p === 'cedulaMal') {
       el.className = 'seg';
       var muchas = G.fallos >= 3;
-      h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de tu cédula</h2>' +
-        '<p class="c">' + (muchas ? 'Lo intentaste varias veces. Si de verdad es tu cédula, la central puede revisarlo.' : 'Ponte de frente a una luz, quítate gafas o gorra. Revisa también que la foto de la cédula se vea clara.') + '</p>' +
-        '<button class="sbtn" data-s="ir" data-a="cara">Tomar mi cara otra vez</button>' +
-        '<button class="sbtn claro" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>' +
-        (muchas ? '<button class="sbtn claro" data-s="aCentral">Que la central lo revise</button>' : ''), 'Crear mi cuenta', 'datos');
+      h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de la cédula</h2>' +
+        '<p class="c">' + (muchas ? 'Lo intentaste varias veces. Si de verdad es tu cédula, la central puede revisarlo.' : 'Revisa que la foto de la cédula se vea clara, sin reflejos, y que sea tu cédula.') + '</p>' +
+        '<button class="sbtn" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>' +
+        (muchas ? '<button class="sbtn claro" data-s="aCentral">Que la central lo revise</button>' : '') +
+        '<button class="sbtn claro" data-s="cancelarPedido">Cancelar</button>', 'Antes de pedir');
     } else if (p === 'terminos') {
       el.className = 'seg';
-      h = tarjeta('<div class="sgrande">✓</div><h2 class="c">¡Eres tú!</h2><p class="c">Tu cara coincide con la de tu cédula. Último paso:</p>' +
+      h = tarjeta('<h2>Último paso</h2>' +
         '<div class="slista"><div><b>Tu cuenta es personal</b><p>No la prestes. Si alguien más va a viajar, pídelo con la opción "Para otra persona".</p></div>' +
         '<div><b>Eres responsable de tu cuenta</b><p>Si tu cuenta se usa para hacerle daño a un conductor, tus datos se entregarán a la Policía.</p></div>' +
         '<div><b>Tu cuenta queda en este celular</b><p>Si entras desde otro teléfono, te pediremos tu cara otra vez.</p></div>' +
-        '<div><b>A veces te pediremos tu cara</b><p>En viajes de noche o a zonas de riesgo, una foto rápida antes de pedir.</p></div></div>' +
-        '<label class="sacepto"><input type="checkbox" id="s-acepto"> Acepto las condiciones de uso y que AutoAmigo guarde mi cédula y mi cara solo para verificar que soy yo.</label>' + err +
-        '<button class="sbtn rojo" data-s="crear">Crear mi cuenta</button>', 'Crear mi cuenta');
+        '<div><b>A veces te pediremos tu cara</b><p>En viajes de noche o a zonas de riesgo, una foto rápida antes de pedir. La primera vez, también tu cédula.</p></div></div>' +
+        '<label class="sacepto"><input type="checkbox" id="s-acepto"> Acepto las condiciones de uso y que AutoAmigo guarde mis datos y mi cara solo para verificar que soy yo.</label>' + err +
+        '<button class="sbtn rojo" data-s="crear">Crear mi cuenta</button>', 'Crear mi cuenta', 'cara');
     } else if (p === 'revision') {
       el.className = 'seg';
-      h = tarjeta('<div class="sgrande espera"></div><h2 class="c">La central está revisando tu cuenta</h2>' +
-        '<p class="c">Te avisaremos por WhatsApp al ' + esc(d.tel || '') + ' cuando esté lista.</p>', 'Cuenta en revisión');
+      h = tarjeta('<div class="sgrande espera"></div><h2 class="c">La central está revisando tu cédula</h2>' +
+        '<p class="c">Mientras tanto puedes pedir de día. Te avisaremos por WhatsApp cuando esté lista.</p><button class="sbtn claro" data-s="cancelarPedido">Entendido</button>', 'Cédula en revisión');
     } else if (p === 'entrar') {
       el.className = 'seg';
       h = tarjeta('<h2>Entrar a mi cuenta</h2><p>Escribe tu cédula y tu celular.</p>' + err +
@@ -161,7 +151,7 @@
       el.className = 'seg';
       var txt = { noche: 'Es de noche', zona: 'Zona de riesgo', nueva: 'Tu cuenta es nueva', celular: 'Estás en un celular nuevo' };
       h = tarjeta('<div class="sgrande" style="background:var(--navy)">🛡️</div><h2 class="c">Una foto rápida antes de pedir</h2>' +
-        '<p class="c">Confirmamos que eres tú para cuidar al conductor. Son 5 segundos.</p>' +
+        '<p class="c">' + (G.conCedula ? 'Confirmamos que eres tú para cuidar al conductor. Como es la primera vez, también te pediremos tu cédula (una sola vez).' : 'Confirmamos que eres tú para cuidar al conductor. Son 5 segundos.') + '</p>' +
         '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', 'Antes de pedir');
     } else if (p === 'selfie') {
@@ -170,7 +160,7 @@
       h = camaraHTML({ paso: 'Antes de pedir', titulo: 'Tu cara', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieOk') {
       el.className = 'seg negro';
-      h = camaraHTML({ paso: 'Antes de pedir', titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: 'Tu cara coincide con la de tu cuenta.', foto: G.vista,
+      h = camaraHTML({ paso: 'Antes de pedir', titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: G.cedulaOk ? 'Tu cara coincide con la de tu cédula. Tu cuenta quedó verificada.' : 'Tu cara coincide con la de tu cuenta.', foto: G.vista,
         abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieMal') {
       el.className = 'seg';
@@ -180,43 +170,6 @@
     }
     if (el.__h !== h) { var foco = document.activeElement && document.activeElement.id, val = foco && $('#' + foco) ? $('#' + foco).value : null; el.innerHTML = h; el.__h = h; if (foco && $('#' + foco) && val != null) { $('#' + foco).value = val; $('#' + foco).focus(); } }
     if (cam !== null) { abrirCam(cam).then(montarCam, function () { }); montarCam(); } else cerrarCam();
-  }
-
-  // ---------- Cara en vivo (registro): mirar de frente y parpadear ----------
-  function enVivo() {
-    var paso = G.paso, inicio = Date.now(), maxEar = 0, cerro = false, frente = 0;
-    G.vivo = 1; G.error = ''; pintar();
-    var ind = function (t) { var e = $('#sindica'); if (e) e.textContent = t; };
-    (function ciclo() {
-      if (G.paso !== paso || !G.vivo) return;
-      if (Date.now() - inicio > 40000) { G.vivo = 0; G.error = 'No vimos bien tu cara o el parpadeo. Ponte de frente a una luz, sin gafas, y vuelve a intentarlo.'; pintar(); return; }
-      if (!C.video || !C.video.videoWidth) { setTimeout(ciclo, 200); return; }
-      faceapi.detectSingleFace(C.video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.35 })).withFaceLandmarks().then(function (r) {
-        if (G.paso !== paso || !G.vivo) return;
-        if (!r) { ind('Pon tu cara frente a la cámara'); setTimeout(ciclo, 150); return; }
-        var l = r.landmarks, e = (ear(l.getLeftEye()) + ear(l.getRightEye())) / 2;
-        if (G.vivo === 1) { maxEar = Math.max(maxEar, e); if (++frente >= 3) { G.vivo = 2; ind('Ahora parpadea'); } }
-        else {
-          maxEar = Math.max(maxEar, e);
-          if (!cerro && e < maxEar * 0.8) cerro = true;
-          else if (cerro && e > maxEar * 0.9) { capturarVivo(); return; }
-        }
-        setTimeout(ciclo, 90);
-      }).catch(function () { setTimeout(ciclo, 300); });
-    })();
-  }
-  function capturarVivo() {
-    var f = cuadro(960, 0.85);
-    G.vivo = 0; G.prev = f.url(); G.analizando = 'Comparando con tu cédula…'; pintar();
-    leerCara(f.c).then(function (r) {
-      G.analizando = '';
-      if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz y vuelve a intentarlo.'; pintar(); return; }
-      var desc = Array.prototype.slice.call(r.descriptor), dc = distancia(desc, G.fotos.descCedula);
-      G.d.parecido = Math.round(dc * 1000) / 1000;
-      if (dc > UMBRAL_CEDULA) { G.fallos++; ir('noCoincide'); return; }
-      G.fotos.descriptor = desc; G.fotos.cara = cuadro(480, 0.72, f.c).url(); G.fallos = 0;
-      ir('terminos');
-    }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
   }
 
   // ---------- Riesgo del viaje ----------
@@ -237,7 +190,7 @@
     var b = e.target.closest('#seg [data-s]'); if (!b) return;
     var a = b.getAttribute('data-s');
     if (a === 'ir') { ir(b.getAttribute('data-a')); return; }
-    if (a === 'atras') { ir('porque'); return; }
+    if (a === 'atras') { ir('datos'); return; }
     if (a === 'repetir') { G.prev = null; G.error = ''; pintar(); return; }
     if (a === 'datosOk') {
       var n = $('#s-nombre').value.trim().replace(/\s+/g, ' '), c = $('#s-cedula').value.replace(/\D/g, ''), t = $('#s-tel').value.replace(/\D/g, '');
@@ -247,7 +200,7 @@
       if (!/^09\d{8}$/.test(t)) { G.error = 'Escribe tu celular de 10 dígitos (empieza con 09).'; pintar(); return; }
       var bloq = leer('aac_bloqueados', []);
       if (bloq.indexOf(c) >= 0 || bloq.indexOf(t) >= 0) { G.error = 'No puedes crear una cuenta con estos datos. Comunícate con la central.'; pintar(); return; }
-      ir('porque'); cargarFA().catch(function () { }); return;
+      ir('cara'); return;
     }
     if (a === 'fotoCedula') { if (!C.video || !C.video.videoWidth) return; G.prev = cuadro(1280, 0.85).url(); G.error = ''; pintar(); return; }
     if (a === 'usarCedula') {
@@ -256,17 +209,29 @@
         cargarFA().then(function () { return leerCara(img); }).then(function (r) {
           G.analizando = '';
           if (!r) { G.prev = null; G.error = 'No se ve bien la foto de tu cédula. Acércala, con buena luz y sin reflejos.'; pintar(); return; }
-          G.fotos.cedula = cuadro(900, 0.8, img).url(); G.fotos.descCedula = Array.prototype.slice.call(r.descriptor);
-          ir('cara');
+          var dc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
+          if (distancia(dc, pf.descriptor) > UMBRAL_CEDULA) { G.fallos++; ir('cedulaMal'); return; }
+          pf.descCedula = dc; pf.verificado = Date.now(); pf.fotoCedula = cuadro(900, 0.8, img).url(); guardar('aac_cuenta', pf); G.fallos = 0;
+          G.vista = G.vista || pf.foto; G.cedulaOk = true; ir('selfieOk');
         }).catch(function () { G.analizando = ''; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
       };
       img.src = G.prev; return;
     }
-    if (a === 'vivo') { cargarFA().then(enVivo).catch(function () { G.error = 'No se pudo cargar el verificador. Revisa tu internet.'; pintar(); }); return; }
+    if (a === 'fotoCara') {
+      if (!C.video || !C.video.videoWidth || G.analizando) return;
+      var fr = cuadro(960, 0.85); G.prev = fr.url(); G.analizando = 'Revisando tu foto…'; pintar();
+      cargarFA().then(function () { return leerCara(fr.c); }).then(function (r) {
+        G.analizando = '';
+        if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz, sin gafas ni gorra, y toma otra.'; pintar(); return; }
+        G.fotos.descriptor = Array.prototype.slice.call(r.descriptor); G.fotos.cara = cuadro(480, 0.72, fr.c).url();
+        ir('terminos');
+      }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
+      return;
+    }
     if (a === 'aCentral') { ir('revision'); return; }
     if (a === 'crear') {
       if (!$('#s-acepto').checked) { G.error = 'Para crear tu cuenta tienes que aceptar las condiciones.'; pintar(); return; }
-      var perfil = { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel, descriptor: G.fotos.descriptor, descCedula: G.fotos.descCedula, foto: G.fotos.cara,
+      var perfil = { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel, descriptor: G.fotos.descriptor, descCedula: null, verificado: null, foto: G.fotos.cara,
         celular: idCelular(), creado: Date.now(), acepto: Date.now() };
       guardar('aac_cuenta', perfil);
       var al = G.al; cerrar(); if (al) al(perfil); return;
@@ -287,7 +252,9 @@
         var ok = distancia(desc, pf.descriptor) <= UMBRAL && (!pf.descCedula || distancia(desc, pf.descCedula) <= UMBRAL_CEDULA);
         if (!ok) { ir('selfieMal'); return; }
         if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
-        G.vista = cuadro(720, 0.8, f.c).url(); ir('selfieOk');
+        G.vista = cuadro(720, 0.8, f.c).url();
+        if (G.conCedula && !pf.verificado) { ir('cedula'); return; }   // primera vez de noche o en zona de riesgo: su cédula
+        ir('selfieOk');
       }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
       return;
     }
@@ -300,11 +267,12 @@
 
   // ---------- Lo que usa la app ----------
   window.AASeg = {
-    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.fallos = 0; ir('bienvenida'); },
+    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.fallos = 0; ir('bienvenida'); cargarFA().catch(function () { }); },   // se carga mientras llena sus datos
     // Antes de pedir: si el viaje es de riesgo, selfie. Si viaja otra persona, no se permite de noche ni en zona de riesgo.
     antesDePedir: function (v, perfil, nViajes, ok) {
       var m = motivos(v, perfil, nViajes);
-      G.perfil = perfil; G.motivos = m; G.al = ok;
+      G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null; G.cedulaOk = false; G.fallos = 0;
+      G.conCedula = !perfil.verificado && (m.indexOf('noche') >= 0 || m.indexOf('zona') >= 0);
       if (!m.length) { ok(perfil); return; }
       cargarFA().catch(function () { });
       ir('selfieIntro');

@@ -331,7 +331,7 @@
   .controles button,.controles select{height:42px;border-radius:12px;border:1px solid var(--linea);background:#fff;font-weight:600;font-size:14px;padding:0 10px}
   .controles button.prin{background:var(--navy);color:#fff;border:0}
   .controles label{font-size:13px;font-weight:600;color:#344054;display:flex;flex-direction:column;gap:5px}
-  .btn-prueba{display:none;position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 96px);z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .btn-prueba{display:none;position:fixed;right:0;top:45%;border-radius:20px 0 0 20px!important;opacity:.85;z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
   @media (max-width:560px){.controles.abierto{position:fixed;left:12px;right:12px;bottom:150px;width:auto;z-index:100}}
 
   /* ---------- App del cliente (mismo estilo de la app del conductor) ---------- */
@@ -572,7 +572,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="seguridad.js?v=1"></script>
+<script src="seguridad.js?v=2"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
