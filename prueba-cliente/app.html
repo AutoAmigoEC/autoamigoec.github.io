@@ -184,7 +184,9 @@
   .exacta{margin-top:10px;background:#FEF6DD;border-radius:14px;padding:12px 14px;font-size:14.5px}
   .btn-final{margin-top:14px;width:100%;height:60px;border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:18px;box-shadow:0 8px 20px rgba(10,15,60,.25)}
   /* Cuadro del conductor abierto (grande): arriba solo el mapa con el carro y la ruta; el mapa conserva al menos un tercio */
-  .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta,.hoja-grande #b-centrar{display:none!important}
+  .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta,.hoja-grande #b-centrar{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s ease,visibility 0s linear .25s}
+  /* Navegando con el cuadro abierto: el recuadro de la instrucción sube casi hasta arriba */
+  .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   .hoja-grande .hoja{max-height:66%}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
@@ -1070,8 +1072,14 @@
     // Flechita antes de "Iniciar": sigue al carro con el mapa derecho, un poco alejado, sin taparlo con la barra de abajo
     if (!SEG.activo && SEG.sigueFuera) M.easeTo({ center: [pos.lng, pos.lat], duration: 900, padding: rellenoCarro() });
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
-    if (SEG.activo && SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: 17, duration: 900, padding: { top: 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } });
+    if (SEG.activo && SEG.sigue) M.easeTo(vistaNav(900));
     pintarNav();
+  }
+  // Cámara de la navegación: con el cuadro abierto se aleja un poco (15.5) para ver avanzar la flecha en el espacio libre
+  function vistaNav(dur) {
+    var pos = S.v.pos, gr = $('#pantalla').classList.contains('hoja-grande');
+    return { center: [pos.lng, pos.lat], bearing: SEG.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
+      padding: { top: gr ? 100 : 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
   }
   function pintarNav() {
     var p = $('#pantalla'), v = S.v, conUnidad = !!(v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion'));
@@ -1942,12 +1950,28 @@
   (function () {
     var y0 = null, hoja = $('#hoja');
     function poner(mini) {
+      if (!mini && hoja.classList.contains('mini')) { agrandar(); return; }
       hoja.classList.toggle('mini', mini);
       setTimeout(function () {
         ultimaHoja = ''; render();
         // El mapa se acomoda al espacio libre: el carro y el punto de recogida quedan a la vista
         if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else verRuta(); }
       }, 20);
+    }
+    function agrandar() {
+      var antes = hoja.offsetHeight;
+      hoja.classList.remove('mini'); ultimaHoja = ''; render();
+      var sube = hoja.offsetHeight - antes, pie = $('#nav-pie');
+      [hoja, pie].forEach(function (el) { el.style.transition = 'none'; el.style.transform = 'translateY(' + sube + 'px)'; });
+      void hoja.offsetHeight;
+      [hoja, pie].forEach(function (el) { el.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; });
+      setTimeout(function () { [hoja, pie].forEach(function (el) { el.style.transition = ''; }); }, 350);
+      // El mapa se acomoda a la vez que sube el cuadro (un solo movimiento)
+      if (S.v && S.v.pos) {
+        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(300)); }
+        else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 300, padding: rellenoCarro() });
+        else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 300 }); }
+      }
     }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
     hoja.addEventListener('pointerup', function (e) {
