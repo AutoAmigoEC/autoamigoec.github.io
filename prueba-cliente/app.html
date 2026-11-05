@@ -565,6 +565,13 @@
   .ufijar .caja h3{margin:0;font-size:19px}
   .ufijar .caja .lugar{display:flex;gap:10px;align-items:center;background:#F6F7FB;border-radius:14px;padding:12px}
   .ufijar .caja .lugar b{display:block}.ufijar .caja .lugar small{color:var(--gris)}
+  /* En el celular: la pantalla queda quieta (los controles de la prueba solo salen al tocar ⚙ Prueba) */
+  @media (max-width:560px){
+    html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+    .escena{height:100%;overflow:hidden}
+    .controles{display:none}
+    .controles.abierto{display:flex;max-height:calc(100svh - 170px);overflow:auto}
+  }
 </style>
 </head>
 <body>
