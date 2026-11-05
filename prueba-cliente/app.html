@@ -191,7 +191,7 @@
   .taxi-on.navegando.hoja-grande .nav-top{display:none!important}
   .hoja-grande .hoja{max-height:66%}
   /* Con el taxímetro iniciado: al achicar el cuadro, lo de arriba aparece suave */
-  .taxi-on:not(.hoja-grande) .arriba-v,.taxi-on:not(.hoja-grande) .ham-v,.taxi-on:not(.hoja-grande) #b-ruta,.taxi-on:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
+  .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -933,15 +933,15 @@
   function vistaRecogida(dur) {
     var v = S.v; if (!v || !v.pos || !v.o) return;
     var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, duration: dur });
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: rumboSeguir(), duration: dur });
   }
   // Con el taxímetro iniciado, al seguir al carro el mapa gira para que el carro vaya siempre de frente (hacia arriba)
-  function rumboSeguir() { return S.v && S.v.fase === 'ejecucion' && SEG.girar !== false ? (SEG.rumbo || 0) : 0; }
-  function verRuta() {
+  function rumboSeguir() { return S.v && SEG.girar !== false ? (SEG.rumbo || 0) : 0; }
+  function verRuta(dur) {
     var v = S.v; if (!v) return;
     var b = new maplibregl.LngLatBounds();
     [v.o, v.d, v.pos].filter(Boolean).forEach(function (p) { b.extend([p.lng, p.lat]); });
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600 });
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: dur || 600 });
   }
   function centrar() {
     if (S.v && S.v.pos) {   // en el viaje: va al carro y lo sigue (hasta que muevas el mapa)
@@ -1082,7 +1082,7 @@
     SEG.llego = falta < 50 || (v.fase === 'aceptada' && v.llego);
     carro(pos, SEG.activo && SEG.sigue && M.getBearing ? M.getBearing() : SEG.rumbo);
     // Flechita antes de "Iniciar": sigue al carro con el mapa derecho, un poco alejado, sin taparlo con la barra de abajo
-    if (!SEG.activo && SEG.sigueFuera) M.easeTo(v.fase === 'ejecucion' && SEG.girar !== false ? { center: [pos.lng, pos.lat], bearing: rumboSeguir(), duration: 900, padding: rellenoCarro() } : { center: [pos.lng, pos.lat], duration: 900, padding: rellenoCarro() });
+    if (!SEG.activo && SEG.sigueFuera) M.easeTo(SEG.girar !== false ? { center: [pos.lng, pos.lat], bearing: rumboSeguir(), duration: 900, padding: rellenoCarro() } : { center: [pos.lng, pos.lat], duration: 900, padding: rellenoCarro() });
     else if (!SEG.activo && SEG.autoFit !== false && v.fase === 'aceptada') vistaRecogida(900);
     // Siguiendo al carro: el mapa gira para que la flecha vaya siempre hacia adelante (como el conductor), sin inclinarse
     if (SEG.activo && SEG.sigue) M.easeTo(vistaNav(900));
@@ -1794,7 +1794,7 @@
     var a = Math.random() * Math.PI * 2;
     v.cond = c; v.fase = 'aceptada'; v.llego = false; v.pos = { lat: v.o.lat + Math.sin(a) * 0.011, lng: v.o.lng + Math.cos(a) * 0.011 };
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
-    SEG.autoFit = true;
+    SEG.autoFit = true; SEG.girar = true;
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
   }
   function llego() {
@@ -1967,7 +1967,7 @@
     var y0 = null, hoja = $('#hoja');
     function poner(mini) {
       if (!mini && hoja.classList.contains('mini')) { agrandar(); return; }
-      if (mini && !hoja.classList.contains('mini') && S.v && S.v.fase === 'ejecucion') { achicarSuave(); return; }
+      if (mini && !hoja.classList.contains('mini') && S.v) { achicarSuave(); return; }
       hoja.classList.toggle('mini', mini);
       setTimeout(function () {
         ultimaHoja = ''; render();
@@ -1986,7 +1986,11 @@
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
       pie.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; pie.style.transform = '';
       setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; pie.style.transition = ''; }, 500);
-      if (S.v && S.v.pos && !SEG.activo && SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
+      if (S.v && S.v.pos && !SEG.activo) {
+        if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
+        else verRuta(1000);
+      }
     }
     function agrandar() {
       var antes = hoja.offsetHeight;
