@@ -429,6 +429,7 @@
   .otra small{color:var(--gris);font-size:13px;line-height:1.4}
   .otra.no{opacity:.6}
   .otra .entrada{margin:0}
+  .etiqueta.recalc{background:#B54708;margin-top:12px;margin-left:6px}
   .para-otra{display:inline-block;background:#FFF4E5;color:#9A5B00;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;margin-top:10px}
 </style>
 </head>
@@ -554,6 +555,7 @@
     <button class="prin" id="sim-acepta">Un conductor acepta</button>
     <button id="sim-llego">El conductor llegó</button>
     <button id="sim-inicia">El conductor inicia el taxímetro</button>
+    <button id="sim-otra">El conductor toma otra ruta</button>
     <button id="sim-fin">El conductor finaliza</button>
     <label>Color del carro del conductor
       <select id="sim-color">
@@ -695,12 +697,66 @@
     [v.o, v.d, v.pos].filter(Boolean).forEach(function (p) { b.extend([p.lng, p.lat]); });
     M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: 600 });
   }
-  function centrar() { M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 }); }
+  function centrar() {
+    if (S.v && S.v.pos && SEG.ruta) { SEG.sigue = true; seguir(); return; }   // en el viaje: vuelve a seguir el carro
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
+  }
   function rumboEntre(a, b) {
     var r = Math.PI / 180, y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
     var x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lng - a.lng) * r);
     return (Math.atan2(y, x) / r + 360) % 360;
   }
+
+  // ---------- Seguimiento del carro (igual que en la app del conductor) ----------
+  // Cada ubicación nueva del conductor: el carro avanza por la calle, la ruta que ya pasó se borra,
+  // y si el conductor se va por otra calle se recalcula la ruta desde donde está.
+  function metrosEntre(a, b) { return distKm(a, b) / 1.3 * 1000; }
+  function proyectar(pos, r) {
+    var mejor = { d: 1e9, i: 0, pt: { lat: r[0][1], lng: r[0][0] } }, kx = Math.cos(pos.lat * Math.PI / 180) * 111320, ky = 110540;
+    for (var i = 0; i < r.length - 1; i++) {
+      var ax = (r[i][0] - pos.lng) * kx, ay = (r[i][1] - pos.lat) * ky, bx = (r[i + 1][0] - pos.lng) * kx, by = (r[i + 1][1] - pos.lat) * ky;
+      var dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+      var px = ax + t * dx, py = ay + t * dy, d = Math.sqrt(px * px + py * py);
+      if (d < mejor.d) mejor = { d: d, i: i, pt: { lat: r[i][1] + t * (r[i + 1][1] - r[i][1]), lng: r[i][0] + t * (r[i + 1][0] - r[i][0]) } };
+    }
+    return mejor;
+  }
+  var SEG = { ruta: null, meta: null, fuera: 0, margen: 45, recalc: false, pedido: 0, falta: 0, rumbo: 0, ant: null, sigue: true };
+  function metaViaje(v) { return v.fase === 'ejecucion' ? v.d : v.o; }
+  function rutaSeg(desde, hasta, desvio) {
+    var pedido = ++SEG.pedido; SEG.recalc = true; SEG.desvio = !!desvio; SEG.meta = hasta; render();
+    var recta = function () { if (pedido !== SEG.pedido) return; SEG.ruta = [[desde.lng, desde.lat], [hasta.lng, hasta.lat]]; listoRuta(); };
+    function listoRuta() { SEG.recalc = false; SEG.desvio = false; SEG.fuera = 0; SEG.margen = Math.max(45, proyectar(desde, SEG.ruta).d + 30); seguir(); }
+    calcularRuta(desde, hasta).then(function (r) { if (pedido !== SEG.pedido) return; SEG.ruta = r.coords; listoRuta(); }).catch(recta);
+  }
+  function empezarSeguimiento() {
+    var v = S.v; if (!v || !v.pos) return;
+    SEG.ant = null; SEG.sigue = true; SEG.fuera = 0;
+    var meta = metaViaje(v);
+    // Ya conocemos la ruta del viaje (la que vio al pedir): se usa al empezar el taxímetro
+    if (v.fase === 'ejecucion' && v.ruta && v.ruta.length > 1) { SEG.ruta = v.ruta; SEG.meta = meta; SEG.recalc = false; SEG.margen = 45; SEG.pedido++; seguir(); }
+    else rutaSeg(v.pos, meta);
+  }
+  function seguir() {
+    var v = S.v; if (!v || !v.pos || !SEG.ruta) return;
+    var pos = v.pos;
+    if (SEG.ant && metrosEntre(SEG.ant, pos) > 3) SEG.rumbo = rumboEntre(SEG.ant, pos);
+    SEG.ant = { lat: pos.lat, lng: pos.lng };
+    var pr = proyectar(pos, SEG.ruta);
+    if (!SEG.recalc) {
+      if (pr.d > SEG.margen) { SEG.fuera++; if (SEG.fuera >= 2) { rutaSeg(pos, metaViaje(v), true); return; } }
+      else { SEG.fuera = 0; if (pr.d < 45) SEG.margen = 45; }
+    }
+    var resto = [[pos.lng, pos.lat]].concat(SEG.ruta.slice(pr.i + 1));
+    ponerRuta(resto);
+    var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
+    SEG.falta = falta;
+    carro(pos, SEG.rumbo);
+    if (SEG.sigue) M.easeTo({ center: [pos.lng, pos.lat], zoom: Math.max(15.5, Math.min(M.getZoom ? M.getZoom() : 16, 17)), duration: 900, padding: relleno() });
+  }
+  function pararSeguimiento() { SEG.pedido++; SEG.ruta = null; SEG.recalc = false; SEG.desvio = false; SEG.falta = 0; }
+  // Si el cliente mueve el mapa con los dedos, deja de seguir el carro hasta que toque "centrar"
+  ['dragstart', 'zoomstart'].forEach(function (ev) { try { M.on(ev, function (e) { if (e && e.originalEvent && S.v && S.v.pos) SEG.sigue = false; }); } catch (er) {} });
 
   // ---------- Servicios (los mismos del panel) ----------
   function buscarLugares(q) {
@@ -820,9 +876,10 @@
       '<small>' + c.calif.toFixed(1) + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg><i></i>Unidad ' + esc(c.u) + '</small></div>' +
       '<a class="circ" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></a>' +
       '<a class="circ" href="tel:' + esc(c.tel) + '" aria-label="Llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a></div>';
-    var meta = enCurso ? v.d : v.o, km = distKm(v.pos, meta);
+    var meta = enCurso ? v.d : v.o, km = SEG.ruta && SEG.falta ? SEG.falta / 1000 : distKm(v.pos, meta);
     var estadoTxt = enCurso ? 'para llegar al destino' : (v.llego ? '· tu unidad llegó' : 'para recogerte');
     h += (v.llego && !enCurso ? '<span class="etiqueta" style="background:var(--verde);margin-top:12px">Tu unidad llegó · te espera afuera</span>' : '') +
+      (SEG.recalc && SEG.desvio && v.pos && !(v.llego && !enCurso) ? '<span class="etiqueta recalc">El conductor tomó otra ruta · recalculando…</span>' : '') +
       '<div class="datos"><div><div class="km">' + (v.llego && !enCurso ? '0.0' : km.toFixed(1)) + ' km</div><div class="min">' + (v.llego && !enCurso ? 'Sal a encontrarte con tu unidad' : minutos(km) + ' min ' + estadoTxt) + '</div></div>' +
       '<div class="valor"><b>' + dineroC(enCurso ? Math.max(CFG.minimaC, v.mostradoC || CFG.arranqueC) : v.estC) + '</b><small>' + (enCurso ? 'Taxímetro' : 'Taxímetro aprox.') + '</small></div></div>';
     h += '<div class="chips"><div class="chip"><b style="font-size:16px;letter-spacing:.5px">' + esc(c.placa) + '</b><small>Placa</small></div>' +
@@ -865,7 +922,7 @@
     $('#arriba-v').style.visibility = v && (v.fase === 'aceptada' || v.fase === 'ejecucion') ? '' : 'hidden';
     if (v && v.cond) {
       $('#p1-t').textContent = 'Unidad ' + v.cond.u; $('#p1-v').textContent = v.cond.placa;
-      var mk = distKm(v.pos, v.fase === 'ejecucion' ? v.d : v.o);
+      var mk = SEG.ruta && SEG.falta ? SEG.falta / 1000 : distKm(v.pos, v.fase === 'ejecucion' ? v.d : v.o);
       $('#p2-t').textContent = v.fase === 'ejecucion' ? 'Llegas a las' : 'Llega en';
       $('#p2-v').textContent = v.fase === 'ejecucion' ? horaTxt(Date.now() + minutos(mk) * 60000) : (v.llego ? 'Afuera' : minutos(mk) + ' min');
     }
@@ -918,11 +975,11 @@
     var a = Math.random() * Math.PI * 2;
     v.cond = c; v.fase = 'aceptada'; v.llego = false; v.pos = { lat: v.o.lat + Math.sin(a) * 0.011, lng: v.o.lng + Math.cos(a) * 0.011 };
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
-    aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); setTimeout(verRuta, 60);
+    aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
   }
   function llego() {
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
-    v.pos = { lat: v.o.lat, lng: v.o.lng }; v.llego = true; carro(v.pos); sonar();
+    v.pos = { lat: v.o.lat, lng: v.o.lng }; v.llego = true; pararSeguimiento(); ponerRuta(v.ruta || null); carro(v.pos); sonar();
     if (navigator.vibrate) try { navigator.vibrate([200, 100, 200]); } catch (e) {}
     aviso('Tu unidad llegó. Te espera afuera.'); render();
   }
@@ -931,7 +988,7 @@
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
     v.fase = 'ejecucion'; v.llego = true; v.seg = 0; v.metros = 0; v.espera = 0; v.mostradoC = 0; v.ultMostrar = 0; v.inicio = Date.now();
     v.pos = { lat: v.o.lat, lng: v.o.lng }; if (mkO) { mkO.remove(); mkO = null; }
-    aviso('Tu viaje empezó. El taxímetro está corriendo.'); render(); setTimeout(verRuta, 60);
+    aviso('Tu viaje empezó. El taxímetro está corriendo.'); render(); empezarSeguimiento();
   }
   function finalizar() {
     var v = S.v; if (!v || v.fase !== 'ejecucion') return;
@@ -939,10 +996,10 @@
     S.fin = { v: v, total: total, marcado: marcado, estrellas: 0, razon: '', fin: Date.now() };
     S.viajes.unshift({ t: Date.now(), o: v.o.nombre, d: v.d.nombre, km: v.metros / 1000, totalC: total, cond: v.cond.nombre, u: v.cond.u, placa: v.cond.placa });
     guardar('aac2_viajes', S.viajes.slice(0, 50));
-    S.v = null; carro(null); puntos(null); render(); pintarFin();
+    pararSeguimiento(); S.v = null; carro(null); puntos(null); render(); pintarFin();
   }
   function cancelar() {
-    clearTimeout(S.tAcepta); S.v = null; carro(null); puntos(null); aviso('Cancelaste tu viaje.'); render();
+    clearTimeout(S.tAcepta); pararSeguimiento(); S.v = null; carro(null); puntos(null); aviso('Cancelaste tu viaje.'); render();
   }
   function sonar() {
     try {
@@ -951,23 +1008,45 @@
     } catch (e) {}
   }
 
+  // Solo en la prueba: el GPS del conductor. Avanza por la ruta; "otra ruta" lo hace doblar por otra calle unos segundos.
+  var SIM = { desvio: 0, rumbo: 0 };
+  function moverSim(v, metros) {
+    var antes = { lat: v.pos.lat, lng: v.pos.lng };
+    if (SIM.desvio > 0) { SIM.desvio--; var r = SIM.rumbo * Math.PI / 180; v.pos = { lat: v.pos.lat + Math.cos(r) * 0.00028, lng: v.pos.lng + Math.sin(r) * 0.00028 }; }
+    else if (SEG.ruta && !SEG.recalc) {
+      var rt = SEG.ruta, pr = proyectar(v.pos, rt);
+      if (pr.d <= SEG.margen) {
+        var cur = pr.pt;
+        for (var k = pr.i + 1; k < rt.length && metros > 0; k++) {
+          var sig = { lat: rt[k][1], lng: rt[k][0] }, d2 = metrosEntre(cur, sig);
+          if (d2 <= metros) { cur = sig; metros -= d2; } else { var f = metros / d2; cur = { lat: cur.lat + (sig.lat - cur.lat) * f, lng: cur.lng + (sig.lng - cur.lng) * f }; metros = 0; }
+        }
+        v.pos = cur;
+      }
+    }
+    return metrosEntre(antes, v.pos);
+  }
+  $('#sim-otra').addEventListener('click', function () {
+    if (!S.v || !S.v.pos || !SEG.ruta || S.v.llego && S.v.fase !== 'ejecucion') { aviso('Funciona cuando el conductor va en camino o durante el viaje.'); return; }
+    SIM.desvio = 5; SIM.rumbo = SEG.rumbo + (Math.random() < 0.5 ? 90 : -90); aviso('El conductor dobló por otra calle…');
+  });
   // Cada segundo: el carro se mueve y el taxímetro avanza igual que en la app del conductor
+  var VEL_PRUEBA = 40;   // metros por segundo en la prueba (más rápido que en la calle, para ver todo el recorrido)
   setInterval(function () {
     var v = S.v; if (!v || !v.pos) return;
     if (v.fase === 'aceptada' && !v.llego) {
-      var ant = { lat: v.pos.lat, lng: v.pos.lng };
-      v.pos.lat += (v.o.lat - v.pos.lat) * 0.08; v.pos.lng += (v.o.lng - v.pos.lng) * 0.08;
-      carro(v.pos, rumboEntre(ant, v.o));
-      if (distKm(v.pos, v.o) < 0.05) { llego(); return; }
+      moverSim(v, VEL_PRUEBA); seguir();
+      if (SEG.ruta && !SEG.recalc && SEG.falta < 40) { llego(); return; }
       render();
     } else if (v.fase === 'ejecucion') {
       v.seg++;
-      var parado = (v.seg % 90) > 70;
-      if (!parado) { var a2 = { lat: v.pos.lat, lng: v.pos.lng }; v.pos.lat += (v.d.lat - v.pos.lat) * 0.012; v.pos.lng += (v.d.lng - v.pos.lng) * 0.012; carro(v.pos, rumboEntre(a2, v.d)); }
-      if (v.seg > CFG.gratisSeg) { if (parado) v.espera++; else v.metros += 8.5; }
+      var parado = (v.seg % 90) > 70 && !SIM.desvio, recorrido = 0;
+      if (!parado) recorrido = moverSim(v, VEL_PRUEBA);
+      seguir();
+      if (v.seg > CFG.gratisSeg) { if (parado) v.espera++; else v.metros += recorrido; }
       if (v.mostradoC === 0 && v.seg >= 3) v.mostradoC = CFG.arranqueC;
       if (v.seg - v.ultMostrar >= 10) { v.ultMostrar = v.seg; v.mostradoC = v.seg <= CFG.gratisSeg ? CFG.arranqueC : taximetroC(v.metros, v.espera); }
-      if (distKm(v.pos, v.d) < 0.06) { finalizar(); return; }
+      if (SEG.ruta && !SEG.recalc && SEG.falta < 40) { finalizar(); return; }
       render();
     }
   }, 1000);
@@ -1058,7 +1137,7 @@
     }
   });
   $('#b-centrar').addEventListener('click', centrar);
-  $('#b-ruta').addEventListener('click', verRuta);
+  $('#b-ruta').addEventListener('click', function () { SEG.sigue = false; verRuta(); });   // ver todo el viaje; "centrar" vuelve a seguir el carro
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'in-d' && S.busq && S.busq.mostrada && S.busq.mostrada.length && S.busq.lista) elegirLugar(S.busq.mostrada[0]); });
 
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
