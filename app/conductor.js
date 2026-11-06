@@ -121,14 +121,16 @@
       o = o || {};
       var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
       if (o.center && SV.a && Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
-      SV.trans = Math.max(SV.trans, fin);
+      SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
       return orig(o);
     };
+    var origF = M.fitBounds.bind(M);
+    M.fitBounds = function (b, o) { var d = o && o.duration != null ? o.duration : 500; SV.trans = Math.max(SV.trans, Date.now() + d); SV.pCam = null; return origF(b, o); };
   })();
   // Con el dedo en el mapa, el mapa es tuyo: deja de seguir al carro apenas lo mueves (como en Google Maps) y no se le pelea
   (function () {
     var caja = document.getElementById('mapa').parentNode, x0 = 0, y0 = 0;   // el mapa y lo que flota encima
-    function abajo(x, y) { SV.dedo = true; x0 = x; y0 = y; }
+    function abajo(x, y) { SV.dedo = true; SV.pCam = null; x0 = x; y0 = y; }
     function mueve(x, y, varios) { if (!SV.dedo) return; if (varios || Math.abs(x - x0) + Math.abs(y - y0) > 6) { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } } }
     function arriba() { setTimeout(function () { SV.dedo = false; }, 60); }
     caja.addEventListener('touchstart', function (e) { var t = e.touches[0]; abajo(t.clientX, t.clientY); if (e.touches.length > 1) mueve(0, 0, true); }, { passive: true });
@@ -140,6 +142,7 @@
     window.addEventListener('mouseup', arriba);
     caja.addEventListener('wheel', function () { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } }, { passive: true });
   })();
+  function NAV_META() { return (NAV.activo ? (NAV.rumbo || 0) : rumboSeguir()); }
   (function cuadro() {
     try {
       var ahora = Date.now(), yo = D && D.yo;
@@ -147,8 +150,9 @@
       var p = posSuave(ahora);
       if (p && yoMk) {
         SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
-        if (SV.resto && SV.resto.length > 1) { SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
-        if (siguiendo() && ahora >= SV.trans && !SV.dedo) {
+        if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
+        if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
+        SV.pCam = p;
           var cur = M.getBearing ? M.getBearing() : 0, meta = NAV.activo ? (NAV.rumbo || 0) : rumboSeguir(), dif = ((meta - cur + 540) % 360) - 180;
           M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.3 ? meta : cur + dif * 0.08 });
         }
@@ -197,7 +201,7 @@
   function centrar() {
     if (!D || !tieneCoord(D.yo)) { aviso('Todavía no hay señal GPS.'); return; }
     if (D.carrera) {   // en la carrera: va al carro y lo sigue de frente (hasta que muevas el mapa)
-      if (NAV.activo) { NAV.sigue = true; pintarNav(); seguirNav(); return; }
+      if (NAV.activo) { NAV.sigue = true; pintarNav(); seguirNav(); M.easeTo(vistaNav(600)); return; }
       NAV.sigueFuera = true; NAV.girar = true;
       M.easeTo({ center: [D.yo.lng, D.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
       return;
@@ -209,7 +213,7 @@
     var c = D && D.carrera; if (!c || NAV.activo || !tieneCoord(D.yo)) return;
     if (NAV.antF && metrosEntre(NAV.antF, D.yo) > 3) NAV.rumbo = rumboEntre(NAV.antF, D.yo);
     if (!NAV.antF || metrosEntre(NAV.antF, D.yo) > 3) NAV.antF = { lat: D.yo.lat, lng: D.yo.lng };
-    if (!NAV.sigueFuera && NAV.autoFit !== false && c.estado === 'aceptada' && Date.now() - (seguirFuera.t || 0) > 900) { seguirFuera.t = Date.now(); vistaRecogida(900); }
+    if (!NAV.sigueFuera && NAV.autoFit !== false && c.estado === 'aceptada' && Date.now() - (seguirFuera.t || 0) > 900 && Date.now() >= SV.trans) { seguirFuera.t = Date.now(); vistaRecogida(900); }
   }
   function pintarMapa() {
     var yo = D && D.yo;
@@ -349,7 +353,7 @@
     NAV.llego = falta < 50;
     try { yoMk && yoMk.setRotation && yoMk.setRotation(NAV.sigue && M.getBearing ? M.getBearing() : NAV.rumbo); } catch (e) {}
     // Siguiendo: el mapa gira para que la flecha vaya siempre hacia adelante, plano (sin inclinarse); al entrar acerca una vez
-    if (NAV.sigue && (Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05 || (M.getPitch && M.getPitch() > 1))) M.easeTo(vistaNav(900));
+    if (NAV.sigue && Date.now() >= SV.trans && (Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05 || (M.getPitch && M.getPitch() > 1))) M.easeTo(vistaNav(900));   // nunca corta un movimiento que ya está en camino
     pintarNav();
   }
   // Cámara de la navegación: con el cuadro abierto se aleja un poco (15.5) para ver avanzar la flecha
@@ -419,7 +423,7 @@
   try { M.on('rotate', pintarBrujula); M.on('pitch', pintarBrujula); M.on('moveend', pintarBrujula); } catch (e) {}
   $('#b-brujula').addEventListener('click', function () { NAV.girar = false; M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); });
+  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); if (D && tieneCoord(D.yo)) M.easeTo(vistaNav(600)); });   // vuelve suave al carro
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
   // Con cada estado nuevo de la app
