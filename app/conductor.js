@@ -92,7 +92,7 @@
     return { top: Math.min(170, Math.round(alto * 0.22)), bottom: Math.min(Math.round(alto * 0.62), abajo), left: 40, right: 40 };
   }
   // El mapa gira para que el carro vaya siempre de frente (la brújula lo endereza)
-  function rumboSeguir() { return NAV.girar !== false ? (NAV.rumbo || 0) : 0; }
+  function rumboSeguir() { return NAV.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (NAV.rumbo || 0)) : 0; }
   // Yendo a la recogida: el carro y el punto de recogida juntos, de frente
   function vistaRecogida(dur) {
     var c = D && D.carrera; if (!c || !tieneCoord(D.yo) || !tieneCoord(c.o)) return;
@@ -103,15 +103,34 @@
   // Cada ubicación nueva: el carro se desliza desde donde se ve hasta la nueva (en el tiempo que tardó en llegar);
   // si el mapa lo sigue, lo acompaña en cada cuadro: el carro queda quieto en la pantalla y el mapa se desliza.
   var SV = { de: null, a: null, t0: 0, dur: 0, ult: 0, vista: null, trans: 0, resto: null };
+  // Por dónde va la flecha: navegando (o con ruta, en el cliente) avanza POR la calle de la ruta, con sus curvas,
+  // en vez de ir en línea recta entre una lectura del GPS y la otra (así no corta las esquinas ni salta)
+  function rutaSuave() { return (NAV.activo && NAV.ruta && !NAV.recalc) ? NAV.ruta : null; }
+  function rutaCum(r) { if (r.__cum) return r.__cum; var cm = [0]; for (var q = 1; q < r.length; q++) cm.push(cm[q - 1] + metrosEntre({ lat: r[q - 1][1], lng: r[q - 1][0] }, { lat: r[q][1], lng: r[q][0] })); r.__cum = cm; return cm; }
+  function sEnRuta(r, p) { if (!r || r.length < 2) return null; var pr = proyectar(p, r); if (!pr.pt || pr.d > 25) return null; var cm = rutaCum(r); return Math.min(cm[pr.i + 1], cm[pr.i] + metrosEntre({ lat: r[pr.i][1], lng: r[pr.i][0] }, pr.pt)); }
+  function puntoRuta(r, sv) {
+    var cm = rutaCum(r), n = cm.length - 1; sv = Math.max(0, Math.min(cm[n], sv));
+    var lo = 0, hi = n - 1; while (lo < hi) { var md = (lo + hi + 1) >> 1; if (cm[md] <= sv) lo = md; else hi = md - 1; }
+    var L = (cm[lo + 1] - cm[lo]) || 1, fr = (sv - cm[lo]) / L, A = r[lo], B = r[lo + 1];
+    return { lat: A[1] + (B[1] - A[1]) * fr, lng: A[0] + (B[0] - A[0]) * fr, rumbo: rumboEntre({ lat: A[1], lng: A[0] }, { lat: B[1], lng: B[0] }), s: sv };
+  }
   function posSuave(t) {
-    if (!SV.a) return null; if (!SV.de || !SV.dur) return SV.a;
-    var k = Math.max(0, Math.min(1, (t - SV.t0) / SV.dur));
+    if (!SV.a) return null;
+    if (SV.r && SV.r !== rutaSuave()) { var resta = Math.max(0, SV.t0 + SV.dur - t); SV.de = SV.vista || SV.a; SV.t0 = t; SV.dur = resta; SV.r = null; }   // cambió la ruta: sigue desde donde se ve, sin salto
+    var k = !SV.de || !SV.dur ? 1 : Math.max(0, Math.min(1, (t - SV.t0) / SV.dur));
+    if (SV.r && SV.sDe != null && SV.sA != null) { var q = puntoRuta(SV.r, SV.sDe + (SV.sA - SV.sDe) * k); SV.tan = q.rumbo; SV.sAhora = q.s; return q; }
+    SV.sAhora = null;
+    if (!SV.de || !SV.dur) return SV.a;
+    if (metrosEntre(SV.de, SV.a) > 1) SV.tan = rumboEntre(SV.de, SV.a);
     return { lat: SV.de.lat + (SV.a.lat - SV.de.lat) * k, lng: SV.de.lng + (SV.a.lng - SV.de.lng) * k };
   }
   function nuevaPosSuave(p) {
-    var ahora = Date.now(), visto = SV.vista || posSuave(ahora);
-    if (!visto || metrosEntre(visto, p) > 400) { SV.de = null; SV.a = p; SV.dur = 0; SV.vista = p; }
-    else { SV.de = visto; SV.a = p; SV.dur = SV.ult ? Math.max(250, Math.min(6000, ahora - SV.ult)) : 1000; }
+    var ahora = Date.now(), visto = SV.vista || posSuave(ahora), r = rutaSuave();
+    if (!visto || metrosEntre(visto, p) > 400) { SV.de = null; SV.a = p; SV.dur = 0; SV.vista = p; SV.r = null; }   // primera vez o salto grande: va directo
+    else {
+      SV.de = visto; SV.a = p; SV.dur = SV.ult ? Math.max(250, Math.min(6000, ahora - SV.ult)) : 1000; SV.r = null;
+      if (r) { var s1 = sEnRuta(r, p), s0 = SV.rVista === r && SV.sVista != null ? SV.sVista : sEnRuta(r, visto); if (s0 != null && s1 != null && Math.abs(s1 - s0) < 400) { SV.r = r; SV.sDe = s0; SV.sA = s1; } }
+    }
     SV.t0 = ahora; SV.ult = ahora;
   }
   // Como Google Maps: si estás quieto, el temblor del GPS (1 a 5 m) no mueve la flecha; navegando, la flecha va pegada a la calle
@@ -154,7 +173,7 @@
     M.easeTo = function (o) {
       o = o || {};
       var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
-      if (o.center && SV.a && siguiendo() && ((Math.abs(o.center[0] - SV.a.lng) < 1e-5 && Math.abs(o.center[1] - SV.a.lat) < 1e-5) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-5 && Math.abs(o.center[1] - SV.raw.lat) < 1e-5) || (SV.vista && Math.abs(o.center[0] - SV.vista.lng) < 1e-4 && Math.abs(o.center[1] - SV.vista.lat) < 1e-4))) { try { M.stop && M.stop(); } catch (e) {} camIr(o, dur); return M; }
+      if (o.center && SV.a && siguiendo() && ((Math.abs(o.center[0] - SV.a.lng) < 1e-5 && Math.abs(o.center[1] - SV.a.lat) < 1e-5) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-5 && Math.abs(o.center[1] - SV.raw.lat) < 1e-5) || (SV.vista && Math.abs(o.center[0] - SV.vista.lng) < 1e-4 && Math.abs(o.center[1] - SV.vista.lat) < 1e-4))) { try { M.stop && M.stop(); } catch (e) {} camIr(Object.assign({}, o, { bearing: null }), dur); return M; }
       if (o.center && SV.a && ((Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-7 && Math.abs(o.center[1] - SV.raw.lat) < 1e-7))) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
       CAM.anim = null; SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
       return orig(o);
@@ -177,21 +196,26 @@
     window.addEventListener('mouseup', arriba);
     caja.addEventListener('wheel', function () { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } }, { passive: true });
   })();
-  function NAV_META() { return (NAV.activo ? (NAV.rumbo || 0) : rumboSeguir()); }
+  function NAV_META() { return NAV.activo ? (SV.rumboFlecha != null ? SV.rumboFlecha : (NAV.rumbo || 0)) : rumboSeguir(); }
   (function cuadro() {
     try {
       var ahora = Date.now(), yo = D && D.yo;
       if (tieneCoord(yo) && (!SV.raw || yo.lat !== SV.raw.lat || yo.lng !== SV.raw.lng)) { SV.raw = { lat: yo.lat, lng: yo.lng }; var tObj = objetivoSuave(yo); if (tObj) nuevaPosSuave(tObj); }
       var p = posSuave(ahora);
       if (p && yoMk) {
-        SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
+        SV.vista = p; SV.sVista = SV.sAhora; SV.rVista = SV.r; yoMk.setLngLat([p.lng, p.lat]);
+      var dt = Math.min(100, ahora - (SV.tPrev || ahora)); SV.tPrev = ahora;
+      // La flecha gira con la calle donde está (se ve doblar); el mapa la sigue con calma (~1 s) y vuelve a quedar derecha
+      if (SV.tan != null) { if (SV.rumboFlecha == null) SV.rumboFlecha = SV.tan; else { var dfl = ((SV.tan - SV.rumboFlecha + 540) % 360) - 180; SV.rumboFlecha = (SV.rumboFlecha + dfl * (1 - Math.exp(-dt / 300)) + 360) % 360; } }
+      if (SV.rumboFlecha != null) { try { yoMk.setRotation(SV.rumboFlecha); } catch (e) {} }
         if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
         var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
         if (camT) M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding });
         else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
-          var cur = M.getBearing ? M.getBearing() : 0, meta = NAV.activo ? (NAV.rumbo || 0) : rumboSeguir(), dif = ((meta - cur + 540) % 360) - 180;
-          M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.3 ? meta : cur + dif * 0.08 });
+          var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META(), dif = ((meta - cur + 540) % 360) - 180;
+          var paso = dif * (1 - Math.exp(-dt / 650)), tope = 110 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
+          M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso });
         }
       }
     } catch (e) {}
@@ -389,7 +413,6 @@
     NAV.falta = falta;
     while (NAV.paso < NAV.pasos.length - 1 && metrosEntre(pos, { lat: NAV.pasos[NAV.paso].loc[1], lng: NAV.pasos[NAV.paso].loc[0] }) < 20) NAV.paso++;
     NAV.llego = falta < 50;
-    try { yoMk && yoMk.setRotation && yoMk.setRotation(NAV.sigue && M.getBearing ? M.getBearing() : NAV.rumbo); } catch (e) {}
     // Siguiendo: el mapa gira para que la flecha vaya siempre hacia adelante, plano (sin inclinarse); al entrar acerca una vez
     if (NAV.sigue && Date.now() >= SV.trans && (Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05 || (M.getPitch && M.getPitch() > 1))) M.easeTo(vistaNav(900));   // nunca corta un movimiento que ya está en camino
     pintarNav();
@@ -454,7 +477,7 @@
     if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); }
   }
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba
-  try { M.on('move', function () { if (NAV.activo && NAV.sigue && yoMk) { try { yoMk.setRotation(M.getBearing()); } catch (e) {} } }); } catch (er) {}
+
   // Gestos con dos dedos (girar e inclinar) y brújula, como la app del cliente
   try { M.touchZoomRotate.enableRotation(); M.touchPitch.enable(); M.dragRotate.enable(); } catch (e) {}
   function pintarBrujula() {
