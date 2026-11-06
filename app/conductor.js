@@ -123,13 +123,40 @@
     return t;
   }
   function siguiendo() { return !!(D && D.carrera && ((NAV.activo && NAV.sigue) || (!NAV.activo && NAV.sigueFuera))); }
+  // Cámara de las transiciones (Iniciar, Salir, agrandar, achicar, Centrar): el mapa lleva al carro pegado en cada cuadro
+  // y el zoom, el giro y el espacio del cuadro cambian poco a poco alrededor de él. Si tocas otra cosa a la mitad,
+  // la nueva transición sigue desde donde va (no se reinicia ni salta).
+  var CAM = { anim: null };
+  function suaveK(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function camActual() {
+    var pd = M.getPadding ? M.getPadding() : null;
+    return { zoom: M.getZoom ? M.getZoom() : 15, bearing: M.getBearing ? M.getBearing() : 0, pitch: M.getPitch ? M.getPitch() : 0,
+      padding: { top: pd ? pd.top : 0, bottom: pd ? pd.bottom : 0, left: pd ? pd.left : 0, right: pd ? pd.right : 0 } };
+  }
+  function camIr(o, dur) {
+    var de = camActual(), pd = o.padding || de.padding;
+    CAM.anim = { de: de, a: { zoom: o.zoom != null ? o.zoom : de.zoom, bearing: o.bearing != null ? o.bearing : null, pitch: o.pitch != null ? o.pitch : de.pitch,
+      padding: { top: pd.top || 0, bottom: pd.bottom || 0, left: pd.left || 0, right: pd.right || 0 } }, t0: Date.now(), dur: Math.max(1, dur) };
+    SV.pCam = null;
+  }
+  function camAhora(ahora) {
+    var A = CAM.anim; if (!A) return null;
+    var t = Math.min(1, (ahora - A.t0) / A.dur), k = suaveK(t), de = A.de, a = A.a;
+    var bMeta = a.bearing != null ? a.bearing : NAV_META(), dif = ((bMeta - de.bearing + 540) % 360) - 180;
+    var r = { zoom: de.zoom + (a.zoom - de.zoom) * k, bearing: de.bearing + dif * k, pitch: de.pitch + (a.pitch - de.pitch) * k,
+      padding: { top: de.padding.top + (a.padding.top - de.padding.top) * k, bottom: de.padding.bottom + (a.padding.bottom - de.padding.bottom) * k,
+        left: de.padding.left + (a.padding.left - de.padding.left) * k, right: de.padding.right + (a.padding.right - de.padding.right) * k } };
+    if (t >= 1) CAM.anim = null;
+    return r;
+  }
   (function () {
     var orig = M.easeTo.bind(M);
     M.easeTo = function (o) {
       o = o || {};
       var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
+      if (o.center && SV.a && siguiendo() && ((Math.abs(o.center[0] - SV.a.lng) < 1e-5 && Math.abs(o.center[1] - SV.a.lat) < 1e-5) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-5 && Math.abs(o.center[1] - SV.raw.lat) < 1e-5) || (SV.vista && Math.abs(o.center[0] - SV.vista.lng) < 1e-4 && Math.abs(o.center[1] - SV.vista.lat) < 1e-4))) { try { M.stop && M.stop(); } catch (e) {} camIr(o, dur); return M; }
       if (o.center && SV.a && ((Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-7 && Math.abs(o.center[1] - SV.raw.lat) < 1e-7))) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
-      SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
+      CAM.anim = null; SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
       return orig(o);
     };
     var origF = M.fitBounds.bind(M);
@@ -138,7 +165,7 @@
   // Con el dedo en el mapa, el mapa es tuyo: deja de seguir al carro apenas lo mueves (como en Google Maps) y no se le pelea
   (function () {
     var caja = document.getElementById('mapa').parentNode, x0 = 0, y0 = 0;   // el mapa y lo que flota encima
-    function abajo(x, y) { SV.dedo = true; SV.pCam = null; x0 = x; y0 = y; }
+    function abajo(x, y) { SV.dedo = true; SV.pCam = null; CAM.anim = null; x0 = x; y0 = y; }
     function mueve(x, y, varios) { if (!SV.dedo) return; if (varios || Math.abs(x - x0) + Math.abs(y - y0) > 6) { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } } }
     function arriba() { setTimeout(function () { SV.dedo = false; }, 60); }
     caja.addEventListener('touchstart', function (e) { var t = e.touches[0]; abajo(t.clientX, t.clientY); if (e.touches.length > 1) mueve(0, 0, true); }, { passive: true });
@@ -159,7 +186,9 @@
       if (p && yoMk) {
         SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
         if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
-        if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
+        var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
+        if (camT) M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding });
+        else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
           var cur = M.getBearing ? M.getBearing() : 0, meta = NAV.activo ? (NAV.rumbo || 0) : rumboSeguir(), dif = ((meta - cur + 540) % 360) - 180;
           M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.3 ? meta : cur + dif * 0.08 });
@@ -971,7 +1000,8 @@
     }
     // Sube o baja deslizándose (0,45 s)
     function animar(mini) {
-      var antes = hoja.offsetHeight;
+      var antes = hoja.offsetHeight;   // donde se ve ahora (aunque vaya a la mitad de otra animación)
+      clearTimeout(hoja.__t); hoja.style.transition = 'none'; hoja.style.height = ''; hoja.style.overflow = '';
       U.mini = mini; hoja.classList.toggle('mini', mini); render();
       ANIM_HOJA.activa = true;
       var despues = hoja.offsetHeight;
@@ -980,7 +1010,7 @@
       void hoja.offsetHeight;
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
       pegarBotones(500);
-      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
+      hoja.__t = setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
     }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; });
     hoja.addEventListener('pointerup', function (e) {
