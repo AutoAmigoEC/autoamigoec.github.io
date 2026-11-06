@@ -1962,9 +1962,24 @@
   $('#b-ruta').addEventListener('click', function () { SEG.sigueFuera = false; SEG.autoFit = false; verRuta(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'in-d' && S.busq && S.busq.mostrada && S.busq.mostrada.length && S.busq.lista) elegirLugar(S.busq.mostrada[0]); });
 
+  // Flechita, brújula y tarjeta Iniciar/Salir pegadas al borde del cuadro (mismas cuentas de siempre)
+  function posBotones() {
+    var h = $('#hoja').offsetHeight || 0, pie = $('#nav-pie'), v = S.v;
+    var conUnidad = !!(v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion'));
+    pie.style.bottom = (h + 10) + 'px';
+    var px = h + 16 + (conUnidad ? (pie.offsetHeight || 0) + 10 : 0);
+    $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px';
+    $('#b-brujula').style.bottom = (px + 58) + 'px';
+    $('#nav-centrar').style.bottom = (h + (pie.offsetHeight || 0) + 22) + 'px';
+  }
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
   (function () {
-    var y0 = null, hoja = $('#hoja');
+    var y0 = null, hoja = $('#hoja'), rafB = 0, finB = 0;
+    function pegarBotones(ms) {
+      finB = Date.now() + ms;
+      if (rafB) return;
+      (function paso() { posBotones(); if (Date.now() < finB) rafB = requestAnimationFrame(paso); else { rafB = 0; ultimaHoja = ''; render(); posBotones(); } })();
+    }
     function poner(mini) {
       if (!mini && hoja.classList.contains('mini')) { agrandar(); return; }
       if (mini && !hoja.classList.contains('mini') && S.v) { achicarSuave(); return; }
@@ -1979,13 +1994,12 @@
     function achicarSuave() {
       var antes = hoja.offsetHeight;
       hoja.classList.add('mini'); ultimaHoja = ''; render();
-      var despues = hoja.offsetHeight, baja = antes - despues, pie = $('#nav-pie');
+      var despues = hoja.offsetHeight;
       hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
-      pie.style.transition = 'none'; pie.style.transform = 'translateY(' + (-baja) + 'px)';
       void hoja.offsetHeight;
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
-      pie.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; pie.style.transform = '';
-      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; pie.style.transition = ''; }, 500);
+      pegarBotones(500);
+      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
       if (S.v && S.v.pos && !SEG.activo) {
         if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
         else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
@@ -1995,11 +2009,12 @@
     function agrandar() {
       var antes = hoja.offsetHeight;
       hoja.classList.remove('mini'); ultimaHoja = ''; render();
-      var sube = hoja.offsetHeight - antes, pie = $('#nav-pie');
-      [hoja, pie].forEach(function (el) { el.style.transition = 'none'; el.style.transform = 'translateY(' + sube + 'px)'; });
+      var despues = hoja.offsetHeight;
+      hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
       void hoja.offsetHeight;
-      [hoja, pie].forEach(function (el) { el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; });
-      setTimeout(function () { [hoja, pie].forEach(function (el) { el.style.transition = ''; }); }, 500);
+      hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
+      pegarBotones(500);
+      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
       // El mapa se acomoda a la vez que sube el cuadro (un solo movimiento)
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
