@@ -191,6 +191,7 @@
       var c = pos.coords, p = { lat: c.latitude, lng: c.longitude, acc: c.accuracy, vel: c.speed };
       W.gps.denegado = false; W.gps.ultima = p;
       txPos(p); recPos(p);
+      if (window.AA && AA.gps) AA.gps(p.lat, p.lng);   // la navegación usa el GPS del teléfono en tiempo real
       var t = mono();
       if (t - W.gps.ultimoEnvio < (W.gps.rapido ? 5000 : GPS_INTERVALO) && W.gps.ultimoEnvio) return;
       W.gps.ultimoEnvio = t; enviarUbicacion(p.lat, p.lng);
