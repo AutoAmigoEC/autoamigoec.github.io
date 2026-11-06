@@ -906,7 +906,7 @@
   }
   var carroEl = document.createElement('div'); carroEl.className = 'carro-mapa';
   carroEl.innerHTML = '<svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="20.4" r="18" fill="rgba(0,0,0,.25)"/><circle cx="19" cy="19" r="18" fill="#fff" stroke="#E4E7EC"/><g class="g"><rect x="12" y="6" width="14" height="26" rx="5" fill="#0A0F3C"/><rect x="14" y="10" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="14" y="23" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="12.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="22.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/></g></svg><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="24.6" r="21" fill="rgba(0,0,0,.28)"/><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
-  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map', pitchAlignment: 'viewport' }), carroEnMapa = false;
+  var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map', pitchAlignment: 'viewport', subpixelPositioning: true }), carroEnMapa = false;
   function relleno() {
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
@@ -944,6 +944,14 @@
     else { SV.de = visto; SV.a = p; SV.dur = SV.ult ? Math.max(250, Math.min(6000, ahora - SV.ult)) : 1000; }
     SV.t0 = ahora; SV.ult = ahora;
   }
+  // Como Google Maps: si estás quieto, el temblor del GPS (1 a 5 m) no mueve la flecha; navegando, la flecha va pegada a la calle
+  function objetivoSuave(raw) {
+    if (SV.fuente && metrosEntre(SV.fuente, raw) < 2.5) return null;
+    SV.fuente = { lat: raw.lat, lng: raw.lng };
+    var t = { lat: raw.lat, lng: raw.lng };
+    if (SEG.ruta && !SEG.recalc) { var pr = proyectar(raw, SEG.ruta); if (pr.d < 25 && pr.pt) t = { lat: pr.pt.lat, lng: pr.pt.lng }; }
+    return t;
+  }
   function siguiendo() { return !!(S.v && S.v.pos && ((SEG.activo && SEG.sigue) || (!SEG.activo && SEG.sigueFuera))); }
   // Las transiciones del mapa que van al carro apuntan a donde estará el carro al terminar
   (function () {
@@ -951,7 +959,7 @@
     M.easeTo = function (o) {
       o = o || {};
       var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
-      if (o.center && SV.a && Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
+      if (o.center && SV.a && ((Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-7 && Math.abs(o.center[1] - SV.raw.lat) < 1e-7))) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
       SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
       return orig(o);
     };
@@ -988,8 +996,8 @@
     requestAnimationFrame(cuadro);
   })();
   function carro(p, rumbo) {
-    if (!p) { if (carroEnMapa) { mkC.remove(); carroEnMapa = false; } SV.a = SV.de = SV.vista = null; SV.ult = 0; SV.resto = null; return; }
-    nuevaPosSuave(p);
+    if (!p) { if (carroEnMapa) { mkC.remove(); carroEnMapa = false; } SV.a = SV.de = SV.vista = SV.fuente = SV.raw = null; SV.ult = 0; SV.resto = null; return; }
+    SV.raw = { lat: p.lat, lng: p.lng }; var tObj = objetivoSuave(p); if (tObj) nuevaPosSuave(tObj);
     if (!carroEnMapa) { mkC.setLngLat([p.lng, p.lat]); mkC.addTo(M); carroEnMapa = true; }
     if (rumbo != null) { try { mkC.setRotation(rumbo); } catch (e) { carroEl.querySelector('.g').setAttribute('transform', 'rotate(' + rumbo + ' 19 19)'); } }
   }

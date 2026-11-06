@@ -114,13 +114,21 @@
     else { SV.de = visto; SV.a = p; SV.dur = SV.ult ? Math.max(250, Math.min(6000, ahora - SV.ult)) : 1000; }
     SV.t0 = ahora; SV.ult = ahora;
   }
+  // Como Google Maps: si estás quieto, el temblor del GPS (1 a 5 m) no mueve la flecha; navegando, la flecha va pegada a la calle
+  function objetivoSuave(raw) {
+    if (SV.fuente && metrosEntre(SV.fuente, raw) < 2.5) return null;
+    SV.fuente = { lat: raw.lat, lng: raw.lng };
+    var t = { lat: raw.lat, lng: raw.lng };
+    if (NAV.activo && NAV.ruta && !NAV.recalc) { var pr = proyectar(raw, NAV.ruta); if (pr.d < 25 && pr.pt) t = { lat: pr.pt.lat, lng: pr.pt.lng }; }
+    return t;
+  }
   function siguiendo() { return !!(D && D.carrera && ((NAV.activo && NAV.sigue) || (!NAV.activo && NAV.sigueFuera))); }
   (function () {
     var orig = M.easeTo.bind(M);
     M.easeTo = function (o) {
       o = o || {};
       var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
-      if (o.center && SV.a && Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
+      if (o.center && SV.a && ((Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) || (SV.raw && Math.abs(o.center[0] - SV.raw.lng) < 1e-7 && Math.abs(o.center[1] - SV.raw.lat) < 1e-7))) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
       SV.trans = Math.max(SV.trans, fin); SV.pCam = null;
       return orig(o);
     };
@@ -146,7 +154,7 @@
   (function cuadro() {
     try {
       var ahora = Date.now(), yo = D && D.yo;
-      if (tieneCoord(yo) && (!SV.a || yo.lat !== SV.a.lat || yo.lng !== SV.a.lng)) nuevaPosSuave({ lat: yo.lat, lng: yo.lng });
+      if (tieneCoord(yo) && (!SV.raw || yo.lat !== SV.raw.lat || yo.lng !== SV.raw.lng)) { SV.raw = { lat: yo.lat, lng: yo.lng }; var tObj = objetivoSuave(yo); if (tObj) nuevaPosSuave(tObj); }
       var p = posSuave(ahora);
       if (p && yoMk) {
         SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
@@ -218,7 +226,7 @@
   function pintarMapa() {
     var yo = D && D.yo;
     if (tieneCoord(yo)) {
-      if (!yoMk) yoMk = new maplibregl.Marker({ element: yoEl, rotationAlignment: 'map', pitchAlignment: 'viewport' }).setLngLat([yo.lng, yo.lat]).addTo(M);
+      if (!yoMk) yoMk = new maplibregl.Marker({ element: yoEl, rotationAlignment: 'map', pitchAlignment: 'viewport', subpixelPositioning: true }).setLngLat([yo.lng, yo.lat]).addTo(M);
       if (primeraVez) { primeraVez = false; M.jumpTo({ center: [yo.lng, yo.lat], zoom: 15 }); }
     }
     var claseYo = 'yo' + (D && (D.estado === 'conectado' || D.carrera) ? '' : ' gris') + (NAV.activo ? ' flecha' : '');
