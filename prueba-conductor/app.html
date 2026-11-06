@@ -298,7 +298,9 @@
   .yo.flecha{width:46px;height:46px}
   .yo.flecha .halo,.yo.flecha .punto{display:none}
   .yo .nav-ic{display:none}
-  .yo.flecha .nav-ic{display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  .yo.flecha .nav-ic{display:block}
+  /* La flecha se mueve con la tarjeta gráfica y su sombra va dibujada adentro (en iPhone el efecto de sombra la hacía parpadear) */
+  .yo,.carro-mapa{will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -679,7 +681,7 @@
   // ---------- Mapa ----------
   var M = MapaAA.crear('mapa', [S.yo.lat, S.yo.lng], 14.5);
   function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
-  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
+  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="24.6" r="21" fill="rgba(0,0,0,.28)"/><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
   var yoMk = new maplibregl.Marker({ element: yoEl }).setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
   function pinV(color) {
     var el = document.createElement('div');
@@ -1038,7 +1040,8 @@
     $('#k-saldo').textContent = $('#v-saldo').textContent = dineroC(S.saldoC);
     $('#k-consumido').textContent = $('#v-consumido').textContent = dineroC(S.consumidoC);
     // Círculo del mapa: verde activo, gris inactivo
-    yoEl.className = 'yo ' + (S.estado === 'conectado' || S.carrera ? '' : 'gris') + (NAV.activo ? ' flecha' : '');
+    var claseYo = 'yo' + (S.estado === 'conectado' || S.carrera ? '' : ' gris') + (NAV.activo ? ' flecha' : '');
+    if (yoEl.className !== claseYo) yoEl.className = claseYo;   // solo si cambió
     if (NAV.activo && !S.carrera) salirNav();
     // Deslizar
     var con = S.estado === 'conectado';
@@ -1621,12 +1624,12 @@
       var antes = hoja.offsetHeight;
       hoja.classList.toggle('mini', mini); ultimaHoja = ''; render();
       var despues = hoja.offsetHeight;
+      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
       hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
       void hoja.offsetHeight;
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
       pegarBotones(500);
       setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
-      moverMapa();
     }
     function poner(mini) {
       if (mini === hoja.classList.contains('mini')) return;

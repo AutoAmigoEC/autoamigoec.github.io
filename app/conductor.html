@@ -313,7 +313,9 @@
   .yo.flecha{width:46px;height:46px}
   .yo.flecha .halo,.yo.flecha .punto{display:none}
   .yo .nav-ic{display:none}
-  .yo.flecha .nav-ic{display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  .yo.flecha .nav-ic{display:block}
+  /* La flecha se mueve con la tarjeta gráfica y su sombra va dibujada adentro (en iPhone el efecto de sombra la hacía parpadear) */
+  .yo,.carro-mapa{will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -612,6 +614,6 @@
 <script src="../mapas.js?v=202610301400"></script>
 <script src="turno.js?v=5"></script>
 <script src="perfil.js?v=1"></script>
-<script src="conductor.js?v=13"></script>
+<script src="conductor.js?v=14"></script>
 </body>
 </html>

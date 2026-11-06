@@ -65,7 +65,7 @@
   // ---------- Mapa ----------
   var M = MapaAA.crear('mapa', [-2.17, -79.9224], 13);
   function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
-  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
+  var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="24.6" r="21" fill="rgba(0,0,0,.28)"/><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
   var yoMk = null, primeraVez = true;
   function pinV(color) {
     var el = document.createElement('div');
@@ -221,7 +221,8 @@
       if (!yoMk) yoMk = new maplibregl.Marker({ element: yoEl, rotationAlignment: 'map', pitchAlignment: 'viewport' }).setLngLat([yo.lng, yo.lat]).addTo(M);
       if (primeraVez) { primeraVez = false; M.jumpTo({ center: [yo.lng, yo.lat], zoom: 15 }); }
     }
-    yoEl.className = 'yo ' + (D && (D.estado === 'conectado' || D.carrera) ? '' : 'gris') + (NAV.activo ? ' flecha' : '');
+    var claseYo = 'yo' + (D && (D.estado === 'conectado' || D.carrera) ? '' : ' gris') + (NAV.activo ? ' flecha' : '');
+    if (yoEl.className !== claseYo) yoEl.className = claseYo;   // solo si cambió (cambiarla cada segundo la hacía parpadear)
     var c = D && (D.carrera || D.oferta);
     mkO = marcador(mkO, c && c.o, '#E5252A');
     mkD = marcador(mkD, c && c.d, '#1570EF');
@@ -966,12 +967,12 @@
       U.mini = mini; hoja.classList.toggle('mini', mini); render();
       ANIM_HOJA.activa = true;
       var despues = hoja.offsetHeight;
+      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
       hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
       void hoja.offsetHeight;
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
       pegarBotones(500);
       setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
-      moverMapa();
     }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; });
     hoja.addEventListener('pointerup', function (e) {

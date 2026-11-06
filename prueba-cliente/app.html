@@ -308,7 +308,9 @@
   .yo.flecha{width:46px;height:46px}
   .yo.flecha .halo,.yo.flecha .punto{display:none}
   .yo .nav-ic{display:none}
-  .yo.flecha .nav-ic{display:block;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  .yo.flecha .nav-ic{display:block}
+  /* La flecha se mueve con la tarjeta gráfica y su sombra va dibujada adentro (en iPhone el efecto de sombra la hacía parpadear) */
+  .yo,.carro-mapa{will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
   /* ---------- Carrera completada ---------- */
   .fin{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;padding:40px 22px 0;overflow:auto}
   .fin>*{flex:none}
@@ -375,7 +377,7 @@
   .btn-acep:disabled{opacity:.45}
   .ruedita.gira svg{animation:girar 1s linear infinite;transform-origin:50% 50%}
   @keyframes girar{to{transform:rotate(270deg)}}
-  .carro-mapa{filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}
+  .carro-mapa{}
   .carro-mapa .nav-ic{display:none}
   .carro-mapa.flecha>svg:first-child{display:none}
   .carro-mapa.flecha .nav-ic{display:block}
@@ -903,7 +905,7 @@
     return el;
   }
   var carroEl = document.createElement('div'); carroEl.className = 'carro-mapa';
-  carroEl.innerHTML = '<svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="18" fill="#fff" stroke="#E4E7EC"/><g class="g"><rect x="12" y="6" width="14" height="26" rx="5" fill="#0A0F3C"/><rect x="14" y="10" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="14" y="23" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="12.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="22.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/></g></svg><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
+  carroEl.innerHTML = '<svg width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="20.4" r="18" fill="rgba(0,0,0,.25)"/><circle cx="19" cy="19" r="18" fill="#fff" stroke="#E4E7EC"/><g class="g"><rect x="12" y="6" width="14" height="26" rx="5" fill="#0A0F3C"/><rect x="14" y="10" width="10" height="6" rx="2" fill="#9DB4FF"/><rect x="14" y="23" width="10" height="4" rx="1.5" fill="#9DB4FF"/><rect x="12.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/><rect x="22.5" y="6.5" width="3" height="2" rx="1" fill="#FFE9A8"/></g></svg><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="24.6" r="21" fill="rgba(0,0,0,.28)"/><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
   var mkO = null, mkD = null, mkC = new maplibregl.Marker({ element: carroEl, rotationAlignment: 'map', pitchAlignment: 'viewport' }), carroEnMapa = false;
   function relleno() {
     var viaje = $('#pantalla').classList.contains('viaje');
@@ -2058,33 +2060,35 @@
       var antes = hoja.offsetHeight;
       hoja.classList.add('mini'); ultimaHoja = ''; render();
       var despues = hoja.offsetHeight;
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
+      if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
+      else if (S.v && S.v.pos) {
+        if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
+        else verRuta(1000);
+      }
       hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
       void hoja.offsetHeight;
       hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
       pegarBotones(500);
       setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
-      if (S.v && S.v.pos && !SEG.activo) {
-        if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
-        else verRuta(1000);
-      }
     }
     function agrandar() {
       var antes = hoja.offsetHeight;
       hoja.classList.remove('mini'); ultimaHoja = ''; render();
       var despues = hoja.offsetHeight;
-      hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
-      void hoja.offsetHeight;
-      hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
-      pegarBotones(500);
-      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
-      // El mapa se acomoda a la vez que sube el cuadro (un solo movimiento)
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
         else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
+      hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
+      void hoja.offsetHeight;
+      hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
+      pegarBotones(500);
+      setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
     }
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
     hoja.addEventListener('pointerup', function (e) {
