@@ -480,6 +480,9 @@
   .aprob{margin-top:14px;background:#FEF6DD;color:#7A5A00;border-radius:14px;padding:12px;font-size:14px;font-weight:600;text-align:center}
   .prog{display:inline-block;margin-left:8px;background:#E0F2FE;color:#026AA2;font-weight:700;font-size:12.5px;padding:5px 10px;border-radius:999px}
   .btn-acep:disabled,.btn-gris:disabled,.btn-final:disabled{opacity:.55}
+  /* La app no deja seleccionar textos ni sale la lupa al mantener el dedo (como una app) */
+  #pantalla{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #pantalla input,#pantalla textarea{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -609,6 +612,6 @@
 <script src="../mapas.js?v=202610301400"></script>
 <script src="turno.js?v=5"></script>
 <script src="perfil.js?v=1"></script>
-<script src="conductor.js?v=10"></script>
+<script src="conductor.js?v=11"></script>
 </body>
 </html>

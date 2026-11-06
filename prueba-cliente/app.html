@@ -643,6 +643,9 @@
   .ufijar .caja h3{margin:0;font-size:19px}
   .ufijar .caja .lugar{display:flex;gap:10px;align-items:center;background:#F6F7FB;border-radius:14px;padding:12px}
   .ufijar .caja .lugar b{display:block}.ufijar .caja .lugar small{color:var(--gris)}
+  /* La app no deja seleccionar textos ni sale la lupa al mantener el dedo (como una app) */
+  #pantalla{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #pantalla input,#pantalla textarea{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>

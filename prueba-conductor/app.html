@@ -441,6 +441,9 @@
   .controles label{font-size:13px;font-weight:600;color:#344054;display:flex;flex-direction:column;gap:5px}
   .btn-prueba{display:none;position:fixed;right:12px;bottom:100px;z-index:100;height:40px;padding:0 14px;border-radius:20px;border:0;background:#101828;color:#fff;font-weight:700;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
   @media (max-width:560px){.controles.abierto{position:fixed;left:12px;right:12px;bottom:150px;width:auto;z-index:100}}
+  /* La app no deja seleccionar textos ni sale la lupa al mantener el dedo (como una app) */
+  #pantalla{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #pantalla input,#pantalla textarea{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -1327,6 +1330,8 @@
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
     render();
+    if (!NAV.rumbo) NAV.rumbo = rumboEntre(S.yo, metaNav());
+    M.easeTo(vistaNav(900));   // de una sola vez: acerca, gira de frente y queda plano (mientras llega la ruta)
   }
   function salirNav() {
     if (!NAV.activo) return;

@@ -306,6 +306,8 @@
     U.mini = true; NAV.sigueFuera = false;
     rutaNav(D.yo, metaNav());
     render();
+    if (!NAV.rumbo) NAV.rumbo = rumboEntre(D.yo, metaNav());
+    M.easeTo(vistaNav(900));   // de una sola vez: acerca, gira de frente y queda plano (mientras llega la ruta)
   }
   function salirNav() {
     if (!NAV.activo) return;
