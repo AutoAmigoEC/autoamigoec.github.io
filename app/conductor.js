@@ -395,10 +395,16 @@
     pintarNav();
   }
   // Cámara de la navegación: con el cuadro abierto se aleja un poco (15.5) para ver avanzar la flecha
+  // Espacio libre real arriba con el cuadro grande: debajo del recuadro de la instrucción (si se ve)
+  function libreArriba() {
+    var nt = document.getElementById('nav-top');
+    if (!nt || getComputedStyle(nt).display === 'none') return 40;
+    return 10 + nt.offsetHeight + 16;
+  }
   function vistaNav(dur) {
     var gr = $('#pantalla').classList.contains('hoja-grande');
     return { center: [D.yo.lng, D.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
-      padding: { top: gr ? 100 : 200, bottom: ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
+      padding: { top: gr ? libreArriba() : 200, bottom: gr ? ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26 : ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
   }
   function pintarNav() {
     var p = $('#pantalla'), c = D && D.carrera;
@@ -985,6 +991,25 @@
   }
   (function () {
     var y0 = null, hoja = $('#hoja'), rafB = 0, finB = 0;
+    // El cuadro y lo que va pegado a él (tarjeta Iniciar/Salir, flechita, brújula) se deslizan con la tarjeta gráfica:
+    // el tamaño final se pone de una vez y solo se anima el desplazamiento (el teléfono no recalcula la pantalla en cada cuadro)
+    var SOMBRA_HOJA = '0 -10px 30px rgba(0,0,0,.25)';
+    function despHoja() { var m = getComputedStyle(hoja).transform; if (!m || m === 'none') return 0; var v = m.match(/matrix\(([^)]+)\)/); return v ? parseFloat(v[1].split(',')[5]) || 0 : 0; }
+    function deslizarHoja(cambiar) {
+      var els = ['#nav-pie', '#b-centrar', '#b-ruta', '#b-brujula', '#nav-centrar'].map(function (s) { return $(s); }).filter(Boolean);
+      els.unshift(hoja);
+      var antes = hoja.offsetHeight - despHoja();   // lo que se ve ahora (aunque vaya a la mitad de otra animación)
+      clearTimeout(hoja.__t);
+      els.forEach(function (el) { el.style.transition = 'none'; el.style.transform = ''; });
+      hoja.style.height = ''; hoja.style.overflow = '';
+      cambiar();
+      var despues = hoja.offsetHeight, d = despues - antes;
+      if (d < 0) hoja.style.boxShadow = SOMBRA_HOJA + ', 0 ' + Math.round(despues / 2) + 'px 0 #fff, 0 ' + despues + 'px 0 #fff';   // al bajar, debajo sigue blanco
+      els.forEach(function (el) { el.style.transform = 'translate3d(0,' + d + 'px,0)'; });
+      void hoja.offsetHeight;
+      els.forEach(function (el) { el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; el.style.transform = 'translate3d(0,0,0)'; });
+      hoja.__t = setTimeout(function () { els.forEach(function (el) { el.style.transition = ''; el.style.transform = ''; }); hoja.style.boxShadow = ''; }, 480);
+    }
     function pegarBotones(ms) {
       finB = Date.now() + ms;
       if (rafB) return;
@@ -1000,18 +1025,13 @@
     }
     // Sube o baja deslizándose (0,45 s)
     function animar(mini) {
-      var antes = hoja.offsetHeight;   // donde se ve ahora (aunque vaya a la mitad de otra animación)
-      clearTimeout(hoja.__t); hoja.style.transition = 'none'; hoja.style.height = ''; hoja.style.overflow = '';
-      U.mini = mini; hoja.classList.toggle('mini', mini); render();
       ANIM_HOJA.activa = true;
-      var despues = hoja.offsetHeight;
+      deslizarHoja(function () { U.mini = mini; hoja.classList.toggle('mini', mini); render(); posBotones(); });
       moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
-      hoja.style.transition = 'none'; hoja.style.height = antes + 'px'; hoja.style.overflow = 'hidden';
-      void hoja.offsetHeight;
-      hoja.style.transition = 'height .45s cubic-bezier(.2,.8,.2,1)'; hoja.style.height = despues + 'px';
-      pegarBotones(500);
-      hoja.__t = setTimeout(function () { hoja.style.transition = ''; hoja.style.height = ''; hoja.style.overflow = ''; posBotones(); }, 500);
+      clearTimeout(animar.t); animar.t = setTimeout(function () { ANIM_HOJA.activa = false; render(); posBotones(); }, 500);
     }
+    hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador')); }, { passive: true });
+    hoja.addEventListener('touchmove', function (e) { if (hoja.__tir) e.preventDefault(); }, { passive: false });   // arrastrar la rayita no mueve la página
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; });
     hoja.addEventListener('pointerup', function (e) {
       if (y0 == null) return; var dy = e.clientY - y0; y0 = null;

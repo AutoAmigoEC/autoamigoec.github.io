@@ -485,6 +485,11 @@
   /* La app no deja seleccionar textos ni sale la lupa al mantener el dedo (como una app) */
   #pantalla{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   #pantalla input,#pantalla textarea{-webkit-user-select:text;user-select:text}
+  /* Al tocar Iniciar o Salir, lo que aparece entra suave (no de golpe) */
+  @keyframes suaveEntra{from{opacity:0}to{opacity:1}}
+  .navegando .nav-top{animation:suaveEntra .25s ease}
+  .viaje:not(.navegando) .arriba-v{animation:suaveEntra .25s ease}
+  .yo.flecha .nav-ic,.yo:not(.flecha) .punto,.carro-mapa.flecha .nav-ic,.carro-mapa:not(.flecha)>svg:first-child{animation:suaveEntra .25s ease}
 </style>
 </head>
 <body>
@@ -614,6 +619,6 @@
 <script src="../mapas.js?v=202610301400"></script>
 <script src="turno.js?v=5"></script>
 <script src="perfil.js?v=1"></script>
-<script src="conductor.js?v=16"></script>
+<script src="conductor.js?v=17"></script>
 </body>
 </html>
