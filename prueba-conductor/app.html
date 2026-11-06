@@ -710,6 +710,21 @@
       return orig(o);
     };
   })();
+  // Con el dedo en el mapa, el mapa es tuyo: deja de seguir al carro apenas lo mueves (como en Google Maps) y no se le pelea
+  (function () {
+    var caja = document.getElementById('mapa').parentNode, x0 = 0, y0 = 0;   // el mapa y lo que flota encima
+    function abajo(x, y) { SV.dedo = true; x0 = x; y0 = y; }
+    function mueve(x, y, varios) { if (!SV.dedo) return; if (varios || Math.abs(x - x0) + Math.abs(y - y0) > 6) { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } } }
+    function arriba() { setTimeout(function () { SV.dedo = false; }, 60); }
+    caja.addEventListener('touchstart', function (e) { var t = e.touches[0]; abajo(t.clientX, t.clientY); if (e.touches.length > 1) mueve(0, 0, true); }, { passive: true });
+    caja.addEventListener('touchmove', function (e) { var t = e.touches[0]; mueve(t.clientX, t.clientY, e.touches.length > 1); }, { passive: true });
+    caja.addEventListener('touchend', function (e) { if (!e.touches.length) arriba(); }, { passive: true });
+    caja.addEventListener('touchcancel', arriba, { passive: true });
+    caja.addEventListener('mousedown', function (e) { abajo(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', function (e) { mueve(e.clientX, e.clientY, false); });
+    window.addEventListener('mouseup', arriba);
+    caja.addEventListener('wheel', function () { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } }, { passive: true });
+  })();
   (function cuadro() {
     var ahora = Date.now();
     if (!SV.a || S.yo.lat !== SV.a.lat || S.yo.lng !== SV.a.lng) nuevaPosSuave({ lat: S.yo.lat, lng: S.yo.lng });
@@ -717,7 +732,7 @@
     if (p) {
       SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
       if (SV.resto && SV.resto.length > 1) { SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
-      if (siguiendo() && ahora >= SV.trans) {
+      if (siguiendo() && ahora >= SV.trans && !SV.dedo) {
         var cur = M.getBearing ? M.getBearing() : 0, meta = NAV.activo ? (NAV.rumbo || 0) : rumboSeguir(), dif = ((meta - cur + 540) % 360) - 180;
         M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.3 ? meta : cur + dif * 0.08 });
       }
