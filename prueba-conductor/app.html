@@ -684,6 +684,46 @@
     return el;
   }
   var mkO = null, mkD = null;
+  // ---------- Movimiento suave como Google Maps ----------
+  // Cada ubicación nueva: el carro se desliza desde donde se ve hasta la nueva (en el tiempo que tardó en llegar);
+  // si el mapa lo sigue, lo acompaña en cada cuadro: el carro queda quieto en la pantalla y el mapa se desliza.
+  var SV = { de: null, a: null, t0: 0, dur: 0, ult: 0, vista: null, trans: 0, resto: null };
+  function posSuave(t) {
+    if (!SV.a) return null; if (!SV.de || !SV.dur) return SV.a;
+    var k = Math.max(0, Math.min(1, (t - SV.t0) / SV.dur));
+    return { lat: SV.de.lat + (SV.a.lat - SV.de.lat) * k, lng: SV.de.lng + (SV.a.lng - SV.de.lng) * k };
+  }
+  function nuevaPosSuave(p) {
+    var ahora = Date.now(), visto = SV.vista || posSuave(ahora);
+    if (!visto || metrosEntre(visto, p) > 400) { SV.de = null; SV.a = p; SV.dur = 0; SV.vista = p; }
+    else { SV.de = visto; SV.a = p; SV.dur = SV.ult ? Math.max(250, Math.min(6000, ahora - SV.ult)) : 1000; }
+    SV.t0 = ahora; SV.ult = ahora;
+  }
+  function siguiendo() { return !!(S.carrera && ((NAV.activo && NAV.sigue) || (!NAV.activo && NAV.sigueFuera))); }
+  (function () {
+    var orig = M.easeTo.bind(M);
+    M.easeTo = function (o) {
+      o = o || {};
+      var dur = o.duration == null ? 500 : o.duration, fin = Date.now() + dur;
+      if (o.center && SV.a && Math.abs(o.center[0] - SV.a.lng) < 1e-7 && Math.abs(o.center[1] - SV.a.lat) < 1e-7) { var pf = posSuave(fin); o = Object.assign({}, o, { center: [pf.lng, pf.lat] }); }
+      SV.trans = Math.max(SV.trans, fin);
+      return orig(o);
+    };
+  })();
+  (function cuadro() {
+    var ahora = Date.now();
+    if (!SV.a || S.yo.lat !== SV.a.lat || S.yo.lng !== SV.a.lng) nuevaPosSuave({ lat: S.yo.lat, lng: S.yo.lng });
+    var p = posSuave(ahora);
+    if (p) {
+      SV.vista = p; yoMk.setLngLat([p.lng, p.lat]);
+      if (SV.resto && SV.resto.length > 1) { SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
+      if (siguiendo() && ahora >= SV.trans) {
+        var cur = M.getBearing ? M.getBearing() : 0, meta = NAV.activo ? (NAV.rumbo || 0) : rumboSeguir(), dif = ((meta - cur + 540) % 360) - 180;
+        M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.3 ? meta : cur + dif * 0.08 });
+      }
+    }
+    requestAnimationFrame(cuadro);
+  })();
   function relleno() {
     var viaje = document.getElementById('pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
@@ -725,7 +765,7 @@
     }).catch(function () {});
   }
   function puntosViaje(c) {
-    if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; ponerRuta(null); return; }
+    if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; ponerRuta(null); return; }
     if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom' }).setLngLat([c.o.lng, c.o.lat]).addTo(M);
     if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom' }).setLngLat([c.d.lng, c.d.lat]).addTo(M);
     mkO.setLngLat([c.o.lng, c.o.lat]); mkD.setLngLat([c.d.lng, c.d.lat]);
@@ -751,7 +791,7 @@
     var c = S.carrera; if (!c || NAV.activo) return;
     if (NAV.antF && metrosEntre(NAV.antF, S.yo) > 3) NAV.rumbo = rumboEntre(NAV.antF, S.yo);
     NAV.antF = { lat: S.yo.lat, lng: S.yo.lng };
-    if (NAV.sigueFuera) M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), duration: 900, padding: rellenoCarro() });
+    if (NAV.sigueFuera) {}   // lo acompaña cuadro por cuadro
     else if (NAV.autoFit !== false && c.estado === 'aceptada') vistaRecogida(900);
   }
 
@@ -978,7 +1018,6 @@
     // Círculo del mapa: verde activo, gris inactivo
     yoEl.className = 'yo ' + (S.estado === 'conectado' || S.carrera ? '' : 'gris') + (NAV.activo ? ' flecha' : '');
     if (NAV.activo && !S.carrera) salirNav();
-    yoMk.setLngLat([S.yo.lng, S.yo.lat]);
     // Deslizar
     var con = S.estado === 'conectado';
     $('#deslizar').classList.toggle('off', !con); // gris desconectado, verde conectado
@@ -1253,7 +1292,7 @@
     for (var i = 0; i < NAV.ruta.length; i++) { var d = metrosEntre(pos, { lat: NAV.ruta[i][1], lng: NAV.ruta[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
     return { d: mejor, i: idx };
   }
-  function ponerMargen() { NAV.margen = Math.max(45, proyectar(S.yo, NAV.ruta).d + 30); }
+  function ponerMargen() { NAV.margen = Math.min(100, Math.max(40, proyectar(S.yo, NAV.ruta).d + 25)); NAV.fueraDesde = 0; }
   // Punto de la ruta más cercano a tu posición (sobre los tramos, no solo las esquinas)
   function proyectar(pos, r) {
     var mejor = { d: 1e9, i: 0, pt: { lat: r[0][1], lng: r[0][0] } }, kx = Math.cos(pos.lat * Math.PI / 180) * 111320, ky = 110540;
@@ -1276,7 +1315,7 @@
   }
   function salirNav() {
     if (!NAV.activo) return;
-    NAV.activo = false; NAV.pedido++;
+    NAV.activo = false; NAV.pedido++; SV.resto = null;
     try { yoMk.setRotation && yoMk.setRotation(0); } catch (e) {}
     // El cuadro de abajo se queda del tamaño en que lo dejaste; el mapa sigue al carro de frente
     var c = S.carrera; if (c) trazar(c.o, c.d); else ponerRuta(null);
@@ -1293,8 +1332,9 @@
     // Punto de la ruta más cercano
     var pr = proyectar(pos, NAV.ruta), mejor = pr.d;
     if (!NAV.recalc) {
-      if (mejor > NAV.margen) { NAV.fuera++; if (NAV.fuera >= 2) { rutaNav(pos, metaNav()); return; } }
-      else { NAV.fuera = 0; if (mejor < 45) NAV.margen = 45; }
+      // Te saliste de la ruta: recalcula rápido (1,5 s fuera, o enseguida si ya vas lejos), como Google Maps
+      if (mejor > NAV.margen) { if (!NAV.fueraDesde) NAV.fueraDesde = Date.now(); if (Date.now() - NAV.fueraDesde >= 1500 || mejor > NAV.margen + 60) { NAV.fueraDesde = 0; rutaNav(pos, metaNav()); return; } }
+      else { NAV.fueraDesde = 0; NAV.fuera = 0; if (mejor < 40) NAV.margen = 40; }
     }
     // Hacia dónde va: la dirección de la calle unos 25 m más adelante en la ruta (no salta de lado en las esquinas ni con el GPS)
     if (mejor < 30) {
@@ -1306,7 +1346,7 @@
       if (metrosEntre(pos, ad) > 3) NAV.rumbo = rumboEntre(pr.pt, ad);
     }
     var resto = [[pos.lng, pos.lat]].concat(NAV.ruta.slice(pr.i + 1));
-    ponerRuta(resto);
+    SV.resto = resto.slice(); ponerRuta(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
     var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
     NAV.falta = falta;
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
@@ -1314,7 +1354,7 @@
     NAV.llego = falta < 50 || (S.carrera && NAV.obj === 'o' && S.carrera.llegue);
     try { yoMk.setRotation && yoMk.setRotation(NAV.sigue && M.getBearing ? M.getBearing() : NAV.rumbo); } catch (e) {}
     // Siguiendo: el mapa gira para que la flecha vaya siempre hacia adelante, plano (sin inclinarse)
-    if (NAV.sigue) M.easeTo(vistaNav(900));
+    if (NAV.sigue && Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05) M.easeTo(vistaNav(900));   // al entrar: acerca y acomoda una vez
     pintarNav();
   }
   // Cámara de la navegación: con el cuadro abierto se aleja un poco (15.5) para ver avanzar la flecha
