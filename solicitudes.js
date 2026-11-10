@@ -67,6 +67,7 @@
       '<div class="sol-datos">' + fila('Cédula', d.cedula) + fila('Nacimiento', fecha(d.nacimiento) + ' (' + edad(d.nacimiento) + ' años)') + fila('Teléfono', d.telefono) + fila('Correo', d.correo) + fila('Sector', d.sector) +
       fila('Vehículo', d.marca + ' · ' + d.color + ' · ' + d.anio) + fila('Placa', d.placa) +
       '<div><span>Vencimientos</span><b>Cédula ' + fecha(d.cedulaVence) + ' ' + chipVence(d.cedulaVence) + '<br>Licencia ' + fecha(d.licenciaVence) + ' ' + chipVence(d.licenciaVence) + '<br>Matrícula ' + fecha(d.matriculaVence) + ' ' + chipVence(d.matriculaVence) + '</b></div></div>' +
+      (window.AAVerificar && d.cedula ? '<div class="acciones verif"><span>Revisar en páginas oficiales:</span>' + AAVerificar.botones(d.cedula) + '</div>' : '') +
       (f && f !== 'cargando' ? '<div class="fotos-turno"><div class="grupo"><h4>Fotos tomadas en vivo</h4><div class="g">' + FOTOS.map(function (x) { return f[x[0]] ? figura(f[x[0]], x[1], d.nombre, x[0] !== 'persona') : ''; }).join('') + '</div></div></div>' : '<p class="muted">Cargando fotos…</p>') + acc + '</article>';
   }
   function nombreDe(uid) { var c = S.cond[uid] || {}; return (c.nombre || 'Conductor') + (c.unidad ? ' · Unidad ' + c.unidad : ''); }

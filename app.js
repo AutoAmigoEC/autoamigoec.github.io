@@ -730,6 +730,7 @@
       var acc = '';
       if (e && typeof e.lat === 'number') acc += '<button class="btn btn-chico" data-ver="' + uid + '">Ver en mapa</button>';
       acc += '<button class="btn btn-chico" data-editar="' + uid + '">Editar</button>';
+      if (window.AAVerificar) acc += AAVerificar.botones(null, uid);
       acc += c.activo === false
         ? '<button class="btn btn-chico" data-bloquear="' + uid + '" data-valor="1">Desbloquear</button>'
         : '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="0">Bloquear</button>';
