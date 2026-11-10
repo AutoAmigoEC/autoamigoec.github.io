@@ -345,3 +345,27 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 /* Botones para revisar antecedentes y procesos judiciales */
 .verif{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
 .verif span{font-size:13px;color:#667085;font-weight:600}
+
+/* Documentación del conductor */
+.doc-velo{position:fixed;inset:0;z-index:9000;background:rgba(9,1,69,.45);display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+.doc-velo[hidden]{display:none}
+.doc-caja{background:#fff;border-radius:18px;width:min(900px,100%);padding:20px 22px;box-shadow:0 20px 50px rgba(16,24,40,.3)}
+.doc-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.doc-cab h2{margin:0;font-size:20px}.doc-cab p{margin:2px 0 0;color:#667085}
+.doc-caja h3{margin:18px 0 8px;font-size:13px;color:#475467;text-transform:uppercase;letter-spacing:.04em}
+.doc-resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.doc-res{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.doc-res b{font-size:13px;color:#344054}.doc-res span{font-size:20px;font-weight:800}.doc-res small{color:#667085;font-size:12px}
+.doc-res.ok{background:#ECFDF3}.doc-res.ok span{color:#067647}
+.doc-res.mal{background:#FEF3F2}.doc-res.mal span{color:#B42318}
+.doc-res.gris{background:#F2F4F7}.doc-res.gris span{color:#667085;font-size:16px}
+.doc-nota{margin:8px 0 0;font-size:12.5px;color:#667085;line-height:1.45}
+.doc-fotos{display:flex;flex-wrap:wrap;gap:12px}
+.doc-fotos figure{margin:0;width:150px}
+.doc-foto{width:150px;height:110px;border:1px solid #E4E7EC;border-radius:12px;background:#F2F4F7;padding:0;overflow:hidden;cursor:zoom-in;display:flex;align-items:center;justify-content:center}
+.doc-foto img{width:100%;height:100%;object-fit:cover}.doc-foto span{color:#98A2B3;font-size:12px}.doc-foto[disabled]{cursor:default}
+.doc-fotos figcaption{font-size:12px;color:#475467;margin-top:4px}
+.doc-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.doc-datos div{background:#F9FAFB;border-radius:10px;padding:8px 10px}.doc-datos span{display:block;font-size:12px;color:#667085}.doc-datos b{font-size:14px}
+.doc-grande{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:zoom-out;padding:20px}
+.doc-grande img{max-width:100%;max-height:85vh;border-radius:10px}.doc-grande p{color:#fff;margin:0}
