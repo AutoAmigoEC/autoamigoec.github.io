@@ -41,8 +41,8 @@
       var at = uid ? ' data-verif-uid="' + uid + '"' : ' data-verif-ced="' + String(cedula || '').replace(/\D/g, '') + '"';
       if (uid) cedulaDe(uid);
       var dis = uid && !CEDULAS[uid] ? ' disabled' : '';
-      return '<button class="btn btn-chico" data-verif="antecedentes"' + at + dis + '>🔎 Antecedentes</button>' +
-        '<button class="btn btn-chico" data-verif="satje"' + at + dis + '>⚖️ Procesos judiciales</button>';
+      return '<button class="btn btn-chico" data-verif="antecedentes"' + at + dis + '>Antecedentes</button>' +
+        '<button class="btn btn-chico" data-verif="satje"' + at + dis + '>Procesos judiciales</button>';
     }
   };
 
