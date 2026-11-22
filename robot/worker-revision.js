@@ -33,12 +33,16 @@ export default {
       if (req.method !== 'POST') return json({ ok: true, servicio: 'AutoAmigo revisión de turno' });
       // Solicitud de conductor nuevo: no tiene cuenta todavía
       if (url.pathname.endsWith('/solicitud')) return json(await solicitud(req, await req.json(), env));
+      // Panel (solo administradores): restringir personas y ver la lista
+      if (url.pathname.endsWith('/restringir')) return json(await restringir(await verificarAdmin(req, env), await req.json(), env));
+      if (url.pathname.endsWith('/restringidos')) { await verificarAdmin(req, env); return json(await listaRestringidos(env)); }
       const uid = await verificarConductor(req, env);
       const body = await req.json();
       if (url.pathname.endsWith('/perfil')) return json(await fotoPerfil(uid, body, env));
       if (url.pathname.endsWith('/documento')) return json(await documento(uid, body, env));
       if (url.pathname.endsWith('/identidad')) return json(await identidad(uid, body, env));
       if (url.pathname.endsWith('/turno')) return json(await turno(uid, body, env));
+      if (url.pathname.endsWith('/equipo')) return json(await equipoConductor(req, uid, body, env));
       return json({ ok: false, error: 'ruta' }, 404);
     } catch (e) {
       const m = String(e && e.message || e);
@@ -89,15 +93,21 @@ async function solicitud(req, b, env) {
   // Versión nueva del registro (v: 2): se leen los documentos en silencio y se comparan
   if (b.v === 2) {
     if (b.prueba === true) sol.prueba = true;
+    sol.equipo = limpiarEquipo(b.equipo); sol.ip = ip;
+    const restr = await buscarRestringidos(env, { cedulas: [datos.cedula], telefono: datos.telefono, correo: datos.correo, placas: [placaNorm(datos.placa)], cara: desc.persona, equipo: sol.equipo, ip });
     const nl = (await db(env, 'GET', 'solicitudesLimite/' + dia + '/' + ip + '_l')) || 0;
     let lec = null;
     if (nl < MAX_LECTURAS_DIA) { try { lec = await leerDocumentos(f, env); } catch (e) { lec = null; } }
     await db(env, 'PUT', 'solicitudesLimite/' + dia + '/' + ip + '_l', nl + 1);
     const rev = compararDocumentos(datos, lec, par);
     // Solo un error de dedo con las fotos correctas se le avisa a la persona (no se guarda nada todavía)
-    if (rev.corregir.length) return { ok: false, corregir: rev.corregir, error: rev.corregir.map(c => MENSAJE_CORREGIR[c]).join(' ') };
+    if (rev.corregir.length && !(restr && restr.nivel === 'fuerte')) return { ok: false, corregir: rev.corregir, error: rev.corregir.map(c => MENSAJE_CORREGIR[c]).join(' ') };
     sol.lectura = lec ? limpiarLectura(lec) : null;
     sol.revision = { estado: rev.estado, motivos: rev.motivos, notas: rev.notas };
+    if (lec) {   // también con lo leído en las fotos (otra cédula escrita, misma persona)
+      const L2 = limpiarLectura(lec), r2 = await buscarRestringidos(env, { cedulas: [L2.cedula.numero, L2.licencia.numero], placas: [L2.matricula.placa, L2.carro.placa] });
+      if (r2 && (!restr || (r2.nivel === 'fuerte' && restr.nivel !== 'fuerte'))) sol.restringido = r2; else if (restr) sol.restringido = restr;
+    } else if (restr) sol.restringido = restr;
     const previas = await buscarPrevias(env, datos, lec, desc, ip);
     if (previas.length) sol.previas = previas;
     if (rev.estado === 'sospechosa') up['sospechosas/' + id] = { t, nombre: datos.nombre, cedula: datos.cedula, cedulaLeida: sol.lectura && sol.lectura.cedula.numero || null, telefono: datos.telefono, correo: datos.correo.toLowerCase(), ip, cara: desc.persona || null };
@@ -226,6 +236,87 @@ async function buscarPrevias(env, datos, lec, desc, ip) {
     if (por.length) out.push({ id: k, t: s.t || 0, nombre: s.nombre || '', por });
   });
   return out.sort((a, b) => b.t - a.t).slice(0, 5);
+}
+
+// ---------------- Restringir (lista negra silenciosa) ----------------
+// Lo que la persona ve nunca cambia: "Solicitud enviada". Solo el panel sabe que es alguien restringido.
+// Fuerte (⛔ Restringido): misma cara, mismo teléfono, misma cédula, mismo celular o correo.
+// Relacionado (⚠): misma red de internet o el mismo carro.
+function limpiarEquipo(e) {
+  const o = {}; e = e || {};
+  ['a', 'w', 'l', 'f'].forEach(k => { if (typeof e[k] === 'string' && /^[0-9a-z]{8,64}$/i.test(e[k])) o[k] = e[k]; });
+  return Object.keys(o).length ? o : null;
+}
+async function buscarRestringidos(env, q) {
+  const todos = (await db(env, 'GET', 'restringidos')) || {};
+  let mejor = null;
+  Object.keys(todos).forEach(k => {
+    const r = todos[k] || {}, fuerte = [], rel = [];
+    const ced = (q.cedulas || []).filter(c => c && c.length === 10);
+    if (ced.some(c => (r.cedulas || []).indexOf(c) >= 0)) fuerte.push('cédula');
+    if (q.telefono && (r.telefonos || []).indexOf(q.telefono) >= 0) fuerte.push('celular');
+    if (q.correo && (r.correos || []).indexOf(String(q.correo).toLowerCase()) >= 0) fuerte.push('correo');
+    if (Array.isArray(q.cara) && Array.isArray(r.cara)) { let s = 0; for (let i = 0; i < 128; i++) s += (q.cara[i] - r.cara[i]) ** 2; if (Math.sqrt(s) < 0.5) fuerte.push('cara'); }
+    const eq = q.equipo || {}, re = r.equipos || [];
+    if (['a', 'w', 'l'].some(x => eq[x] && re.some(e => e[x] === eq[x]))) fuerte.push('teléfono');
+    else if (eq.f && re.some(e => e.f === eq.f)) rel.push('mismo modelo de teléfono y configuración');
+    if (q.ip && (r.ips || []).indexOf(q.ip) >= 0) rel.push('misma red de internet');
+    const pl = (q.placas || []).filter(Boolean);
+    if (pl.some(p => (r.placas || []).indexOf(p) >= 0)) rel.push('mismo carro');
+    if (!fuerte.length && !rel.length) return;
+    const nivel = fuerte.length ? 'fuerte' : 'relacionado';
+    const cand = { id: k, nombre: r.nombre || '', t: r.t || 0, nivel, por: fuerte.concat(rel) };
+    if (!mejor || (nivel === 'fuerte' && mejor.nivel !== 'fuerte') || (nivel === mejor.nivel && cand.por.length > mejor.por.length)) mejor = cand;
+  });
+  return mejor;
+}
+function juntar(a, b) { const o = (a || []).slice(); (b || []).forEach(x => { if (x && o.indexOf(x) < 0) o.push(x); }); return o; }
+function juntarEquipos(a, b) { const o = (a || []).slice(); (b || []).forEach(e => { if (e && !o.some(x => JSON.stringify(x) === JSON.stringify(e))) o.push(e); }); return o.slice(-10); }
+async function restringir(admin, b, env) {
+  const t = Date.now();
+  if (b.quitar) { await db(env, 'PATCH', '', { ['restringidos/' + String(b.quitar).replace(/[.#$\[\]\/]/g, '')]: null }); return { ok: true }; }
+  let r = null;
+  if (b.solicitud) {
+    const id = String(b.solicitud).replace(/[.#$\[\]\/]/g, '');
+    const s = await db(env, 'GET', 'solicitudes/' + id);
+    if (!s || !s.datos) throw new Error('datos');
+    const d = s.datos, L = s.lectura || {};
+    r = { nombre: d.nombre, t, por: admin, origen: 'solicitud', ref: id,
+      cedulas: juntar([d.cedula], [L.cedula && L.cedula.numero, L.licencia && L.licencia.numero].filter(x => x && x.length === 10)),
+      telefonos: [d.telefono], correos: [String(d.correo || '').toLowerCase()],
+      placas: juntar([placaNorm(d.placa)], [L.matricula && L.matricula.placa, L.carro && L.carro.placa]),
+      cara: (s.desc && s.desc.persona) || null, equipos: s.equipo ? [s.equipo] : [], ips: s.ip ? [s.ip] : [] };
+  } else if (b.uid) {
+    const uid = String(b.uid).replace(/[.#$\[\]\/]/g, '');
+    const [c, f, ide, eq] = await Promise.all([db(env, 'GET', 'conductores/' + uid), db(env, 'GET', 'fichas/' + uid), db(env, 'GET', 'identidad/' + uid + '/descriptor'), db(env, 'GET', 'dispositivos/' + uid)]);
+    if (!c) throw new Error('datos');
+    const fi = f || {};
+    let sol = null; if (fi.solicitud) sol = await db(env, 'GET', 'solicitudes/' + fi.solicitud);
+    r = { nombre: c.nombre || fi.nombre || '', t, por: admin, origen: 'conductor', ref: uid,
+      cedulas: [fi.cedula].filter(Boolean), telefonos: [c.telefono || fi.telefono].filter(Boolean), correos: [String(fi.correo || '').toLowerCase()].filter(Boolean),
+      placas: [placaNorm(c.placa || fi.placa)].filter(Boolean), cara: ide || (sol && sol.desc && sol.desc.persona) || null,
+      equipos: juntarEquipos(eq && eq.equipos, sol && sol.equipo ? [sol.equipo] : []), ips: juntar(eq && eq.ips, sol && sol.ip ? [sol.ip] : []) };
+  } else throw new Error('datos');
+  const id = (b.solicitud ? 's_' : 'c_') + r.ref;
+  const prev = (await db(env, 'GET', 'restringidos/' + id)) || {};
+  r.equipos = juntarEquipos(prev.equipos, r.equipos); r.ips = juntar(prev.ips, r.ips);
+  await db(env, 'PUT', 'restringidos/' + id, r);
+  return { ok: true, id };
+}
+async function listaRestringidos(env) {
+  const [todos, alertas] = await Promise.all([db(env, 'GET', 'restringidos'), db(env, 'GET', 'restringidosAlertas')]);
+  const lista = Object.keys(todos || {}).map(k => { const r = todos[k]; return { id: k, nombre: r.nombre, t: r.t, origen: r.origen, cedula: (r.cedulas || [])[0] || '' }; }).sort((a, b) => b.t - a.t);
+  return { ok: true, lista, alertas: alertas || {} };
+}
+// La app del conductor avisa desde qué teléfono entró (una vez por sesión)
+async function equipoConductor(req, uid, b, env) {
+  const e = limpiarEquipo(b.equipo), ip = await huella(req.headers.get('cf-connecting-ip') || 'x'), t = Date.now();
+  const prev = (await db(env, 'GET', 'dispositivos/' + uid)) || {};
+  const up = { ['dispositivos/' + uid]: { equipos: juntarEquipos(prev.equipos, e ? [e] : []), ips: juntar(prev.ips, [ip]).slice(-20), t } };
+  const r = await buscarRestringidos(env, { equipo: e });
+  if (r && r.id !== 'c_' + uid) up['restringidosAlertas/' + uid] = { id: r.id, nombre: r.nombre, por: r.por, t };
+  await db(env, 'PATCH', '', up);
+  return { ok: true };
 }
 
 // ---------------- Foto de perfil ----------------
@@ -413,6 +504,17 @@ async function guardarEntrenamiento(env, b, clases) {
 // ---------------- Sesión del conductor (token de Firebase) ----------------
 let llaves = null, llavesHasta = 0;
 async function verificarConductor(req, env) {
+  const uid = await verificarSesion(req);
+  const c = await db(env, 'GET', 'conductores/' + uid);
+  if (!c || c.activo !== true) throw new Error('auth: conductor no activo');
+  return uid;
+}
+async function verificarAdmin(req, env) {
+  const uid = await verificarSesion(req);
+  if ((await db(env, 'GET', 'admins/' + uid)) !== true) throw new Error('auth: no es administrador');
+  return uid;
+}
+async function verificarSesion(req) {
   const h = req.headers.get('authorization') || '';
   const tok = h.startsWith('Bearer ') ? h.slice(7) : '';
   const p = tok.split('.');
@@ -429,8 +531,6 @@ async function verificarConductor(req, env) {
   const k = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', k, b64url(p[2]), new TextEncoder().encode(p[0] + '.' + p[1]));
   if (!ok) throw new Error('auth: firma');
-  const c = await db(env, 'GET', 'conductores/' + dat.sub);
-  if (!c || c.activo !== true) throw new Error('auth: conductor no activo');
   return dat.sub;
 }
 

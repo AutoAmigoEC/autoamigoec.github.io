@@ -24,7 +24,7 @@
   function wa(tel, txt) { var n = String(tel || '').replace(/\D/g, ''); if (n[0] === '0') n = '593' + n.slice(1); return (/Android|iPhone|Mobile/i.test(navigator.userAgent) ? 'https://wa.me/' + n + '?text=' : 'whatsapp://send?phone=' + n + '&text=') + encodeURIComponent(txt); }
   function abrirWA(tel, txt) { var a = document.createElement('a'); a.href = wa(tel, txt); a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); }
 
-  var S = { sol: {}, fotos: {}, cond: {}, fichas: {}, perfiles: {}, perfFotos: {}, docs: {}, aprobando: null, rechazando: null, motivos: {}, creado: null, ocupado: false };
+  var S = { excusa: '', restringir: false, sol: {}, fotos: {}, cond: {}, fichas: {}, perfiles: {}, perfFotos: {}, docs: {}, aprobando: null, rechazando: null, motivos: {}, creado: null, ocupado: false };
   var oy = [];
   function on(ruta, fn) { var r = db.ref(ruta), cb = function (s) { fn(s.val() || {}); pintar(); }; r.on('value', cb, function () { }); oy.push([r, cb]); }
   firebase.auth().onAuthStateChanged(function (u) {
@@ -66,7 +66,10 @@
     var fila = function (a, b) { return '<div><span>' + a + '</span><b>' + esc(b) + '</b></div>'; };
     var acc;
     if (S.aprobando === id) acc = '<div class="aprobar-sol"><label>Número de unidad <input id="sol-unidad" inputmode="numeric" maxlength="3" placeholder="Ej.: 15"></label><div class="acciones"><button class="btn" data-sol-volver="1">Volver</button><button class="btn btn-primario" data-sol-crear="' + id + '"' + (S.ocupado ? ' disabled' : '') + '>' + (S.ocupado ? 'Creando…' : 'Crear usuario y clave') + '</button></div></div>';
-    else if (S.rechazando === id) acc = '<div class="rechazo"><b>¿Por qué la rechazas?</b><div class="chips">' + MOT.map(function (m) { return '<button class="chip' + (S.motivos[m[0]] ? ' activo' : '') + '" data-sol-motivo="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div><div class="acciones"><button class="btn" data-sol-volver="1">Volver</button><button class="btn btn-peligro" data-sol-rechazar-ok="' + id + '">Rechazar y avisar por WhatsApp</button></div></div>';
+    else if (S.rechazando === id) acc = '<div class="rechazo"><b>¿Por qué la rechazas?</b><div class="chips">' + MOT.map(function (m) { return '<button class="chip' + (S.motivos[m[0]] ? ' activo' : '') + '" data-sol-motivo="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div>' +
+      '<label class="excusa">O escribe tu propio motivo (es lo que le llega por WhatsApp)<input id="sol-excusa" maxlength="160" placeholder="Ej.: Por ahora solo aceptamos carros blancos." value="' + esc(S.excusa) + '"></label>' +
+      '<label class="restr-check"><input type="checkbox" id="sol-restringir"' + (S.restringir ? ' checked' : '') + '> <span><b>Restringir en silencio</b><small>No se entera. Si vuelve a registrarse (aunque sea con otra cédula, desde su teléfono, con su cara o su carro), te saldrá "⛔ Restringido".</small></span></label>' +
+      '<div class="acciones"><button class="btn" data-sol-volver="1">Volver</button><button class="btn btn-peligro" data-sol-rechazar-ok="' + id + '">Rechazar y avisar por WhatsApp</button></div></div>';
     else acc = '<div class="acciones"><button class="btn btn-primario" data-sol-aprobar="' + id + '">✓ Aprobar</button><button class="btn btn-peligro" data-sol-rechazar="' + id + '">Rechazar</button></div>';
     var caras = ['cedula', 'licencia'].map(function (k) { var v = par[k]; return (k === 'cedula' ? 'Cédula' : 'Licencia') + ' ' + (typeof v === 'number' ? pct(v) + '%' : 'sin dato'); }).join(' · ');
     var sello = rev ? (rev.estado === 'sospechosa' ? '<span class="sello mal">⚠ Sospechosa</span>' : rev.estado === 'ok' ? '<span class="sello ok">✓ Todo coincide</span>' : '<span class="sello duda">Revisa tú</span>') : '';
@@ -76,10 +79,14 @@
         (rev.notas && rev.notas.length ? '<ul class="notas">' + rev.notas.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' : '') +
         (L ? '<p class="leido">Leído en las fotos: cédula <b>' + esc(L.cedula.numero || '—') + '</b> · ' + esc(L.cedula.nombre || '—') + ' | licencia <b>' + esc(L.licencia.numero || '—') + '</b> | matrícula <b>' + esc(L.matricula.placa || '—') + '</b>' + (L.matricula.propietario ? ' a nombre de ' + esc(L.matricula.propietario) : '') + ' | carro <b>' + esc(L.carro.placa || '—') + '</b></p>' : '') +
         (rev.estado === 'sospechosa' ? '<p class="leido">A la persona no se le avisó nada: cree que su solicitud está en revisión normal.</p>' : '') + '</div>' : '';
+    var R0 = s.restringido || null;
+    var hRestr = R0 ? (R0.nivel === 'fuerte'
+      ? '<div class="restr fuerte"><b>⛔ RESTRINGIDO</b> Es la misma persona o el mismo teléfono de <b>' + esc(R0.nombre) + '</b>, a quien restringiste el ' + hora(R0.t) + '. Coincide: <b>' + esc((R0.por || []).join(', ')) + '</b>.' + (rev && rev.estado === 'ok' ? '<br>Ojo: pasó todos los filtros de documentos.' : '') + '</div>'
+      : '<div class="restr relacionado"><b>⚠ Relacionado con un restringido</b> (' + esc(R0.nombre) + ', restringido el ' + hora(R0.t) + '). Coincide: <b>' + esc((R0.por || []).join(', ')) + '</b>.</div>') : '';
     var hPrev = s.previas && s.previas.length ? '<div class="rev-docs sospechosa"><b>⚠ Esta persona ya envió antes una solicitud sospechosa:</b><ul>' + s.previas.map(function (p) { return '<li>' + hora(p.t) + ' · ' + esc(p.nombre) + ' (coincide: ' + esc((p.por || []).join(', ')) + ')</li>'; }).join('') + '</ul></div>' : '';
     return '<article class="turno' + (rev && rev.estado === 'sospechosa' ? ' sospechosa' : '') + '"><div class="fila"><div><strong>' + esc(d.nombre) + (s.prueba ? ' <span class="sello duda">PRUEBA</span>' : '') + '</strong><div class="meta">Solicitud enviada el ' + hora(s.t) + ' · esperando ' + diasEsperando(s.t) + '</div></div>' +
-      sello + '<span class="cara-ok' + (parecido == null || parecido > 0.62 ? ' mal' : '') + '">' + (parecido != null && parecido <= 0.62 ? '✓ La cara coincide' : 'Revisa la cara') + ' · ' + caras + '</span></div>' +
-      hPrev + hRev +
+      (R0 && R0.nivel === 'fuerte' ? '<span class="sello mal">⛔ Restringido</span>' : '') + sello + '<span class="cara-ok' + (parecido == null || parecido > 0.62 ? ' mal' : '') + '">' + (parecido != null && parecido <= 0.62 ? '✓ La cara coincide' : 'Revisa la cara') + ' · ' + caras + '</span></div>' +
+      hRestr + hPrev + hRev +
       (al.length ? '<div class="duda-ia">' + al.map(esc).join(' ') + '</div>' : '') +
       '<div class="sol-datos">' + fila('Cédula', d.cedula) + fila('Nacimiento', fecha(d.nacimiento) + ' (' + edad(d.nacimiento) + ' años)') + fila('Teléfono', d.telefono) + fila('Correo', d.correo) + fila('Sector', d.sector) +
       fila('Vehículo', d.marca + ' · ' + d.color + ' · ' + d.anio) + fila('Placa', d.placa) +
@@ -152,13 +159,21 @@
     }).then(function () { S.ocupado = false; S.aprobando = null; pintar(); toast('Usuario creado. Envíale los datos por WhatsApp.'); }, function (e) { S.ocupado = false; pintar(); throw e; });
   }
 
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'sol-excusa') S.excusa = e.target.value;
+    if (e.target.id === 'sol-restringir') S.restringir = e.target.checked;
+  });
+  document.addEventListener('change', function (e) { if (e.target.id === 'sol-restringir') S.restringir = e.target.checked; });
+  document.addEventListener('aa-restringidos', function () { pintar(); });
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-sol-aprobar],[data-sol-rechazar],[data-sol-volver],[data-sol-crear],[data-sol-motivo],[data-sol-rechazar-ok],[data-sol-cerrar-creado],[data-sol-wa],[data-pf-ok],[data-pf-no],[data-doc-ok],[data-doc-no],.menu-item[data-vista]');
     if (!b) return;
     if (b.matches('.menu-item[data-vista]')) { setTimeout(pintar, 0); return; }
     var id;
-    if ((id = b.getAttribute('data-sol-aprobar'))) { S.aprobando = id; S.rechazando = null; pintar(); setTimeout(function () { var i = $('#sol-unidad'); if (i) i.focus(); }, 30); return; }
-    if ((id = b.getAttribute('data-sol-rechazar'))) { S.rechazando = id; S.aprobando = null; S.motivos = {}; pintar(); return; }
+    if ((id = b.getAttribute('data-sol-aprobar'))) {
+      var rr = (S.sol[id] || {}).restringido;
+      if (rr && rr.nivel === 'fuerte' && !(confirm('⛔ Esta solicitud es de alguien RESTRINGIDO (' + rr.nombre + '). ¿Seguro que quieres aprobarla?') && confirm('Confírmalo otra vez: ¿aprobar a una persona restringida?'))) return; S.aprobando = id; S.rechazando = null; pintar(); setTimeout(function () { var i = $('#sol-unidad'); if (i) i.focus(); }, 30); return; }
+    if ((id = b.getAttribute('data-sol-rechazar'))) { S.rechazando = id; S.aprobando = null; S.motivos = {}; S.excusa = ''; S.restringir = false; pintar(); return; }
     if (b.hasAttribute('data-sol-volver')) { S.aprobando = S.rechazando = null; pintar(); return; }
     if (b.hasAttribute('data-sol-motivo')) { var k = b.getAttribute('data-sol-motivo'); S.motivos[k] = !S.motivos[k]; pintar(); return; }
     if ((id = b.getAttribute('data-sol-crear'))) {
@@ -170,15 +185,23 @@
     if (b.hasAttribute('data-sol-wa')) { if (S.creado) abrirWA(S.creado.tel, S.creado.msg); return; }
     if (b.hasAttribute('data-sol-cerrar-creado')) { S.creado = null; pintar(); return; }
     if ((id = b.getAttribute('data-sol-rechazar-ok'))) {
-      var sel = MOT.filter(function (m) { return S.motivos[m[0]]; });
-      if (!sel.length) { toast('Elige al menos un motivo.', true); return; }
-      var s = S.sol[id], d = s.datos || {};
-      var up = {}; up['solicitudes/' + id + '/estado'] = 'rechazada'; up['solicitudes/' + id + '/motivo'] = sel.map(function (m) { return m[1]; }).join(', ');
+      var sel = MOT.filter(function (m) { return S.motivos[m[0]]; }), exc = ($('#sol-excusa') && $('#sol-excusa').value || '').trim();
+      if (!sel.length && !exc) { toast('Elige un motivo o escribe el tuyo.', true); return; }
+      var s = S.sol[id], d = s.datos || {}, restr = $('#sol-restringir') && $('#sol-restringir').checked;
+      var nombre1 = String(d.nombre).split(' ')[0];
+      var msg = exc ? 'Hola ' + nombre1 + ', gracias por querer ser parte de *AutoAmigo*. Por ahora no pudimos aprobar tu solicitud. ' + exc
+        : 'Hola ' + nombre1 + ', gracias por querer ser parte de *AutoAmigo*. Por ahora no pudimos aprobar tu solicitud porque ' + sel.map(function (m) { return m[2]; }).join(' y ') + '.' + (S.motivos.general ? '' : ' Puedes corregirlo y enviarla otra vez desde la app.');
+      var up = {}; up['solicitudes/' + id + '/estado'] = 'rechazada'; up['solicitudes/' + id + '/motivo'] = exc || sel.map(function (m) { return m[1]; }).join(', ');
+      if (restr) up['solicitudes/' + id + '/restringida'] = true;
       up['solicitudesCedula/' + d.cedula] = null; up['solicitudFotos/' + id] = null;
-      db.ref().update(up).then(function () {
-        abrirWA(d.telefono, 'Hola ' + String(d.nombre).split(' ')[0] + ', gracias por querer ser parte de *AutoAmigo*. Por ahora no pudimos aprobar tu solicitud porque ' + sel.map(function (m) { return m[2]; }).join(' y ') + '. Puedes corregirlo y enviarla otra vez desde la app.');
-        S.rechazando = null; pintar(); toast('Solicitud rechazada.');
-      }, function (er) { toast('No se pudo guardar: ' + er.message, true); });
+      b.disabled = true;
+      // Primero se restringe (el servidor lee la solicitud antes de que se borren las fotos)
+      (restr && window.AARestringir ? AARestringir.restringir({ solicitud: id }) : Promise.resolve()).then(function () {
+        return db.ref().update(up);
+      }).then(function () {
+        abrirWA(d.telefono, msg);
+        S.rechazando = null; pintar(); toast(restr ? 'Rechazada y restringida en silencio.' : 'Solicitud rechazada.');
+      }, function (er) { b.disabled = false; toast('No se pudo: ' + (er && er.message || er), true); });
       return;
     }
     if ((id = b.getAttribute('data-pf-ok'))) {

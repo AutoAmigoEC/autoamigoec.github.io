@@ -705,6 +705,7 @@
     b.addEventListener('click', function () { filtrarCarreras(b.getAttribute('data-filtro')); });
   });
 
+  document.addEventListener('aa-restringidos', function () { var v = document.getElementById('vista-conductores'); if (v && !v.hidden) renderTablaConductores(); });
   function renderTablaConductores() {
     var t = ahora();
     var hoy0 = inicioDia(new Date()).getTime();
@@ -736,7 +737,7 @@
         ? '<button class="btn btn-chico" data-bloquear="' + uid + '" data-valor="1">Desbloquear</button>'
         : '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="0">Bloquear</button>';
       return '<tr><td><strong>U' + esc(c.unidad || '') + '</strong></td>' +
-        '<td>' + esc(c.nombre) + '<small>' + esc(c.telefono || '') + '</small></td>' +
+        '<td>' + esc(c.nombre) + (window.AARestringir ? ' ' + AARestringir.sello(uid) : '') + '<small>' + esc(c.telefono || '') + '</small></td>' +
         '<td>' + esc(c.vehiculo || '') + '<small>' + esc(c.placa || '') + '</small></td>' +
         '<td>' + esc(c.usuario || '') + '</td>' +
         '<td><span class="pill ' + est + '">' + etiqueta + '</span></td>' +

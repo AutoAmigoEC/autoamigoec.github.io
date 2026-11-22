@@ -33,6 +33,19 @@
       img.src = src;
     });
   }
+  // Código del teléfono (para "Restringir"): en la app Android lo da la app; en el navegador, una marca guardada + rasgos del equipo
+  function sha(s) {
+    try { return crypto.subtle.digest('SHA-256', new TextEncoder().encode('AutoAmigo|' + s)).then(function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 32); }); }
+    catch (e) { return Promise.resolve(''); }
+  }
+  function equipo() {
+    var e = {};
+    try { if (window.AndroidRegistro && AndroidRegistro.equipo) e = JSON.parse(AndroidRegistro.equipo()) || {}; } catch (er) { e = {}; }
+    var marca = null;
+    try { marca = localStorage.getItem('aa_eq'); if (!marca) { var a = new Uint32Array(4); crypto.getRandomValues(a); marca = Array.prototype.map.call(a, function (x) { return x.toString(16); }).join(''); localStorage.setItem('aa_eq', marca); } } catch (er) { }
+    var rasgos = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height + 'x' + (window.devicePixelRatio || 1), navigator.hardwareConcurrency || '', navigator.deviceMemory || '', (Intl.DateTimeFormat().resolvedOptions().timeZone || '')].join('|');
+    return Promise.all([marca ? sha('l:' + marca) : Promise.resolve(''), sha('f:' + rasgos)]).then(function (x) { if (x[0]) e.l = x[0]; if (x[1]) e.f = x[1]; return e; }, function () { return e; });
+  }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
 
   var FOTOS = [
@@ -198,7 +211,9 @@
         if (h3[0]) desc.persona = h3[0];
         if (h3[1]) { desc.cedula = h3[1]; if (h3[0]) par.cedula = distancia(h3[0], h3[1]); }
         if (h3[2]) { desc.licencia = h3[2]; if (h3[0]) par.licencia = distancia(h3[0], h3[2]); }
-        return fetch(servidor + '/solicitud', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: 2, prueba: true, datos: R.datos, fotos: R.fotos, desc: desc, parecido: par }) });
+        return equipo().then(function (eq) {
+          return fetch(servidor + '/solicitud', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: 2, prueba: true, equipo: eq, datos: R.datos, fotos: R.fotos, desc: desc, parecido: par }) });
+        });
       }).then(function (r) { return r.json(); }).then(function (j) {
         // Solo escribió mal la cédula o la placa: corrige ese recuadro y vuelve a enviar
         if (j && j.corregir && j.corregir.length) {
