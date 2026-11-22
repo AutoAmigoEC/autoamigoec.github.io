@@ -10,7 +10,7 @@
   var UMBRAL_DOC = 0.62, UMBRAL_TURNO = 0.55;
   var FOTOS = [['persona', 'Foto en vivo'], ['cedula', 'Cédula'], ['licencia', 'Licencia'], ['matricula', 'Matrícula'], ['carro', 'Carro']];
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  var ESCALA = [[0, 100], [0.2, 98], [0.35, 92], [0.45, 82], [0.55, 70], [0.62, 60], [0.75, 35], [0.9, 10], [1, 0]];
+  var ESCALA = [[0, 100], [0.2, 98], [0.35, 93], [0.45, 82], [0.55, 70], [0.62, 60], [0.75, 35], [0.9, 10], [1, 0]];
   function pct(d) { for (var i = 1; i < ESCALA.length; i++) if (d <= ESCALA[i][0]) { var a = ESCALA[i - 1], b = ESCALA[i]; return Math.round(a[1] + (b[1] - a[1]) * (d - a[0]) / (b[0] - a[0])); } return 0; }
   function fecha(iso) { if (!iso) return '—'; var p = String(iso).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : esc(iso); }
   function fechaMs(ms) { if (!ms) return ''; var d = new Date(ms); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }

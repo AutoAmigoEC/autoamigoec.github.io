@@ -12,7 +12,7 @@
   var db = firebase.database();
   var AJ = window.AUTOAMIGO || {};
   // Parecido de la cara en %: la misma persona sale entre 75% y 95%; otra persona, menos de 50%. Se aprueba desde 60%.
-  var ESCALA = [[0, 100], [0.2, 98], [0.35, 92], [0.45, 82], [0.55, 70], [0.62, 60], [0.75, 35], [0.9, 10], [1, 0]];
+  var ESCALA = [[0, 100], [0.2, 98], [0.35, 93], [0.45, 82], [0.55, 70], [0.62, 60], [0.75, 35], [0.9, 10], [1, 0]];
   function pct(d) { for (var i = 1; i < ESCALA.length; i++) if (d <= ESCALA[i][0]) { var a = ESCALA[i - 1], b = ESCALA[i]; return Math.round(a[1] + (b[1] - a[1]) * (d - a[0]) / (b[0] - a[0])); } return 0; }
   function diasEsperando(t) { var n = Math.floor((Date.now() - (Number(t) || 0)) / 86400000); return n <= 0 ? 'hoy' : n === 1 ? 'hace 1 día' : 'hace ' + n + ' días'; }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
