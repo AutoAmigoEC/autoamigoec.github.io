@@ -23,6 +23,7 @@ const DB = 'https://autoamigo-be443-default-rtdb.firebaseio.com';
 const MAX_INTENTOS_DIA = 15;          // para no gastar el límite gratis de Gemini
 const MAX_FOTOS_POR_CLASE = 2000;     // fotos guardadas para entrenar el detector propio
 const SEGURO = 0.8;                   // desde qué seguridad Gemini decide solo
+const MAX_LECTURAS_DIA = 8;           // lecturas de documentos por día desde la misma conexión
 
 export default {
   async fetch(req, env) {
@@ -84,12 +85,147 @@ async function solicitud(req, b, env) {
   ['persona', 'cedula', 'licencia'].forEach(k => { const v = b.desc && b.desc[k]; if (Array.isArray(v) && v.length === 128) desc[k] = v.map(n => Math.round(n * 1e5) / 1e5); });
   const par = {}; ['cedula', 'licencia'].forEach(k => { const v = b.parecido && b.parecido[k]; if (typeof v === 'number') par[k] = Math.round(v * 1000) / 1000; });
   const up = {};
-  up['solicitudes/' + id] = { datos, t, estado: 'pendiente', parecido: par, desc };
+  const sol = { datos, t, estado: 'pendiente', parecido: par, desc };
+  // Versión nueva del registro (v: 2): se leen los documentos en silencio y se comparan
+  if (b.v === 2) {
+    if (b.prueba === true) sol.prueba = true;
+    const nl = (await db(env, 'GET', 'solicitudesLimite/' + dia + '/' + ip + '_l')) || 0;
+    let lec = null;
+    if (nl < MAX_LECTURAS_DIA) { try { lec = await leerDocumentos(f, env); } catch (e) { lec = null; } }
+    await db(env, 'PUT', 'solicitudesLimite/' + dia + '/' + ip + '_l', nl + 1);
+    const rev = compararDocumentos(datos, lec, par);
+    // Solo un error de dedo con las fotos correctas se le avisa a la persona (no se guarda nada todavía)
+    if (rev.corregir.length) return { ok: false, corregir: rev.corregir, error: rev.corregir.map(c => MENSAJE_CORREGIR[c]).join(' ') };
+    sol.lectura = lec ? limpiarLectura(lec) : null;
+    sol.revision = { estado: rev.estado, motivos: rev.motivos, notas: rev.notas };
+    const previas = await buscarPrevias(env, datos, lec, desc, ip);
+    if (previas.length) sol.previas = previas;
+    if (rev.estado === 'sospechosa') up['sospechosas/' + id] = { t, nombre: datos.nombre, cedula: datos.cedula, cedulaLeida: sol.lectura && sol.lectura.cedula.numero || null, telefono: datos.telefono, correo: datos.correo.toLowerCase(), ip, cara: desc.persona || null };
+  }
+  up['solicitudes/' + id] = sol;
   up['solicitudFotos/' + id] = Object.assign({ t }, ...FOTOS_SOL.map(k => ({ [k]: f[k] })));
   up['solicitudesLimite/' + dia + '/' + ip] = cuenta + 1;
   up['solicitudesCedula/' + d.cedula] = { estado: 'pendiente', id, t };
   await db(env, 'PATCH', '', up);
   return { ok: true, estado: 'pendiente' };
+}
+
+// ---------------- Lectura silenciosa de los documentos del registro ----------------
+// La persona NUNCA sabe qué se revisó. Solo se le avisa un error de dedo en lo que escribió
+// (cédula o placa) cuando las fotos están bien y cuadran entre sí. Todo lo demás llega al panel como "Sospechosa".
+const MENSAJE_CORREGIR = {
+  cedula: 'El número de cédula que escribiste no coincide con tu cédula y tu licencia. Revísalo.',
+  placa: 'La placa que escribiste no coincide con la matrícula. Revísala.'
+};
+async function leerDocumentos(f, env) {
+  const prompt = 'Lee 4 fotos de documentos de un conductor de taxi en Ecuador. Copia los datos EXACTAMENTE como están impresos; no inventes ni corrijas nada.\n' +
+    'Foto 1: cédula de identidad ecuatoriana (frente). numero = el número de cédula (10 dígitos, a veces con guion antes del último). nombre = apellidos y nombres.\n' +
+    'Foto 2: licencia de conducir ecuatoriana. numero = el número de la licencia (en Ecuador es el número de cédula). nombre = apellidos y nombres.\n' +
+    'Foto 3: matrícula del vehículo. placa = la placa. propietario = el nombre del propietario.\n' +
+    'Foto 4: el carro por fuera. placa = la placa que se ve en el carro.\n' +
+    'es_documento: true solo si la foto es de verdad ese documento (o un carro en la foto 4). legible: true si se lee bien. Si un dato no se lee, déjalo vacío.';
+  const doc = (campos) => ({ type: 'OBJECT', properties: Object.assign({ es_documento: { type: 'BOOLEAN' }, legible: { type: 'BOOLEAN' } }, campos), required: ['es_documento', 'legible'].concat(Object.keys(campos)) });
+  const S = { type: 'STRING' };
+  return await gemini(env, prompt, [f.cedula, f.licencia, f.matricula, f.carro], {
+    type: 'OBJECT',
+    properties: { cedula: doc({ numero: S, nombre: S }), licencia: doc({ numero: S, nombre: S }), matricula: doc({ placa: S, propietario: S }), carro: doc({ placa: S }) },
+    required: ['cedula', 'licencia', 'matricula', 'carro']
+  });
+}
+function limpiarLectura(l) {
+  const s = (v) => String(v || '').trim().slice(0, 80);
+  const o = (x) => x || {};
+  return {
+    cedula: { numero: soloDigitos(o(l.cedula).numero), nombre: s(o(l.cedula).nombre), valido: o(l.cedula).es_documento !== false, legible: o(l.cedula).legible !== false },
+    licencia: { numero: soloDigitos(o(l.licencia).numero), nombre: s(o(l.licencia).nombre), valido: o(l.licencia).es_documento !== false, legible: o(l.licencia).legible !== false },
+    matricula: { placa: placaNorm(o(l.matricula).placa), propietario: s(o(l.matricula).propietario), valido: o(l.matricula).es_documento !== false, legible: o(l.matricula).legible !== false },
+    carro: { placa: placaNorm(o(l.carro).placa), valido: o(l.carro).es_documento !== false }
+  };
+}
+function soloDigitos(v) { return String(v || '').replace(/\D/g, ''); }
+function placaNorm(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+// Distancia de edición con intercambio de dos vecinos (0912 -> 0921 cuenta como 1)
+function distEdicion(a, b) {
+  const m = a.length, n = b.length, d = [];
+  for (let i = 0; i <= m; i++) { d[i] = [i]; for (let j = 1; j <= n; j++) d[i][j] = i ? 0 : j; }
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+    const c = a[i - 1] === b[j - 1] ? 0 : 1;
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+  }
+  return d[m][n];
+}
+function palabras(nombre) {
+  return String(nombre || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-ZÑ ]/g, ' ').split(/\s+/)
+    .filter(w => w.length > 1 && ['DE', 'DEL', 'LA', 'LAS', 'LOS', 'Y'].indexOf(w) < 0);
+}
+// Mismo nombre aunque esté en otro orden o con una letra mal leída
+function mismoNombre(a, b) {
+  const x = palabras(a), y = palabras(b);
+  if (!x.length || !y.length) return null;
+  const [chica, grande] = x.length <= y.length ? [x, y] : [y, x];
+  const comunes = chica.filter(w => grande.some(g => g === w || (w.length >= 5 && distEdicion(w, g) <= 1))).length;
+  return comunes >= Math.min(2, chica.length) && comunes / chica.length >= 0.6;
+}
+function compararDocumentos(datos, lec, par) {
+  const motivos = [], notas = [], errDedo = [];
+  const sosp = (m) => motivos.push(m);
+  // La cara (la compara el teléfono)
+  ['cedula', 'licencia'].forEach(k => { if (typeof par[k] === 'number' && par[k] > 0.62) sosp('La cara de la persona no coincide con la de la ' + (k === 'cedula' ? 'cédula' : 'licencia') + '.'); });
+  if (typeof par.cedula !== 'number' || typeof par.licencia !== 'number') notas.push('El teléfono no encontró la cara en la cédula o la licencia: compáralas tú.');
+  if (!lec) {
+    notas.push('No se pudieron leer los documentos automáticamente: revisa tú el número, el nombre y la placa.');
+    return { estado: motivos.length ? 'sospechosa' : 'revisar', motivos, notas, corregir: [] };
+  }
+  const L = limpiarLectura(lec);
+  if (!L.cedula.valido) sosp('La foto de la cédula no parece una cédula.');
+  if (!L.licencia.valido) sosp('La foto de la licencia no parece una licencia de conducir.');
+  if (!L.matricula.valido) sosp('La foto de la matrícula no parece una matrícula.');
+  if (!L.carro.valido) sosp('La foto del carro no muestra un carro.');
+  const cedOk = L.cedula.numero.length === 10, licOk = L.licencia.numero.length === 10;
+  if (!cedOk) notas.push('No se pudo leer el número de la cédula en la foto.');
+  if (!licOk) notas.push('No se pudo leer el número de la licencia en la foto.');
+  // Las fotos entre sí
+  if (cedOk && licOk && L.cedula.numero !== L.licencia.numero) sosp('La cédula (' + L.cedula.numero + ') y la licencia (' + L.licencia.numero + ') tienen números distintos.');
+  const nomDocs = mismoNombre(L.cedula.nombre, L.licencia.nombre);
+  if (nomDocs === false) sosp('El nombre de la licencia (' + L.licencia.nombre + ') no es el de la cédula (' + L.cedula.nombre + ').');
+  if (L.matricula.placa && L.carro.placa && distEdicion(L.matricula.placa, L.carro.placa) > 1) sosp('La placa del carro (' + L.carro.placa + ') no es la de la matrícula (' + L.matricula.placa + ').');
+  if (L.matricula.propietario && L.cedula.nombre && mismoNombre(L.matricula.propietario, L.cedula.nombre) === false) notas.push('El carro está a nombre de: ' + L.matricula.propietario + '.');
+  // Lo que escribió contra lo que dicen las fotos
+  const docNum = cedOk ? L.cedula.numero : (licOk ? L.licencia.numero : '');
+  if (docNum && datos.cedula !== docNum) {
+    if (distEdicion(datos.cedula, docNum) <= 2) errDedo.push('cedula');
+    else sosp('Escribió la cédula ' + datos.cedula + ' pero la cédula de la foto dice ' + docNum + '.');
+  }
+  const placaDoc = L.matricula.placa || L.carro.placa, placaEsc = placaNorm(datos.placa);
+  if (placaDoc && placaEsc !== placaDoc) {
+    if (distEdicion(placaEsc, placaDoc) <= 2) errDedo.push('placa');
+    else sosp('Escribió la placa ' + datos.placa + ' pero la matrícula dice ' + placaDoc + '.');
+  }
+  if (L.cedula.nombre && mismoNombre(datos.nombre, L.cedula.nombre) === false) sosp('Escribió el nombre ' + datos.nombre + ' pero la cédula dice ' + L.cedula.nombre + '.');
+  // Si algo de las fotos no cuadra, NO se le avisa nada (ni siquiera el error de dedo)
+  if (motivos.length) {
+    errDedo.forEach(c => notas.push(c === 'cedula' ? 'El número de cédula escrito (' + datos.cedula + ') no es igual al de la foto (' + docNum + ').' : 'La placa escrita (' + datos.placa + ') no es igual a la de la matrícula (' + placaDoc + ').'));
+    return { estado: 'sospechosa', motivos, notas, corregir: [] };
+  }
+  if (errDedo.length) return { estado: 'ok', motivos, notas, corregir: errDedo };
+  return { estado: notas.some(n => /^No se pudo|compáralas/.test(n)) ? 'revisar' : 'ok', motivos, notas, corregir: [] };
+}
+// ¿Ya envió antes una solicitud sospechosa? (por cédula, celular, correo, conexión o cara)
+async function buscarPrevias(env, datos, lec, desc, ip) {
+  const todas = (await db(env, 'GET', 'sospechosas')) || {};
+  const ced = lec ? soloDigitos(lec.cedula && lec.cedula.numero) : '';
+  const out = [];
+  Object.keys(todas).forEach(k => {
+    const s = todas[k] || {}, por = [];
+    if (s.cedula === datos.cedula || (s.cedulaLeida && (s.cedulaLeida === datos.cedula || s.cedulaLeida === ced)) || (ced && s.cedula === ced)) por.push('cédula');
+    if (s.telefono === datos.telefono) por.push('celular');
+    if (s.correo && s.correo === datos.correo.toLowerCase()) por.push('correo');
+    if (s.ip === ip) por.push('mismo teléfono o internet');
+    if (Array.isArray(s.cara) && Array.isArray(desc.persona)) { let q = 0; for (let i = 0; i < 128; i++) q += (s.cara[i] - desc.persona[i]) ** 2; if (Math.sqrt(q) < 0.5) por.push('cara'); }
+    if (por.length) out.push({ id: k, t: s.t || 0, nombre: s.nombre || '', por });
+  });
+  return out.sort((a, b) => b.t - a.t).slice(0, 5);
 }
 
 // ---------------- Foto de perfil ----------------
