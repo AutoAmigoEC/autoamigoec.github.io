@@ -23,7 +23,10 @@
   }
   function cargar() {
     return llamar('restringidos').then(function (j) {
-      R.lista = j.lista || []; R.alertas = j.alertas || {}; R.cargado = true;
+      R.lista = j.lista || []; R.alertas = {}; R.cargado = true;
+      // Avisos solo de restricciones que siguen vigentes (si quitaste la restricción, el aviso desaparece)
+      var vivos = {}; R.lista.forEach(function (r) { vivos[r.id] = 1; });
+      Object.keys(j.alertas || {}).forEach(function (u) { if (vivos[j.alertas[u].id]) R.alertas[u] = j.alertas[u]; });
       document.dispatchEvent(new Event('aa-restringidos'));
     }, function () { });
   }
