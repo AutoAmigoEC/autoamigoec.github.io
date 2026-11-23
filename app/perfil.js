@@ -69,7 +69,7 @@
     if (CAM.stream && CAM.frente === frente) return;
     cerrarCam(); CAM.frente = frente;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { P.error = 'Actualiza la app para usar la cámara.'; pintar(); return; }
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false })
       .then(function (s) { CAM.stream = s; CAM.video.srcObject = s; CAM.video.play().catch(function () { }); })
       .catch(function () { P.error = 'Activa el permiso de cámara de AutoAmigo.'; pintar(); });
   }
@@ -103,9 +103,10 @@
     } else if (P.paso === 'camara') {
       cam = true;
       h = '<div class="vcab"><b>Foto de perfil</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Mira a la cámara</h2><p>Fondo claro y camisa manga larga sin estampado.</p>' + err +
-        (P.prev ? '<div class="cam"><img src="' + P.prev + '"></div><div class="fila2"><button class="vbtn claro" data-f="repetir">Repetir</button><button class="vbtn" data-f="enviar">Enviar</button></div>'
+        (P.arreglando ? '<div class="cam"><div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:220px;font-weight:700;color:#475467">Acomodando tu foto…</div></div>' :
+         P.prev ? '<p style="margin:4px 0 6px;font-weight:700">Así te verán tus clientes:</p><div class="cam"><img src="' + P.prev + '"></div><div class="fila2"><button class="vbtn claro" data-f="repetir">Repetir</button><button class="vbtn" data-f="enviar">Enviar</button></div>'
           : '<div class="cam" id="pcam"><div class="ovalo"></div></div><button class="vbtn" data-f="tomar">Tomar foto</button>') + '</div>';
-      if (P.prev) cam = null;
+      if (P.prev || P.arreglando) cam = null;
     } else if (P.paso === 'enviando') {
       h = '<div class="vcuerpo" style="padding-top:90px"><div class="grande espera"></div><h2 class="centro">Revisando tu foto…</h2><p class="centro">Comparamos tu cara con la de tu cédula y tu licencia.</p></div>';
     } else if (P.paso === 'resultado') {
@@ -141,9 +142,27 @@
     var f = e.target.closest('#pfoto [data-f]'); if (!f) return;
     var x = f.getAttribute('data-f');
     if (x === 'cerrar') { P.paso = null; pintar(); render(); return; }
-    if (x === 'camara') { P.paso = 'camara'; P.prev = null; P.error = ''; pintar(); cargarFA().catch(function () { }); return; }
+    if (x === 'camara') { P.paso = 'camara'; P.prev = null; P.error = ''; P.malos = 0; pintar(); cargarFA().catch(function () { }); if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); return; }
+    // Foto de perfil: calidad alta, y el teléfono la centra, la iguala y la endereza (o pide repetirla si está oscura, de lado, lejos...)
+    if (x === 'tomar' && P.paso === 'camara' && window.AAEncuadre) {
+      var alta = capturar(1080, 0.92), baja = capturar(600, 0.7);
+      if (!alta) { aviso('Espera a que se encienda la cámara.'); return; }
+      P.arreglando = true; P.prev = null; P.error = ''; pintar();
+      AAEncuadre.arreglar(alta).then(function (r) {
+        P.arreglando = false;
+        if (r.ok) { P.prev = r.foto; P.error = ''; }
+        else {
+          P.malos = (P.malos || 0) + 1;
+          // Si ya lo intentó 2 veces, puede enviarla igual (la revisa la central): nunca se queda trabado
+          if (P.malos >= 2) { P.prev = baja; P.error = r.motivo + ' Si no puedes mejorarla, envíala así y la central la revisará.'; }
+          else { P.prev = null; P.error = r.motivo; }
+        }
+        pintar();
+      }, function () { P.arreglando = false; P.prev = baja; pintar(); });
+      return;
+    }
     if (x === 'tomar') { P.fecha = ($('#pf-fecha') || {}).value || P.fecha; var cap = capturar(P.paso === 'doc' ? 960 : 600, P.paso === 'doc' ? 0.72 : 0.7); if (!cap) { aviso('Espera a que se encienda la cámara.'); return; } P.prev = cap; pintar(); return; }
-    if (x === 'repetir') { P.fecha = ($('#pf-fecha') || {}).value || P.fecha; P.prev = null; pintar(); return; }
+    if (x === 'repetir') { P.fecha = ($('#pf-fecha') || {}).value || P.fecha; P.prev = null; P.error = ''; pintar(); return; }
     if (x === 'enviar') {
       var foto = P.prev; P.paso = 'enviando'; P.error = ''; pintar();
       cargarFA().then(function () {
