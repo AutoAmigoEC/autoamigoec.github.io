@@ -812,7 +812,8 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
-<script src="seguridad.js?v=4"></script>
+<script src="../app/encuadre.js?v=5"></script>
+<script src="seguridad.js?v=5"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
@@ -2210,6 +2211,7 @@
     });
   }
   if (!S.perfil || !S.perfil.cedula) registrar();
+  else AASeg.verificar(S.perfil, function (p) { S.perfil = p; render(); });   // en revisión o suspendida: no puede pedir
   saludo(); setInterval(saludo, 30000);
   render();
 })();

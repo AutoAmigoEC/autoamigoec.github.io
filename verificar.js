@@ -49,6 +49,13 @@
         '<button class="btn btn-chico" data-verif="ant"' + at + dis + '>Multas ANT</button>' +
         '<button class="btn btn-chico" data-verif="atm"' + at + dis + '>Multas ATM</button>' +
         '<button class="btn btn-chico" data-verif="fiscalia"' + at + dis + '>Fiscalía</button>';
+    },
+    // Clientes de la app: sin multas de tránsito (no manejan)
+    botonesCliente: function (cedula) {
+      var at = ' data-verif-ced="' + String(cedula || '').replace(/\D/g, '') + '"';
+      return '<button class="btn btn-chico" data-verif="antecedentes"' + at + '>Antecedentes</button>' +
+        '<button class="btn btn-chico" data-verif="satje"' + at + '>Procesos judiciales</button>' +
+        '<button class="btn btn-chico" data-verif="fiscalia"' + at + '>Fiscalía</button>';
     }
   };
 

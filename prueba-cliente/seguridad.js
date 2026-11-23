@@ -45,6 +45,30 @@
     return (10 - s % 10) % 10 === +c[9];
   }
 
+  // ---------- Servidor de revisión ----------
+  var URL_SRV = null;
+  function servidor() {
+    if (URL_SRV) return Promise.resolve(URL_SRV);
+    return fetch('../app/servidor.json?v=' + Date.now()).then(function (r) { return r.json(); }).then(function (s) { URL_SRV = String(s && s.url || '').replace(/\/+$/, ''); if (!/^https:\/\//.test(URL_SRV)) throw new Error('srv'); return URL_SRV; });
+  }
+  function llamar(ruta, cuerpo) {
+    return servidor().then(function (u) { return fetch(u + '/' + ruta, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) }); })
+      .then(function (r) { return r.json(); }).then(function (j) { if (!j) throw new Error('No se pudo.'); if (!j.ok && !j.corregir) throw new Error(j.error || 'No se pudo.'); return j; });
+  }
+  // Código del teléfono (para "Restringir"): en la app lo dará el teléfono; en el navegador, una marca guardada + rasgos del equipo
+  function sha(s) {
+    try { return crypto.subtle.digest('SHA-256', new TextEncoder().encode('AutoAmigo|' + s)).then(function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 32); }); }
+    catch (e) { return Promise.resolve(''); }
+  }
+  function equipo() {
+    var e = {};
+    try { if (window.AndroidCliente && AndroidCliente.equipo) e = JSON.parse(AndroidCliente.equipo()) || {}; } catch (er) { e = {}; }
+    var marca = null;
+    try { marca = localStorage.getItem('aa_eq'); if (!marca) { var a = new Uint32Array(4); crypto.getRandomValues(a); marca = Array.prototype.map.call(a, function (x) { return x.toString(16); }).join(''); localStorage.setItem('aa_eq', marca); } } catch (er) { }
+    var rasgos = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height + 'x' + (window.devicePixelRatio || 1), navigator.hardwareConcurrency || '', navigator.deviceMemory || '', (Intl.DateTimeFormat().resolvedOptions().timeZone || '')].join('|');
+    return Promise.all([marca ? sha('l:' + marca) : Promise.resolve(''), sha('f:' + rasgos)]).then(function (x) { if (x[0]) e.l = x[0]; if (x[1]) e.f = x[1]; return e; }, function () { return e; });
+  }
+
   // ---------- Celular de esta cuenta ----------
   function idCelular() {
     var id = leer('aac_celular', null);
@@ -110,7 +134,7 @@
         '<label class="slbl" for="s-nombre">Nombre y apellido</label><input class="sent" id="s-nombre" autocomplete="name" value="' + esc(d.nombre || '') + '" placeholder="Ej. Ana María Ruiz">' +
         '<label class="slbl" for="s-cedula">Número de cédula</label><input class="sent" id="s-cedula" inputmode="numeric" maxlength="10" value="' + esc(d.cedula || '') + '" placeholder="10 dígitos">' +
         '<label class="slbl" for="s-tel">Número de celular</label><input class="sent" id="s-tel" inputmode="tel" maxlength="10" autocomplete="tel" value="' + esc(d.tel || '') + '" placeholder="Ej. 0991234567">' +
-        '<button class="sbtn" data-s="datosOk">Continuar</button>', 'Crear mi cuenta', 'bienvenida');
+        '<button class="sbtn" data-s="datosOk">' + (d.corrigiendo ? 'Corregir y continuar' : 'Continuar') + '</button>', 'Crear mi cuenta', 'bienvenida');
     } else if (p === 'cedula') {
       el.className = 'seg negro';
       cam = G.prev ? null : false;
@@ -121,25 +145,28 @@
       h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara' });
     } else if (p === 'noCoincide') {
       el.className = 'seg';
-      var muchas = G.fallos >= 3;
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de tu cédula</h2>' +
-        '<p class="c">' + (muchas ? 'Lo intentaste varias veces. Si de verdad es tu cédula, la central puede revisarlo.' : 'Ponte de frente a una luz, sin gafas ni gorra. Revisa también que la foto de la cédula se vea clara.') + '</p>' +
+        '<p class="c">Ponte de frente a una luz, sin gafas ni gorra. Revisa también que la foto de la cédula se vea clara.</p>' +
         '<button class="sbtn" data-s="ir" data-a="cara">Tomar mi foto otra vez</button>' +
-        '<button class="sbtn claro" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>' +
-        (muchas ? '<button class="sbtn claro" data-s="aCentral">Que la central lo revise</button>' : ''), 'Crear mi cuenta', 'datos');
+        '<button class="sbtn claro" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>', 'Crear mi cuenta', 'datos');
     } else if (p === 'terminos') {
       el.className = 'seg';
-      h = tarjeta('<div class="sok">✓ Tu cara coincide con la de tu cédula</div><h2>Último paso</h2>' +
+      h = tarjeta((G.d.noCoincide ? '' : '<div class="sok">✓ Tu cara coincide con la de tu cédula</div>') + '<h2>Último paso</h2>' +
         '<div class="slista"><div><b>Tu cuenta es personal</b><p>No la prestes. Si alguien más va a viajar, pídelo con la opción "Para otra persona".</p></div>' +
         '<div><b>Eres responsable de tu cuenta</b><p>Si tu cuenta se usa para hacerle daño a un conductor, tus datos se entregarán a la Policía.</p></div>' +
         '<div><b>Tu cuenta queda en este celular</b><p>Si entras desde otro teléfono, te pediremos tu cara otra vez.</p></div>' +
-        '<div><b>A veces te pediremos tu cara</b><p>En viajes de noche o a zonas de riesgo, una foto rápida antes de pedir, que se compara con tu cédula.</p></div></div>' +
-        '<label class="sacepto"><input type="checkbox" id="s-acepto"> Acepto las condiciones de uso y que AutoAmigo guarde mi cédula y mi cara solo para verificar que soy yo.</label>' + err +
-        '<button class="sbtn rojo" data-s="crear">Crear mi cuenta</button>', 'Crear mi cuenta', 'cara');
+        '<div><b>A veces te pediremos tu cara</b><p>En viajes de noche o a zonas de riesgo, una foto rápida antes de pedir, que se compara con tu cédula.</p></div>' +
+        '<div><b>Revisamos los antecedentes</b><p>Para cuidar a los conductores, AutoAmigo revisa los antecedentes de cada cuenta en los registros públicos.</p></div></div>' +
+        '<label class="sacepto"><input type="checkbox" id="s-acepto"' + (G.d.acepto ? ' checked' : '') + '> Acepto las condiciones de uso, que AutoAmigo guarde mi cédula y mi cara solo para verificar que soy yo, y autorizo a AutoAmigo a verificar mis antecedentes en los registros públicos (Policía, Función Judicial y Fiscalía).</label>' + err +
+        (G.creando ? '<button class="sbtn rojo" disabled>Creando tu cuenta…</button>' : '<button class="sbtn rojo" data-s="crear">Crear mi cuenta</button>'), 'Crear mi cuenta', 'cara');
     } else if (p === 'revision') {
       el.className = 'seg';
-      h = tarjeta('<div class="sgrande espera"></div><h2 class="c">La central está revisando tu cuenta</h2>' +
-        '<p class="c">Te avisaremos por WhatsApp al ' + esc(d.tel || '') + ' cuando esté lista.</p>', 'Cuenta en revisión');
+      h = tarjeta('<div class="sgrande espera"></div><h2 class="c">Estamos revisando tu cuenta</h2>' +
+        '<p class="c">Te avisaremos pronto.</p>', 'Cuenta en revisión');
+    } else if (p === 'suspendido') {
+      el.className = 'seg';
+      h = tarjeta('<div class="sgrande mal">!</div><h2 class="c">Tu cuenta está suspendida</h2>' +
+        '<p class="c">Comunícate con AutoAmigo.</p>', 'Cuenta suspendida');
     } else if (p === 'entrar') {
       el.className = 'seg';
       h = tarjeta('<h2>Entrar a mi cuenta</h2><p>Escribe tu cédula y tu celular.</p>' + err +
@@ -163,8 +190,7 @@
         abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieMal') {
       el.className = 'seg';
-      h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de tu cuenta</h2>' +
-        '<p class="c">Solo el dueño de la cuenta puede pedir en este viaje. Si viaja otra persona, pídelo con la opción "Para otra persona" (solo de día y fuera de zonas de riesgo).</p>' +
+      h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Solo el dueño de la cuenta puede pedir el viaje.</h2>' +
         '<button class="sbtn" data-s="ir" data-a="selfie">Intentar otra vez</button><button class="sbtn claro" data-s="cancelarPedido">Cancelar</button>', 'Antes de pedir');
     }
     if (el.__h !== h) { var foco = document.activeElement && document.activeElement.id, val = foco && $('#' + foco) ? $('#' + foco).value : null; el.innerHTML = h; el.__h = h; if (foco && $('#' + foco) && val != null) { $('#' + foco).value = val; $('#' + foco).focus(); } }
@@ -199,6 +225,7 @@
       if (!/^09\d{8}$/.test(t)) { G.error = 'Escribe tu celular de 10 dígitos (empieza con 09).'; pintar(); return; }
       var bloq = leer('aac_bloqueados', []);
       if (bloq.indexOf(c) >= 0 || bloq.indexOf(t) >= 0) { G.error = 'No puedes crear una cuenta con estos datos. Comunícate con la central.'; pintar(); return; }
+      if (G.d.corrigiendo && G.fotos.cara && G.fotos.cedula) { G.d.corrigiendo = false; ir('terminos'); return; }   // ya tiene las fotos: solo corrigió lo escrito
       ir('cedula'); return;
     }
     if (a === 'fotoCedula') {
@@ -214,31 +241,49 @@
     }
     if (a === 'fotoCara') {
       if (!C.video || !C.video.videoWidth || G.analizando) return;
-      var fr = cuadro(960, 0.85); G.prev = fr.url(); G.analizando = 'Revisando tu foto…'; pintar();
+      var fr = cuadro(1600, 0.92); G.prev = fr.url(); G.analizando = 'Revisando tu foto…'; pintar();
       cargarFA().then(function () { return leerCara(fr.c); }).then(function (r) {
         G.analizando = '';
         if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz, sin gafas ni gorra, y toma otra.'; pintar(); return; }
         var desc = Array.prototype.slice.call(r.descriptor);
         G.d.parecido = Math.round(distancia(desc, G.fotos.descCedula) * 1000) / 1000;
-        if (G.d.parecido > UMBRAL_CEDULA) { G.fallos++; ir('noCoincide'); return; }
-        G.fotos.descriptor = desc; G.fotos.cara = cuadro(480, 0.72, fr.c).url(); G.fallos = 0;
-        ir('terminos');
+        // Encuadre y luz (como la foto del conductor). Si sale mal 2 veces, se usa igual.
+        var enc = window.AAEncuadre ? AAEncuadre.arreglar(fr.url()) : Promise.resolve({ ok: true, foto: cuadro(480, 0.8, fr.c).url() });
+        return enc.then(function (e) {
+          if (!e.ok && G.fallosFoto < 1) { G.fallosFoto++; G.prev = null; G.error = e.motivo; pintar(); return; }
+          G.fallosFoto = 0;
+          // Su cara no coincide con la de la cédula: puede repetir una vez; si vuelve a fallar, sigue y la central lo revisa
+          if (G.d.parecido > UMBRAL_CEDULA && G.fallos < 1) { G.fallos++; ir('noCoincide'); return; }
+          G.d.noCoincide = G.d.parecido > UMBRAL_CEDULA;
+          G.fotos.descriptor = desc; G.fotos.cara = e.ok ? e.foto : cuadro(800, 0.85, fr.c).url();
+          ir('terminos');
+        }, function () { G.fotos.descriptor = desc; G.fotos.cara = cuadro(800, 0.85, fr.c).url(); G.d.noCoincide = G.d.parecido > UMBRAL_CEDULA; ir('terminos'); });
       }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
       return;
     }
-    if (a === 'aCentral') { ir('revision'); return; }
     if (a === 'crear') {
+      if (G.creando) return;
       if (!$('#s-acepto').checked) { G.error = 'Para crear tu cuenta tienes que aceptar las condiciones.'; pintar(); return; }
-      var perfil = { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel, descriptor: G.fotos.descriptor, descCedula: G.fotos.descCedula, fotoCedula: G.fotos.cedula, parecido: G.d.parecido, foto: G.fotos.cara,
-        celular: idCelular(), creado: Date.now(), acepto: Date.now() };
-      guardar('aac_cuenta', perfil);
-      var al = G.al; cerrar(); if (al) al(perfil); return;
+      G.d.acepto = true; G.creando = true; G.error = ''; pintar();
+      equipo().then(function (eq) {
+        return llamar('cliente/registro', { v: 1, prueba: true, equipo: eq, datos: { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel },
+          fotos: { cedula: G.fotos.cedula, cara: G.fotos.cara }, desc: { cara: G.fotos.descriptor, cedula: G.fotos.descCedula }, parecido: G.d.parecido });
+      }).then(function (r) {
+        G.creando = false;
+        if (r.corregir) { G.d.corrigiendo = true; ir('datos'); G.error = r.error; pintar(); return; }   // solo lo que escribió: lo corrige él
+        var perfil = { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel, descriptor: G.fotos.descriptor, descCedula: G.fotos.descCedula, fotoCedula: G.fotos.cedula, parecido: G.d.parecido, foto: G.fotos.cara,
+          celular: idCelular(), creado: Date.now(), acepto: Date.now(), srv: { id: r.id, token: r.token }, estado: r.estado };
+        guardar('aac_cuenta', perfil);
+        if (r.estado !== 'aprobado') { G.perfil = perfil; esperar(perfil, G.al); return; }   // no sabe por qué: solo "Estamos revisando tu cuenta"
+        var al = G.al; cerrar(); if (al) al(perfil);
+      }, function (er) { G.creando = false; G.error = /fetch|network|srv/i.test(er.message) ? 'No se pudo crear tu cuenta. Revisa tu internet e intenta otra vez.' : er.message; pintar(); });
+      return;
     }
     if (a === 'entrar') { ir('entrar'); return; }
     if (a === 'entrarOk') {
       var cu = leer('aac_cuenta', null), ce = $('#s-ecedula').value.replace(/\D/g, ''), te = $('#s-etel').value.replace(/\D/g, '');
       if (!cu || cu.cedula !== ce || cu.tel !== te) { G.error = 'No encontramos una cuenta con esos datos. Revisa o crea una cuenta nueva.'; pintar(); return; }
-      var al2 = G.al; cerrar(); if (al2) al2(cu); return;   // si es otro celular, se pedirá la cara al pedir
+      var al2 = G.al; cerrar(); AASeg.verificar(cu, al2); return;   // si es otro celular, se pedirá la cara al pedir
     }
     if (a === 'fotoSelfie') {
       if (!C.video || !C.video.videoWidth || G.analizando) return;
@@ -249,7 +294,10 @@
         var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
         if (!pf.descriptor) { pf.descriptor = desc; guardar('aac_cuenta', pf); }   // cuenta de prueba aprobada sin cara: esta foto queda como su cara
         var ok = distancia(desc, pf.descriptor) <= UMBRAL && (!pf.descCedula || distancia(desc, pf.descCedula) <= UMBRAL_CEDULA);
-        if (!ok) { ir('selfieMal'); return; }
+        if (!ok) {
+          if (pf.srv) llamar('cliente/intento', { id: pf.srv.id, token: pf.srv.token, foto: cuadro(640, 0.8, f.c).url() }).catch(function () { });
+          ir('selfieMal'); return;
+        }
         if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
         G.vista = cuadro(720, 0.8, f.c).url();
         ir('selfieOk');
@@ -263,16 +311,50 @@
     if (e.target.id === 's-cedula' || e.target.id === 's-tel' || e.target.id === 's-ecedula' || e.target.id === 's-etel') e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
   });
 
+  // ---------- Estado de la cuenta en el servidor ----------
+  var espera = null;
+  function estadoSrv(perfil) {
+    if (!perfil || !perfil.srv || perfil.forzado) return Promise.resolve(perfil && perfil.estado || 'aprobado');
+    return llamar('cliente/estado', { id: perfil.srv.id, token: perfil.srv.token }).then(function (r) {
+      if (r.estado !== perfil.estado) { perfil.estado = r.estado; var g = leer('aac_cuenta', null); if (g && g.srv && g.srv.id === perfil.srv.id) { g.estado = r.estado; guardar('aac_cuenta', g); } }
+      return r.estado;
+    }, function () { return perfil.estado || 'aprobado'; });   // sin internet: lo último que se sabe
+  }
+  // Muestra "Estamos revisando tu cuenta" (o suspendida) y vuelve a mirar cada minuto; cuando la aprueban, sigue sola
+  function esperar(perfil, al) {
+    G.perfil = perfil; G.al = al; ir(perfil.estado === 'suspendido' ? 'suspendido' : 'revision');
+    clearInterval(espera);
+    espera = setInterval(function () {
+      if (G.paso !== 'revision' && G.paso !== 'suspendido') { clearInterval(espera); return; }
+      estadoSrv(perfil).then(function (e) {
+        if (e === 'aprobado') { clearInterval(espera); var f = G.al; cerrar(); if (f) f(perfil); return; }
+        var p = e === 'suspendido' ? 'suspendido' : 'revision'; if (G.paso !== p) ir(p);
+      });
+    }, 60000);
+  }
+
   // ---------- Lo que usa la app ----------
   window.AASeg = {
-    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.fallos = 0; ir('bienvenida'); cargarFA().catch(function () { }); },   // se carga mientras llena sus datos
+    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.fallos = 0; G.fallosFoto = 0; G.creando = false; if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); ir('bienvenida'); cargarFA().catch(function () { }); },   // se carga mientras llena sus datos
     // Antes de pedir: si el viaje es de riesgo, selfie. Si viaja otra persona, no se permite de noche ni en zona de riesgo.
+    // Al abrir la app: si la cuenta está en revisión o suspendida, no puede pedir viajes
+    verificar: function (perfil, ok) {
+      if (!perfil) return;
+      estadoSrv(perfil).then(function (e) { if (e === 'aprobado') { if (ok) ok(perfil); } else esperar(perfil, ok); });
+    },
     antesDePedir: function (v, perfil, nViajes, ok) {
+      if (perfil && perfil.srv && !perfil.forzado) {
+        estadoSrv(perfil).then(function (e) { if (e !== 'aprobado') { esperar(perfil, null); return; } seguir(); });
+        return;
+      }
+      seguir();
+      function seguir() {
       var m = motivos(v, perfil, nViajes);
       G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null;
       if (!m.length) { ok(perfil); return; }
       cargarFA().catch(function () { });
       ir('selfieIntro');
+      }
     },
     paraOtraPermitido: function (v) { if (esNoche()) return 'De noche solo puede pedir el dueño de la cuenta.'; if (enZonaRiesgo(v)) return 'En zonas de riesgo solo puede pedir el dueño de la cuenta.'; return ''; },
     motivos: motivos, esNoche: esNoche, cedulaValida: cedulaValida, prueba: PRUEBA,
@@ -283,6 +365,10 @@
       if (!G.paso) return false;
       var al = G.al;
       if (['selfieIntro', 'selfie', 'selfieOk', 'selfieMal'].indexOf(G.paso) >= 0) { cerrar(); if (al) al(G.perfil); return true; }
+      if (G.paso === 'revision' || G.paso === 'suspendido') {   // solo la prueba: la deja aprobada en este teléfono
+        var pr = leer('aac_cuenta', null) || G.perfil; if (pr) { pr.estado = 'aprobado'; pr.forzado = true; guardar('aac_cuenta', pr); }
+        clearInterval(espera); cerrar(); if (al) al(pr); return true;
+      }
       var perfil = { nombre: G.d.nombre && G.d.nombre.split(' ').length > 1 ? G.d.nombre : 'Cliente de Prueba', cedula: cedulaValida(G.d.cedula || '') ? G.d.cedula : '0926687856',
         tel: /^09\d{8}$/.test(G.d.tel || '') ? G.d.tel : '0991234567', descriptor: G.fotos.descriptor || null, descCedula: G.fotos.descCedula || null,
         fotoCedula: G.fotos.cedula || null, foto: G.fotos.cara || null, celular: idCelular(), creado: Date.now(), acepto: Date.now(), prueba: true };

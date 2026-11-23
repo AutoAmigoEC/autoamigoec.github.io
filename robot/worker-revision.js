@@ -33,6 +33,10 @@ export default {
       if (req.method !== 'POST') return json({ ok: true, servicio: 'AutoAmigo revisión de turno' });
       // Solicitud de conductor nuevo: no tiene cuenta todavía
       if (url.pathname.endsWith('/solicitud')) return json(await solicitud(req, await req.json(), env));
+      // App del cliente (todavía sin cuenta de Firebase): se identifica con su id + clave secreta que le dio el servidor
+      if (url.pathname.endsWith('/cliente/registro')) return json(await clienteRegistro(req, await req.json(), env));
+      if (url.pathname.endsWith('/cliente/estado')) return json(await clienteEstado(await req.json(), env));
+      if (url.pathname.endsWith('/cliente/intento')) return json(await clienteIntento(await req.json(), env));
       // Panel (solo administradores): restringir personas y ver la lista
       if (url.pathname.endsWith('/restringir')) return json(await restringir(await verificarAdmin(req, env), await req.json(), env));
       if (url.pathname.endsWith('/restringidos')) { await verificarAdmin(req, env); return json(await listaRestringidos(env)); }
@@ -313,6 +317,14 @@ async function restringir(admin, b, env) {
       telefonos: [d.telefono], correos: [String(d.correo || '').toLowerCase()],
       placas: juntar([placaNorm(d.placa)], [L.matricula && L.matricula.placa, L.carro && L.carro.placa]),
       cara: (s.desc && s.desc.persona) || null, equipos: s.equipo ? [s.equipo] : [], ips: s.ip ? [s.ip] : [] };
+  } else if (b.cliente) {
+    const cid = idLimpio(b.cliente), c = await db(env, 'GET', CLI + '/' + cid);
+    if (!c) throw new Error('datos');
+    r = { nombre: c.nombre || '', t, por: admin, origen: 'cliente', ref: cid,
+      cedulas: juntar([c.cedula], [c.lectura && c.lectura.numero].filter(x => x && x.length === 10)), telefonos: [c.tel].filter(Boolean), correos: [],
+      placas: [], cara: (c.desc && c.desc.cara) || null, equipos: c.equipo ? [c.equipo] : [], ips: c.ip ? [c.ip] : [] };
+    // En silencio: no puede pedir viajes y solo ve "Estamos revisando tu cuenta"
+    await db(env, 'PATCH', '', { [CLI + '/' + cid + '/estado']: 'revision', [CLI + '/' + cid + '/restringidoT']: t });
   } else if (b.uid) {
     const uid = String(b.uid).replace(/[.#$\[\]\/]/g, '');
     const [c, f, ide, eq] = await Promise.all([db(env, 'GET', 'conductores/' + uid), db(env, 'GET', 'fichas/' + uid), db(env, 'GET', 'identidad/' + uid + '/descriptor'), db(env, 'GET', 'dispositivos/' + uid)]);
@@ -324,7 +336,7 @@ async function restringir(admin, b, env) {
       placas: [placaNorm(c.placa || fi.placa)].filter(Boolean), cara: ide || (sol && sol.desc && sol.desc.persona) || null,
       equipos: juntarEquipos(eq && eq.equipos, sol && sol.equipo ? [sol.equipo] : []), ips: juntar(eq && eq.ips, sol && sol.ip ? [sol.ip] : []) };
   } else throw new Error('datos');
-  const id = (b.solicitud ? 's_' : 'c_') + r.ref;
+  const id = (b.solicitud ? 's_' : b.cliente ? 'cl_' : 'c_') + r.ref;
   const prev = (await db(env, 'GET', 'restringidos/' + id)) || {};
   r.equipos = juntarEquipos(prev.equipos, r.equipos); r.ips = juntar(prev.ips, r.ips);
   await db(env, 'PUT', 'restringidos/' + id, r);
@@ -365,6 +377,84 @@ async function claveConductor(b, env) {
     if (!r.ok) throw new Error('No se pudo cambiar la clave (' + r.status + ').');
   } else if (b.accion !== 'guardar') throw new Error('datos');
   await db(env, 'PUT', 'clavesConductores/' + uid, { clave, t: Date.now() });
+  return { ok: true };
+}
+
+// ---------------- Clientes de la app ----------------
+// Entra al instante si todo coincide. Si la cédula o la cara no cuadran, o es alguien restringido: NO puede pedir viajes
+// ("Estamos revisando tu cuenta") y le llega a la central. Se guarda en recargas/ (solo administradores).
+const CLI = 'recargas/clientesApp', CLI_FOTOS = 'recargas/clientesAppFotos';
+function idLimpio(v) { return String(v || '').replace(/[^0-9a-z]/gi, '').slice(0, 40); }
+async function leerCedulaCliente(foto, env) {
+  const prompt = 'La foto debería ser el frente de una cédula de identidad de Ecuador. Copia EXACTAMENTE lo impreso, sin inventar.\n' +
+    'numero = el número de cédula (10 dígitos). nombre = apellidos y nombres. es_documento = true solo si de verdad es una cédula. legible = true si se lee bien.';
+  const S = { type: 'STRING' };
+  return await gemini(env, prompt, [foto], { type: 'OBJECT', properties: { es_documento: { type: 'BOOLEAN' }, legible: { type: 'BOOLEAN' }, numero: S, nombre: S }, required: ['es_documento', 'legible', 'numero', 'nombre'] });
+}
+async function clienteRegistro(req, b, env) {
+  const d = b && b.datos || {}, f = b && b.fotos || {};
+  const nombre = String(d.nombre || '').trim().replace(/\s+/g, ' ').slice(0, 80), cedula = soloDigitos(d.cedula), tel = soloDigitos(d.tel);
+  if (nombre.split(' ').length < 2 || cedula.length !== 10 || !/^09\d{8}$/.test(tel) || !esImagen(f.cedula) || !esImagen(f.cara)) throw new Error('datos');
+  const t = Date.now(), dia = diaEcuador(t), ip = await huella(req.headers.get('cf-connecting-ip') || 'x');
+  const cuenta = (await db(env, 'GET', 'solicitudesLimite/' + dia + '/c_' + ip)) || 0;
+  if (cuenta >= 3) throw new Error('Ya se crearon varias cuentas hoy desde esta conexión. Intenta mañana.');
+  if (b.prueba !== true) {   // una sola cuenta por cédula
+    const ya = await db(env, 'GET', CLI + 'Cedula/' + cedula);
+    if (ya) throw new Error('Ya existe una cuenta con esta cédula. Entra con "Ya tengo cuenta".');
+  }
+  const desc = {}; ['cara', 'cedula'].forEach(k => { const v = b.desc && b.desc[k]; if (Array.isArray(v) && v.length === 128) desc[k] = v.map(n => Math.round(n * 1e5) / 1e5); });
+  const parecido = typeof b.parecido === 'number' ? Math.round(b.parecido * 1000) / 1000 : null;
+  const equipo = limpiarEquipo(b.equipo);
+  // Lectura silenciosa de la cédula (sin revisar la fecha: al cliente no le importa si está caducada)
+  let lec = null; try { lec = await leerCedulaCliente(f.cedula, env); } catch (e) { lec = null; }
+  const motivos = [], notas = [];
+  let num = '', nomLeido = '';
+  if (lec) {
+    num = soloDigitos(lec.numero); nomLeido = String(lec.nombre || '').trim().slice(0, 80);
+    if (lec.es_documento === false) motivos.push('La foto de la cédula no parece una cédula.');
+    if (num.length === 10 && num !== cedula) {
+      if (distEdicion(cedula, num) <= 2 && !motivos.length && !(parecido != null && parecido > 0.62)) return { ok: false, corregir: 'cedula', error: 'El número de cédula que escribiste no coincide con tu cédula. Revísalo.' };
+      motivos.push('Escribió la cédula ' + cedula + ' pero la cédula de la foto dice ' + num + '.');
+    }
+    if (nomLeido && mismoNombre(nombre, nomLeido) === false) motivos.push('Escribió el nombre ' + nombre + ' pero la cédula dice ' + nomLeido + '.');
+    if (num.length !== 10) notas.push('No se pudo leer el número de la cédula en la foto.');
+  } else notas.push('No se pudo leer la cédula automáticamente.');
+  if (parecido != null && parecido > 0.62) motivos.push('Su cara no coincide con la de la cédula.');
+  const restr = await buscarRestringidos(env, { cedulas: [cedula, num], telefono: tel, cara: desc.cara, equipo, ip });
+  const previas = await buscarPrevias(env, { cedula, telefono: tel, correo: '' }, lec ? { cedula: { numero: num } } : null, { persona: desc.cara }, ip);
+  const restringido = restr && restr.nivel === 'fuerte' ? restr : null;
+  const estado = motivos.length || restringido ? 'revision' : 'aprobado';
+  const id = clave(t), token = clave(t) + clave(t + 1), tokenH = await huella('tok|' + token);
+  const up = {};
+  up[CLI + '/' + id] = { nombre, cedula, tel, t, estado, prueba: b.prueba === true || null, parecido, desc, equipo, ip,
+    lectura: lec ? { numero: num, nombre: nomLeido } : null, revision: { motivos, notas }, restringido: restr || null, previas: previas.length ? previas : null,
+    antecedentes: 'pendiente', tokenH };
+  up[CLI_FOTOS + '/' + id] = { cedula: f.cedula, cara: f.cara, t };
+  up['solicitudesLimite/' + dia + '/c_' + ip] = cuenta + 1;
+  if (b.prueba !== true) up[CLI + 'Cedula/' + cedula] = id;
+  if (motivos.length) up['sospechosas/cl_' + id] = { t, nombre, cedula, cedulaLeida: num || null, telefono: tel, correo: '', ip, cara: desc.cara || null };
+  await db(env, 'PATCH', '', up);
+  return { ok: true, estado, id, token };
+}
+async function clienteVerificado(b, env) {
+  const id = idLimpio(b && b.id); if (!id || !b.token) throw new Error('datos');
+  const c = await db(env, 'GET', CLI + '/' + id);
+  if (!c || c.tokenH !== await huella('tok|' + String(b.token))) throw new Error('auth: cliente');
+  return [id, c];
+}
+async function clienteEstado(b, env) {
+  const [, c] = await clienteVerificado(b, env);
+  return { ok: true, estado: c.suspendido ? 'suspendido' : c.estado };
+}
+// Selfie antes de pedir que NO es la cara del dueño: a la 3ª vez le llega a la central (con las fotos)
+async function clienteIntento(b, env) {
+  const [id, c] = await clienteVerificado(b, env);
+  if (!esImagen(b.foto)) throw new Error('datos');
+  const t = Date.now(), n = (c.intentosAjenos || 0) + 1, up = {};
+  up[CLI + '/' + id + '/intentosAjenos'] = n;
+  up[CLI_FOTOS + '/' + id + '/ajenas/' + clave(t)] = b.foto;
+  if (n >= 3) up[CLI + '/' + id + '/alertaAjena'] = { n, t };
+  await db(env, 'PATCH', '', up);
   return { ok: true };
 }
 
