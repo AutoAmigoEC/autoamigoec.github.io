@@ -70,6 +70,7 @@
   }
   function pintarFondo(g, n, tipo) {
     var gr;
+    if (tipo === 'gris' || tipo === 'blanco') { g.fillStyle = tipo === 'gris' ? '#D3D6DB' : '#F6F7F9'; g.fillRect(0, 0, n, n); return; }   // liso, sin luces
     if (tipo === 'azul') { gr = g.createRadialGradient(n / 2, n * 0.35, n * 0.05, n / 2, n * 0.45, n * 0.75); gr.addColorStop(0, '#2B3A8C'); gr.addColorStop(1, '#0A0F3C'); }
     else { gr = g.createRadialGradient(n / 2, n * 0.35, n * 0.05, n / 2, n * 0.45, n * 0.75); gr.addColorStop(0, '#F4F5F7'); gr.addColorStop(1, '#D9DDE3'); }
     g.fillStyle = gr; g.fillRect(0, 0, n, n);
@@ -111,7 +112,20 @@
         var ii = y2 * n + x2; if (alfa[ii] < 0.5) continue;
         for (var ch = 0; ch < 3; ch++) { var p0 = ii * 4 + ch; var bl = (o[p0 - 4] + o[p0 + 4] + o[p0 - n * 4] + o[p0 + n * 4]) / 4; d[p0] = o[p0] + 0.35 * (o[p0] - bl); }
       }
-      // Persona sobre el fondo de AutoAmigo
+      // Borde limpio: en el filo de la persona se quita el color de la pared vieja (si no, queda una silueta clara)
+      var pc = document.createElement('canvas'); pc.width = pc.height = n; var gp = pc.getContext('2d'), pdat = gp.createImageData(n, n);
+      for (var q1 = 0; q1 < n * n; q1++) { var r6 = q1 * 4; pdat.data[r6] = d[r6]; pdat.data[r6 + 1] = d[r6 + 1]; pdat.data[r6 + 2] = d[r6 + 2]; pdat.data[r6 + 3] = alfa[q1] > 0.97 ? 255 : 0; }
+      gp.putImageData(pdat, 0, 0);
+      var pb2 = document.createElement('canvas'); pb2.width = pb2.height = n; var gpb = pb2.getContext('2d');
+      gpb.filter = 'blur(' + Math.max(2, Math.round(n / 120)) + 'px)'; gpb.drawImage(pc, 0, 0); gpb.drawImage(pc, 0, 0); gpb.filter = 'none';
+      var lim = gpb.getImageData(0, 0, n, n).data;
+      for (var q2 = 0; q2 < n * n; q2++) {
+        var a2 = alfa[q2]; if (a2 <= 0 || a2 > 0.97) continue;
+        var r7 = q2 * 4; if (lim[r7 + 3] < 10) { alfa[q2] = a2 * 0.5; continue; }
+        d[r7] = lim[r7]; d[r7 + 1] = lim[r7 + 1]; d[r7 + 2] = lim[r7 + 2];
+        alfa[q2] = Math.pow(a2, 1.6);   // y el borde un poco más fino
+      }
+      // Persona sobre el fondo
       var f = document.createElement('canvas'); f.width = f.height = n; var gf = f.getContext('2d');
       if (tipo === 'retrato') {
         // Modo retrato: el fondo real, desenfocado y un poco más claro (como una cámara buena), sin inventar nada
