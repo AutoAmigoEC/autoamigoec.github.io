@@ -71,7 +71,7 @@
     if ((id = b.getAttribute('data-restr-quitar'))) {
       if (!confirm('¿Quitar la restricción? Podrá volver a registrarse sin que te salga el aviso.')) return;
       b.disabled = true;
-      llamar('restringir', { quitar: id }).then(function () { toast('Restricción quitada.'); var s = b.previousElementSibling; if (s && s.classList.contains('sello')) s.remove(); b.textContent = '✓ Restricción quitada'; cargar(); }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
+      llamar('restringir', { quitar: id }).then(function () { toast('Restricción quitada.'); cargar(); }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
       return;
     }
     if ((id = b.getAttribute('data-restr-uid'))) {
