@@ -3,13 +3,14 @@
  * y cuánto se parecieron las caras según la revisión automática.
  *   - Registro: el teléfono comparó la foto en vivo con la cara de la cédula y de la licencia.
  *   - Último turno: la foto del turno comparada con la del registro, la cédula y la licencia.
- * Parecido en %: 100% = idénticas. La app aprueba desde 38% (cédula/licencia) y 45% (turno).
+ * Parecido en %: la misma persona sale entre 75% y 95%; otra persona, menos de 50%. Se aprueba desde 60% (cédula/licencia) y 70% (turno).
  */
 (function () {
   var UMBRAL_DOC = 0.62, UMBRAL_TURNO = 0.55;
   var FOTOS = [['persona', 'Foto en vivo'], ['cedula', 'Cédula'], ['licencia', 'Licencia'], ['matricula', 'Matrícula'], ['carro', 'Carro']];
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function pct(d) { return Math.max(0, Math.min(100, Math.round((1 - d) * 100))); }
+  var ESCALA = [[0, 100], [0.2, 98], [0.35, 93], [0.45, 82], [0.55, 70], [0.62, 60], [0.75, 35], [0.9, 10], [1, 0]];
+  function pct(d) { for (var i = 1; i < ESCALA.length; i++) if (d <= ESCALA[i][0]) { var a = ESCALA[i - 1], b = ESCALA[i]; return Math.round(a[1] + (b[1] - a[1]) * (d - a[0]) / (b[0] - a[0])); } return 0; }
   function fecha(iso) { if (!iso) return '—'; var p = String(iso).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : esc(iso); }
   function fechaMs(ms) { if (!ms) return ''; var d = new Date(ms); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
   function resultado(titulo, d, umbral, detalle) {
@@ -50,7 +51,7 @@
       resultado('Último turno vs. registro', turno.cara, UMBRAL_TURNO, turno.t ? 'Turno del ' + fechaMs(turno.t) + (turno.estado ? ' · ' + esc(turno.estado) : '') : 'Todavía no hay turnos');
     caja.innerHTML = '<div class="doc-caja"><div class="doc-cab"><div><h2>Documentación</h2><p>' + esc(nombre) + (cond.unidad ? ' · Unidad ' + esc(cond.unidad) : '') + '</p></div><button class="btn btn-chico" data-doc-cerrar="1">Cerrar</button></div>' +
       '<h3>Coincidencia de la cara</h3><div class="doc-resumen">' + resumen + '</div>' +
-      '<p class="doc-nota">El porcentaje lo calcula la revisión automática comparando las caras (100% = idénticas). Se aprueba desde 38% en cédula y licencia, y desde 45% en el turno. La matrícula y el carro no tienen cara: revísalos tú (placa, nombre y color).</p>' +
+      '<p class="doc-nota">El porcentaje lo calcula nuestra comparación de caras. La misma persona suele salir entre 75% y 95% (contra una cédula casi nunca llega a 100%, porque la foto es vieja, pequeña e impresa); otra persona sale por debajo de 50%. Se aprueba desde 60% en cédula y licencia, y desde 70% en el turno. La matrícula y el carro no tienen cara: revísalos tú (placa, nombre y color).</p>' +
       '<h3>Fotos</h3><div class="doc-fotos">' + figuras + '</div>' +
       '<h3>Datos</h3><div class="doc-datos">' +
         '<div><span>Cédula</span><b>' + esc(ficha.cedula || '—') + '</b></div>' +
@@ -61,6 +62,9 @@
         '<div><span>Vence matrícula</span><b>' + fecha(docs.matricula && docs.matricula.vence) + '</b></div>' +
       '</div>' +
       (window.AAVerificar && ficha.cedula ? '<h3>Revisar en páginas oficiales</h3><div class="acciones verif">' + AAVerificar.botones(ficha.cedula) + '</div>' : '') +
+      (window.AARestringir ? '<h3>Restringir</h3>' + (AARestringir.alerta(uid) ? '<div class="restr fuerte"><b>⛔ Restringido:</b> entró desde el teléfono de ' + esc(AARestringir.alerta(uid).nombre) + ', a quien restringiste.</div>' : '') +
+        '<p class="doc-nota">Restringir es en silencio: el conductor no se entera. Si vuelve a registrarse (aunque sea con otra cédula) o alguien entra desde su teléfono, te saldrá "⛔ Restringido". Para que no pueda trabajar, usa también "Bloquear".</p>' +
+        '<div class="acciones">' + (AARestringir.esta(uid) ? '<span class="sello mal">⛔ Ya está restringido</span>' : AARestringir.boton(uid)) + '</div>' : '') +
       '</div>';
   }
 

@@ -1,4 +1,6 @@
-/* AutoAmigo · "Crear usuario y ser parte de AutoAmigo" (se abre desde el inicio de sesión de la app).
+/* Registro (v2): el servidor lee los documentos en silencio.
+ * Si solo escribió mal la cédula o la placa (y las fotos están bien), se le pide corregir ese recuadro sin perder las fotos.
+ * AutoAmigo · "Crear usuario y ser parte de AutoAmigo" (se abre desde el inicio de sesión de la app).
  * Datos + 5 fotos en vivo (no se pueden subir de la galería). El teléfono saca la "huella" de la cara de la foto
  * de la persona, de la cédula y de la licencia, y mide si se parecen. Todo se envía al servidor de revisión;
  * la central aprueba la solicitud en el panel y ahí se crean el usuario y la clave (llegan por WhatsApp).
@@ -30,6 +32,19 @@
       img.onerror = function () { ok(null); };
       img.src = src;
     });
+  }
+  // Código del teléfono (para "Restringir"): en la app Android lo da la app; en el navegador, una marca guardada + rasgos del equipo
+  function sha(s) {
+    try { return crypto.subtle.digest('SHA-256', new TextEncoder().encode('AutoAmigo|' + s)).then(function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 32); }); }
+    catch (e) { return Promise.resolve(''); }
+  }
+  function equipo() {
+    var e = {};
+    try { if (window.AndroidRegistro && AndroidRegistro.equipo) e = JSON.parse(AndroidRegistro.equipo()) || {}; } catch (er) { e = {}; }
+    var marca = null;
+    try { marca = localStorage.getItem('aa_eq'); if (!marca) { var a = new Uint32Array(4); crypto.getRandomValues(a); marca = Array.prototype.map.call(a, function (x) { return x.toString(16); }).join(''); localStorage.setItem('aa_eq', marca); } } catch (er) { }
+    var rasgos = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height + 'x' + (window.devicePixelRatio || 1), navigator.hardwareConcurrency || '', navigator.deviceMemory || '', (Intl.DateTimeFormat().resolvedOptions().timeZone || '')].join('|');
+    return Promise.all([marca ? sha('l:' + marca) : Promise.resolve(''), sha('f:' + rasgos)]).then(function (x) { if (x[0]) e.l = x[0]; if (x[1]) e.f = x[1]; return e; }, function () { return e; });
   }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
 
@@ -108,7 +123,7 @@
     var err = R.error ? '<div class="motivo">' + esc(R.error) + '</div>' : '';
     if (R.vista === 'form') {
       h = '<div class="vcab"><b>Crear usuario</b><button data-r="cerrar" aria-label="Cerrar">✕</button></div><div class="vprog"><i class="ya"></i><i></i></div><div class="vpaso">Paso 1 de 2 · Tus datos</div>' +
-        '<div class="vcuerpo"><p>Llena tus datos como aparecen en tus documentos.</p>' +
+        '<div class="vcuerpo">' + (R.corregir ? '<div class="motivo">' + esc(R.error) + ' Tus fotos se quedan guardadas.</div>' : '<p>Llena tus datos como aparecen en tus documentos.</p>') +
         CAMPOS.map(function (c) {
           if (c.length === 1) return '<h3 class="grupo-r">' + c[0] + '</h3>';
           var v = R.datos[c[0]] || '', er = R.errores[c[0]];
@@ -117,7 +132,7 @@
             (c[2] === 'date' ? (c[0] === 'nacimiento' ? ' max="' + hoyISO(-18 * 365) + '"' : ' min="' + hoyISO(0) + '"') : '') + '>' + (er ? '<small>' + er + '</small>' : '') + '</label>';
         }).join('') +
         '<p style="font-size:12.5px">Al continuar aceptas que AutoAmigo guarde tus datos y fotos para revisar tu solicitud y, si eres aprobado, para verificar que eres tú al empezar cada turno.</p>' +
-        '<button class="vbtn" data-r="continuar">Continuar</button></div>';
+        (R.corregir ? '<button class="vbtn" data-r="reenviar">Corregir y enviar</button>' : '<button class="vbtn" data-r="continuar">Continuar</button>') + '</div>';
     } else if (R.vista === 'fotos') {
       var n = FOTOS.filter(function (f) { return R.fotos[f[0]]; }).length;
       h = '<div class="vcab"><b>Tus fotos</b><button data-r="atras" aria-label="Volver">←</button></div><div class="vprog"><i class="ok"></i><i class="ya"></i></div><div class="vpaso">Paso 2 de 2 · ' + n + ' de 5 fotos</div>' +
@@ -156,6 +171,10 @@
       if (!validar()) { pintar(); var m = $('#registro .campo.mal'); if (m) m.scrollIntoView({ block: 'center' }); aviso('Revisa los datos marcados en rojo.'); return; }
       R.vista = 'fotos'; pintar(); cargarFA().catch(function () { }); return;
     }
+    if (a === 'reenviar') {
+      if (!validar()) { pintar(); var m2 = $('#registro .campo.mal'); if (m2) m2.scrollIntoView({ block: 'center' }); aviso('Revisa los datos marcados en rojo.'); return; }
+      R.corregir = null; a = 'enviar';
+    }
     if (a === 'atras') { R.vista = 'form'; pintar(); return; }
     if (a === 'foto') { R.foto = +b.getAttribute('data-i'); R.prev = null; R.error = ''; R.vista = 'camara'; pintar(); return; }
     if (a === 'volver-fotos') { R.vista = 'fotos'; pintar(); return; }
@@ -192,11 +211,19 @@
         if (h3[0]) desc.persona = h3[0];
         if (h3[1]) { desc.cedula = h3[1]; if (h3[0]) par.cedula = distancia(h3[0], h3[1]); }
         if (h3[2]) { desc.licencia = h3[2]; if (h3[0]) par.licencia = distancia(h3[0], h3[2]); }
-        return fetch(servidor + '/solicitud', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ datos: R.datos, fotos: R.fotos, desc: desc, parecido: par }) });
+        return equipo().then(function (eq) {
+          return fetch(servidor + '/solicitud', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: 2, equipo: eq, datos: R.datos, fotos: R.fotos, desc: desc, parecido: par }) });
+        });
       }).then(function (r) { return r.json(); }).then(function (j) {
+        // Solo escribió mal la cédula o la placa: corrige ese recuadro y vuelve a enviar
+        if (j && j.corregir && j.corregir.length) {
+          R.corregir = j.corregir; R.error = j.error || 'Revisa los datos marcados en rojo.'; R.errores = {};
+          j.corregir.forEach(function (c) { R.errores[c] = c === 'cedula' ? 'No coincide con tu cédula y tu licencia.' : 'No coincide con la matrícula.'; });
+          R.vista = 'form'; pintar(); var m = $('#registro .campo.mal'); if (m) m.scrollIntoView({ block: 'center' }); return;
+        }
         if (!j || !j.ok) throw new Error(j && j.error && !/^(datos|falta|foto)/.test(j.error) ? j.error : 'No se pudo enviar. Revisa tus datos e intenta otra vez.');
         try { sessionStorage.removeItem('aa_registro'); } catch (e2) { }
-        R.vista = 'enviado'; pintar();
+        R.corregir = null; R.vista = 'enviado'; pintar();
       }).catch(function (er) { R.vista = 'fotos'; R.error = er && er.message && !/fetch|network|json/i.test(er.message) ? er.message : 'No se pudo enviar. Revisa tu internet e intenta otra vez.'; pintar(); });
       return;
     }

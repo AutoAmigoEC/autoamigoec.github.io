@@ -1,4 +1,4 @@
-/* AutoAmigo · Panel · Restringir (PRUEBA: se carga solo con ?prueba=1).
+/* AutoAmigo · Panel · Restringir.
  * Lista negra silenciosa: la persona restringida nunca se entera. Si vuelve a registrarse (aunque sea con otra cédula),
  * su solicitud llega con el sello "⛔ Restringido". Si un conductor entra desde el teléfono de alguien restringido,
  * en Conductores sale "⛔ Restringido".
