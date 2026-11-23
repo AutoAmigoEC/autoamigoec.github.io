@@ -116,10 +116,10 @@
     } else if (P.paso === 'doc') {
       var nom = DOCS.filter(function (x) { return x[0] === P.doc; })[0][1].toLowerCase();
       cam = false;
-      h = '<div class="vcab"><b>Actualizar ' + nom + '</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Tu ' + nom + ' renovada</h2><p>Toma la foto del documento nuevo y pon su nueva fecha de vencimiento. La central lo revisará.</p>' + err +
+      h = '<div class="vcab"><b>Actualizar ' + nom + '</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Tu ' + nom + ' renovada</h2><p>Toma la foto del documento nuevo y pon su nueva fecha de caducidad.</p>' + err +
         (P.prev ? '<div class="cam ancha"><img src="' + P.prev + '"></div><button class="vbtn claro" data-f="repetir">Repetir foto</button>' : '<div class="cam ancha" id="pcam"><div class="marco"></div></div><button class="vbtn" data-f="tomar">Tomar foto</button>') +
-        '<label class="campo">Nueva fecha de vencimiento<input id="pf-fecha" type="date" min="' + hoyISO(1) + '" value="' + esc(P.fecha) + '"></label>' +
-        '<button class="vbtn" data-f="enviar-doc"' + (P.prev ? '' : ' disabled') + '>Enviar a revisión</button></div>';
+        '<label class="campo">Nueva fecha de caducidad<input id="pf-fecha" type="date" min="' + hoyISO(1) + '" value="' + esc(P.fecha) + '"></label>' +
+        '<button class="vbtn" data-f="enviar-doc"' + (P.prev ? '' : ' disabled') + '>Enviar</button></div>';
       if (P.prev) cam = null;
     }
     if (el.__h !== h) { el.innerHTML = h; el.__h = h; }
@@ -181,8 +181,15 @@
     if (x === 'enviar-doc') {
       var fe = ($('#pf-fecha') || {}).value;
       if (!fe || diasHasta(fe) < 1) { aviso('Pon la nueva fecha de vencimiento.'); return; }
-      P.paso = 'enviando'; pintar();
-      accion('documentoEnviar', { doc: P.doc, foto: P.prev, vence: fe });
+      P.fecha = fe; P.paso = 'enviando'; P.error = ''; pintar();
+      var fotoDoc = P.prev, docK = P.doc;
+      // En cédula y licencia: ¿la cara del documento es la del conductor? (se mide aquí en el teléfono)
+      var ref = (D.turno && D.turno.descriptor) || [];
+      var conCara = (docK === 'cedula' || docK === 'licencia') && ref.length === 128;
+      (conCara ? cargarFA().then(function () {
+        return new Promise(function (ok) { var img = new Image(); img.onload = function () { faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 608, scoreThreshold: 0.3 })).withFaceLandmarks().withFaceDescriptor().then(ok, function () { ok(null); }); }; img.onerror = function () { ok(null); }; img.src = fotoDoc; });
+      }).then(function (r) { return r ? Math.round(distancia(Array.prototype.slice.call(r.descriptor), ref) * 1000) / 1000 : null; }, function () { return null; }) : Promise.resolve(null))
+        .then(function (cara) { accion('documentoEnviar', { v: 2, doc: docK, foto: fotoDoc, vence: fe, cara: cara }); });
       return;
     }
   });
@@ -196,8 +203,16 @@
     // Respuesta del servidor (foto de perfil o documento)
     respuesta: function (tipo, json) {
       var r; try { r = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { r = { ok: false }; }
-      if (!r || !r.ok) { P.paso = tipo === 'documento' ? 'doc' : 'camara'; P.error = (r && r.error) || 'No se pudo enviar. Revisa tu internet.'; pintar(); return; }
-      if (tipo === 'documento') { P.paso = null; pintar(); render(); aviso('Enviado. La central revisará tu documento nuevo.'); return; }
+      if (!r || !r.ok) {
+        P.paso = tipo === 'documento' ? 'doc' : 'camara'; P.error = (r && r.error) || 'No se pudo enviar. Revisa tu internet.';
+        if (tipo === 'documento' && r && r.repetir) P.prev = null;   // foto mala o documento viejo: tomar otra
+        pintar(); return;
+      }
+      if (tipo === 'documento') {
+        P.paso = null; pintar(); render();
+        aviso(r.estado === 'aprobado' ? '¡Listo! Tu documento quedó actualizado.' : 'Enviado. La central revisará tu documento nuevo.');
+        return;
+      }
       if (r.estado === 'aprobada') { P.fotoUrl = P.fotoEnviada; pintarAvatar(); P.res = { estado: 'aprobada', titulo: '¡Foto de perfil aprobada!', texto: 'Coincide con tu cédula y tu licencia y cumple los requisitos. Ya la verán tus clientes.' }; }
       else if (r.estado === 'revision') P.res = { estado: 'revision', titulo: 'Tu foto la está revisando la central', texto: 'La revisión automática no pudo decidir. Te avisaremos apenas la aprueben.' };
       else P.res = { estado: 'rechazada', titulo: 'Tu foto no fue aprobada', motivo: r.motivo, texto: 'Corrige lo indicado y toma otra foto.', reintentar: 'camara' };

@@ -120,7 +120,8 @@
     venc.sort(function (a, b) { return a[2] < b[2] ? -1 : 1; });
     var hd = docs.map(function (x) {
       var u = x[0], k = x[1], p = x[2], antes = ((S.fichas[u] || {}).docs || {})[k] || {};
-      return '<article class="turno"><div class="fila"><div><strong>' + esc(nombreDe(u)) + '</strong><div class="meta">' + NOM[k] + ' renovada · nueva fecha de vencimiento: <b>' + fecha(p.vence) + '</b> (antes ' + fecha(antes.vence) + ')</div></div></div>' +
+      return '<article class="turno"><div class="fila"><div><strong>' + esc(nombreDe(u)) + '</strong><div class="meta">' + NOM[k] + ' renovada · nueva fecha de caducidad: <b>' + fecha(p.vence) + '</b> (antes ' + fecha(antes.vence) + ')</div></div></div>' +
+        (p.revisar && p.revisar.length ? '<div class="rev-docs sospechosa"><b>⚠ Revisar: puede ser de otra persona u otro carro</b><ul>' + p.revisar.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
         '<div class="fotos-turno"><div class="grupo"><h4>' + NOM[k] + ' nueva</h4><div class="g">' + figura(p.foto, NOM[k], nombreDe(u), true) + '</div></div></div>' +
         '<div class="acciones"><button class="btn btn-primario" data-doc-ok="' + u + '|' + k + '">✓ Aprobar documento</button><button class="btn btn-peligro" data-doc-no="' + u + '|' + k + '">Rechazar: no se lee</button></div></article>';
     }).join('') + (venc.length ? '<div class="tabla-caja"><table class="tabla"><thead><tr><th>Conductor</th><th>Documento</th><th>Caduca</th><th></th></tr></thead><tbody>' +

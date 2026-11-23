@@ -420,12 +420,65 @@ async function revisarPerfil(foto, env) {
   });
 }
 
-// ---------------- Documento renovado (lo aprueba la central) ----------------
+// ---------------- Documento renovado ----------------
+// v:2 → se revisa solo: si todo coincide se aprueba sin la central. Errores del conductor (foto mala, fecha mal escrita,
+// documento viejo) se le piden corregir a él. A la central SOLO llega si parece de otra persona u otro carro.
+const NOMBRE_DOC = { cedula: 'cédula', licencia: 'licencia', matricula: 'matrícula' };
 async function documento(uid, b, env) {
   if (['cedula', 'licencia', 'matricula'].indexOf(b.doc) < 0 || !esImagen(b.foto) || !/^\d{4}-\d{2}-\d{2}$/.test(b.vence || '')) throw new Error('datos');
-  if (b.vence <= diaEcuador(Date.now())) throw new Error('La nueva fecha de vencimiento debe ser futura.');
-  await db(env, 'PATCH', '', { ['docsPendientes/' + uid + '/' + b.doc]: { foto: b.foto, vence: b.vence, t: Date.now() } });
-  return { ok: true, estado: 'pendiente' };
+  const hoy = diaEcuador(Date.now()), t = Date.now(), nom = NOMBRE_DOC[b.doc];
+  if (b.vence <= hoy) throw new Error('La nueva fecha de caducidad debe ser futura.');
+  if (b.v !== 2) {   // app vieja: como antes, lo revisa la central
+    await db(env, 'PATCH', '', { ['docsPendientes/' + uid + '/' + b.doc]: { foto: b.foto, vence: b.vence, t } });
+    return { ok: true, estado: 'pendiente' };
+  }
+  const [ficha, cond] = await Promise.all([db(env, 'GET', 'fichas/' + uid), db(env, 'GET', 'conductores/' + uid)]);
+  const fi = ficha || {}, co = cond || {}, antes = ((fi.docs || {})[b.doc] || {}).vence || '';
+  const ki = 'docsIntentos/' + uid + '/' + b.doc + '/' + hoy, intentos = ((await db(env, 'GET', ki)) || 0) + 1;
+  await db(env, 'PUT', ki, intentos);
+  let l;
+  try { l = await leerDocRenovado(b.doc, b.foto, env); } catch (e) { return { ok: false, error: 'No pudimos revisar tu ' + nom + ' en este momento. Intenta otra vez en unos minutos.' }; }
+  if (l.es_documento === false) return { ok: false, repetir: true, error: 'Esa foto no parece tu ' + nom + '. Tómale una foto al frente del documento.' };
+  const leida = fechaNorm(l.vence);
+  const sinLeer = !leida && (b.doc === 'cedula' || intentos >= 3);   // la cédula a veces no trae la fecha al frente; y nunca se queda trabado
+  if (!leida && !sinLeer) return { ok: false, repetir: true, error: 'No se lee bien la fecha de caducidad de tu ' + nom + '. Tómale la foto otra vez, completa, con buena luz y sin reflejos.' };
+  if (leida) {
+    if (leida < hoy) return { ok: false, repetir: true, error: 'La ' + nom + ' de la foto ya está caducada (' + fechaTexto(leida) + '). Tómale la foto a tu ' + nom + ' nueva.' };
+    if (antes && leida <= antes) return { ok: false, repetir: true, error: 'Esa es la misma ' + nom + ' de antes (caduca el ' + fechaTexto(leida) + '). Tómale la foto a la nueva.' };
+    if (leida !== b.vence) return { ok: false, corregir: 'vence', error: 'La fecha que escribiste no coincide con la de tu ' + nom + '. Revísala.' };
+  }
+  // ¿Es de la misma persona / el mismo carro? (solo esto llega a la central)
+  const motivos = [];
+  if (b.doc !== 'matricula') {
+    const num = soloDigitos(l.numero);
+    if (num.length === 10 && fi.cedula && num !== String(fi.cedula)) motivos.push('El número del documento (' + num + ') no es su cédula (' + fi.cedula + ').');
+    if (l.nombre && (fi.nombre || co.nombre) && mismoNombre(l.nombre, fi.nombre || co.nombre) === false) motivos.push('El nombre del documento (' + l.nombre + ') no es el suyo (' + (fi.nombre || co.nombre) + ').');
+    if (typeof b.cara === 'number' && b.cara > 0.62) motivos.push('La cara del documento no se parece a la del conductor.');
+  } else {
+    const pl = placaNorm(l.placa), suya = placaNorm(fi.placa || co.placa);
+    if (pl && suya && distEdicion(pl, suya) > 1) motivos.push('La placa de la matrícula (' + pl + ') no es la de su carro (' + suya + ').');
+  }
+  const vence = leida || b.vence;
+  if (motivos.length) {
+    await db(env, 'PATCH', '', { ['docsPendientes/' + uid + '/' + b.doc]: { foto: b.foto, vence, t, revisar: motivos } });
+    return { ok: true, estado: 'pendiente' };
+  }
+  await db(env, 'PATCH', '', {
+    ['fichas/' + uid + '/docs/' + b.doc]: { vence, t, auto: true, sinLeer: sinLeer || null },
+    ['fichaFotos/' + uid + '/' + b.doc]: b.foto,
+    ['docsPendientes/' + uid + '/' + b.doc]: null
+  });
+  return { ok: true, estado: 'aprobado', vence };
+}
+async function leerDocRenovado(doc, foto, env) {
+  const que = doc === 'matricula' ? 'la matrícula de un vehículo de Ecuador. placa = la placa. propietario = el nombre del propietario.'
+    : doc === 'licencia' ? 'una licencia de conducir de Ecuador. numero = el número de la licencia (es el número de cédula). nombre = apellidos y nombres.'
+    : 'una cédula de identidad de Ecuador. numero = el número de cédula (10 dígitos). nombre = apellidos y nombres.';
+  const prompt = 'La foto debería ser ' + que + ' Copia los datos EXACTAMENTE como están impresos; no inventes nada.\n' +
+    'vence = la fecha de vencimiento, caducidad o expiración impresa, en formato AAAA-MM-DD; si no aparece o no se lee, déjala vacía (no uses la de expedición ni la de nacimiento).\n' +
+    'es_documento = true solo si la foto es de verdad ese documento. legible = true si se lee bien.';
+  const S = { type: 'STRING' };
+  return await gemini(env, prompt, [foto], { type: 'OBJECT', properties: { es_documento: { type: 'BOOLEAN' }, legible: { type: 'BOOLEAN' }, numero: S, nombre: S, placa: S, propietario: S, vence: S }, required: ['es_documento', 'legible', 'vence'] });
 }
 
 // ---------------- Revisión diaria del turno ----------------
