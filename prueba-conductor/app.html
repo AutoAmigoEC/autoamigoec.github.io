@@ -1998,5 +1998,13 @@
 })();
 </script>
 <script src="registro.js?v=1"></script>
+<script>
+/* Enlace directo: app.html#perfil abre la pantalla Mi perfil */
+(function () {
+  function abrir() { if (location.hash !== '#perfil') return; var b = document.querySelector('[data-ir="perfil"]'); if (b) b.click(); }
+  window.addEventListener('load', function () { setTimeout(abrir, 400); });
+  window.addEventListener('hashchange', abrir);
+})();
+</script>
 </body>
 </html>
