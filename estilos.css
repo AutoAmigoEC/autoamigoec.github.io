@@ -396,3 +396,4 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .rechazo .restr-check span{flex:1;min-width:0}
 .sello-btn{border:0;cursor:pointer;font-family:inherit}
 .sello-btn:hover{filter:none;text-decoration:none}
+.sello.mal.sello-btn,.sello.mal.sello-btn:hover,.sello.mal.sello-btn:focus{background:#FEE4E2;color:#B42318;box-shadow:none;outline:none}
