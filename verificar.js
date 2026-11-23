@@ -6,7 +6,10 @@
 (function () {
   var PAGINAS = {
     antecedentes: { url: 'https://certificados.ministeriodelinterior.gob.ec/gestorcertificados/antecedentes/', nombre: 'Antecedentes penales' },
-    satje: { url: 'https://procesosjudiciales.funcionjudicial.gob.ec/busqueda-filtros', nombre: 'Procesos judiciales' }
+    satje: { url: 'https://procesosjudiciales.funcionjudicial.gob.ec/busqueda-filtros', nombre: 'Procesos judiciales' },
+    ant: { url: 'https://consultaweb.ant.gob.ec/PortalWEB/paginas/clientes/clp_criterio_consulta.jsp', nombre: 'Multas ANT' },
+    atm: { url: 'https://tramites.atm.gob.ec/', nombre: 'Multas ATM' },
+    fiscalia: { url: 'https://www.fiscalia.gob.ec/consulta-de-noticias-del-delito/', nombre: 'Fiscalía' }
   };
   var CEDULAS = {};   // cédula de cada conductor ya aprobado (se lee de su ficha)
   var pedidas = {};
@@ -42,7 +45,10 @@
       if (uid) cedulaDe(uid);
       var dis = '';   // sin cédula guardada: al tocarlo se pide una sola vez
       return '<button class="btn btn-chico" data-verif="antecedentes"' + at + dis + '>Antecedentes</button>' +
-        '<button class="btn btn-chico" data-verif="satje"' + at + dis + '>Procesos judiciales</button>';
+        '<button class="btn btn-chico" data-verif="satje"' + at + dis + '>Procesos judiciales</button>' +
+        '<button class="btn btn-chico" data-verif="ant"' + at + dis + '>Multas ANT</button>' +
+        '<button class="btn btn-chico" data-verif="atm"' + at + dis + '>Multas ATM</button>' +
+        '<button class="btn btn-chico" data-verif="fiscalia"' + at + dis + '>Fiscalía</button>';
     }
   };
 
