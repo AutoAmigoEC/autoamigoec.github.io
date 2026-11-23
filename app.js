@@ -734,7 +734,7 @@
       if (window.AADocumentacion) acc += AADocumentacion.boton(uid);
       if (window.AAVerificar) acc += AAVerificar.botones(null, uid);
       acc += c.activo === false
-        ? '<button class="btn btn-chico" data-bloquear="' + uid + '" data-valor="1">Desbloquear</button>'
+        ? '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="1">Desbloquear</button>'
         : '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="0">Bloquear</button>';
       return '<tr><td><strong>U' + esc(c.unidad || '') + '</strong></td>' +
         '<td>' + esc(c.nombre) + (window.AARestringir ? ' ' + AARestringir.sello(uid) : '') + '<small>' + esc(c.telefono || '') + '</small></td>' +
