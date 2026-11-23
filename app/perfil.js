@@ -28,7 +28,7 @@
   function alertas() { if (!D || !D.ficha) return []; return DOCS.filter(function (x) { var e = estadoDoc(x[0])[0]; return e === 'mal' || e === 'pronto'; }); }
   function fila(et, v, k) {
     if (k && P.editar === k) return '<div class="pf-fila edit"><span>' + et + '</span><input id="pf-edit" value="' + esc(v) + '" type="' + (k === 'correo' ? 'email' : 'tel') + '"' + (k === 'telefono' ? ' inputmode="numeric" maxlength="10"' : '') + '><button data-p="guardar" data-k="' + k + '">Guardar</button></div>';
-    return '<div class="pf-fila"><span>' + et + '</span><b>' + esc(v || '—') + '</b>' + (k ? '<button data-p="editar" data-k="' + k + '">Editar</button>' : '<i title="No se puede cambiar">🔒</i>') + '</div>';
+    return '<div class="pf-fila"><span>' + et + '</span><b>' + esc(v || '—') + '</b>' + (k ? '<button data-p="editar" data-k="' + k + '">Editar</button>' : '') + '</div>';
   }
   function html(d) {
     D = d;
@@ -51,11 +51,11 @@
     h += '<h3 class="pf-h">Datos personales</h3><div class="pf-caja">' + fila('Nombre', f.nombre) + fila('Cédula', f.cedula) + fila('Nacimiento', fecha(f.nacimiento)) + fila('Sector', f.sector) +
       fila('Teléfono', f.telefono, 'telefono') + fila('Correo', f.correo, 'correo') + '</div>' +
       '<h3 class="pf-h">Tu vehículo</h3><div class="pf-caja">' + fila('Placa', f.placa) + fila('Marca', f.marca) + fila('Color', f.color) + fila('Año', f.anio) +
-      (ff.carro ? '<div class="pf-docfoto"><img src="' + ff.carro + '"><small>Foto del carro 🔒</small></div>' : '') + '</div>' +
+      (ff.carro ? '<div class="pf-docfoto"><img src="' + ff.carro + '"><small>Foto del carro</small></div>' : '') + '</div>' +
       '<h3 class="pf-h">Documentos</h3><div class="pf-caja">' + DOCS.map(function (x) {
         var dd = (f.docs || {})[x[0]] || {}, e = estadoDoc(x[0]);
         return '<div class="pf-doc">' + (ff[x[0]] ? '<img src="' + ff[x[0]] + '">' : '<span class="pf-doc-ic">📄</span>') + '<div><b>' + x[1] + '</b><small>Vence: ' + fecha(dd.vence) + '</small><span class="pf-chip ' + e[0] + '">' + e[1] + '</span></div>' +
-          (e[0] === 'mal' || e[0] === 'pronto' ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '<i>🔒</i>') + '</div>';
+          (e[0] === 'mal' || e[0] === 'pronto' ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '') + '</div>';
       }).join('') + '</div>' +
       '<p class="pf-nota">Tus datos y fotos no se pueden cambiar. Solo puedes cambiar tu teléfono y tu correo. Si un documento vence, actualízalo aquí.</p>';
     return h;

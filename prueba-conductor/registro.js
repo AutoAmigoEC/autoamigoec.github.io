@@ -218,7 +218,7 @@
   }
   function fila(et, v, editable, k) {
     if (P.editar === k) return '<div class="pf-fila edit"><span>' + et + '</span><input id="pf-edit" value="' + esc(v) + '" type="' + (k === 'correo' ? 'email' : 'tel') + '"><button data-p="guardar" data-k="' + k + '">Guardar</button></div>';
-    return '<div class="pf-fila"><span>' + et + '</span><b>' + esc(v) + '</b>' + (editable ? '<button data-p="editar" data-k="' + k + '">Editar</button>' : '<i title="No se puede cambiar">🔒</i>') + '</div>';
+    return '<div class="pf-fila"><span>' + et + '</span><b>' + esc(v) + '</b>' + (editable ? '<button data-p="editar" data-k="' + k + '">Editar</button>' : '') + '</div>';
   }
   function html() {
     var p = PERFIL, todas = SIM.todas(), n = todas.length;
@@ -235,11 +235,11 @@
       '<h3 class="pf-h">Datos personales</h3><div class="pf-caja">' + fila('Nombre', p.nombre) + fila('Cédula', p.cedula) + fila('Nacimiento', fecha(p.nacimiento)) + fila('Sector', p.sector) +
       fila('Teléfono', p.telefono, true, 'telefono') + fila('Correo', p.correo, true, 'correo') + '</div>' +
       '<h3 class="pf-h">Tu vehículo</h3><div class="pf-caja">' + fila('Placa', p.placa) + fila('Marca', p.marca) + fila('Color', p.color) + fila('Año', p.anio) +
-      '<div class="pf-docfoto"><img src="' + p.fotoCarro + '"><small>Foto del carro 🔒</small></div></div>' +
+      '<div class="pf-docfoto"><img src="' + p.fotoCarro + '"><small>Foto del carro</small></div></div>' +
       '<h3 class="pf-h">Documentos</h3><div class="pf-caja">' + DOCS.map(function (x) {
         var d = p.docs[x[0]], e = estadoDoc(d);
         return '<div class="pf-doc"><img src="' + d.foto + '"><div><b>' + x[1] + '</b><small>Vence: ' + fecha(d.vence) + '</small><span class="pf-chip ' + e[0] + '">' + e[1] + '</span></div>' +
-          ((e[0] === 'mal' || e[0] === 'pronto') && !d.pendiente ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '<i>🔒</i>') + '</div>';
+          ((e[0] === 'mal' || e[0] === 'pronto') && !d.pendiente ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '') + '</div>';
       }).join('') + '</div>' +
       '<p class="pf-nota">Tus datos y fotos no se pueden cambiar. Solo puedes cambiar tu teléfono y tu correo. Si un documento vence, actualízalo aquí.</p>';
   }
