@@ -53,5 +53,70 @@
       });
     });
   }
-  window.AAEncuadre = { arreglar: arreglar, cargar: cargar };
+  // ---------- "Estudio": fondo igual para todos + luz y color ----------
+  // Separa a la persona del fondo (MediaPipe de Google, en el teléfono), arregla la luz y el color solo de la persona
+  // (sin filtros de belleza: tiene que seguir pareciéndose a su cédula) y la pone sobre el fondo de AutoAmigo.
+  var MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  var MODELO = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+  var seg = null;
+  function segmentador() {
+    if (seg) return seg;
+    seg = import(MP + '/vision_bundle.mjs').then(function (m) {
+      return m.FilesetResolver.forVisionTasks(MP + '/wasm').then(function (f) {
+        return m.ImageSegmenter.createFromOptions(f, { baseOptions: { modelAssetPath: MODELO, delegate: 'CPU' }, runningMode: 'IMAGE', outputConfidenceMasks: true, outputCategoryMask: false });
+      });
+    }).catch(function (e) { seg = null; throw e; });
+    return seg;
+  }
+  function pintarFondo(g, n, tipo) {
+    var gr;
+    if (tipo === 'azul') { gr = g.createRadialGradient(n / 2, n * 0.35, n * 0.05, n / 2, n * 0.45, n * 0.75); gr.addColorStop(0, '#2B3A8C'); gr.addColorStop(1, '#0A0F3C'); }
+    else { gr = g.createRadialGradient(n / 2, n * 0.35, n * 0.05, n / 2, n * 0.45, n * 0.75); gr.addColorStop(0, '#F4F5F7'); gr.addColorStop(1, '#D9DDE3'); }
+    g.fillStyle = gr; g.fillRect(0, 0, n, n);
+  }
+  function estudio(src, tipo) {
+    return Promise.all([segmentador(), imagen(src)]).then(function (x) {
+      var s = x[0], im = x[1], n = im.naturalWidth || im.width;
+      var c = document.createElement('canvas'); c.width = c.height = n; var g = c.getContext('2d'); g.drawImage(im, 0, 0, n, n);
+      var res = s.segment(c), m = res.confidenceMasks[0], mw = m.width, mh = m.height, conf = m.getAsFloat32Array();
+      var px = g.getImageData(0, 0, n, n), d = px.data, alfa = new Float32Array(n * n);
+      // Máscara de la persona (con borde suave)
+      for (var yy = 0; yy < n; yy++) for (var xx = 0; xx < n; xx++) {
+        var v = conf[Math.min(mh - 1, Math.floor(yy * mh / n)) * mw + Math.min(mw - 1, Math.floor(xx * mw / n))];
+        alfa[yy * n + xx] = Math.max(0, Math.min(1, (v - 0.35) / 0.3));
+      }
+      if (m.close) m.close();
+      // Luz: estira el brillo de la persona entre sus tonos oscuros y claros, y lleva el promedio a un punto agradable
+      var hist = new Uint32Array(256), tot = 0, sr = 0, sg = 0, sb = 0;
+      for (var i = 0; i < n * n; i++) if (alfa[i] > 0.8) { var k = i * 4, l = Math.round(0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2]); hist[l]++; tot++; sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; }
+      var bajo = 0, alto = 255, acc = 0, medio = 128;
+      if (tot > 500) {
+        for (var a = 0; a < 256; a++) { acc += hist[a]; if (acc >= tot * 0.01) { bajo = a; break; } }
+        acc = 0; for (var b = 255; b >= 0; b--) { acc += hist[b]; if (acc >= tot * 0.01) { alto = b; break; } }
+        acc = 0; for (var c2 = 0; c2 < 256; c2++) { acc += hist[c2]; if (acc >= tot * 0.5) { medio = c2; break; } }
+      }
+      bajo = Math.min(bajo, 40); alto = Math.max(alto, 200);
+      var mN = Math.max(0.05, Math.min(0.95, (medio - bajo) / (alto - bajo)));
+      var gamma = Math.max(0.6, Math.min(1.5, Math.log(0.5) / Math.log(mN)));
+      // Color: quita la mitad del tinte (amarillo de focos, azul de sombra) sin tocar el tono de piel por completo
+      var pr = 1, pg = 1, pb = 1;
+      if (tot > 500) { var mr = sr / tot, mg = sg / tot, mb = sb / tot, gris = (mr + mg + mb) / 3; pr = 1 + 0.35 * (gris / mr - 1); pg = 1 + 0.35 * (gris / mg - 1); pb = 1 + 0.35 * (gris / mb - 1); }
+      var tabla = new Uint8ClampedArray(256);
+      for (var t = 0; t < 256; t++) tabla[t] = 255 * Math.pow(Math.max(0, Math.min(1, (t - bajo) / (alto - bajo))), gamma);
+      for (var j = 0; j < n * n; j++) { var q = j * 4; d[q] = tabla[Math.min(255, d[q] * pr) | 0]; d[q + 1] = tabla[Math.min(255, d[q + 1] * pg) | 0]; d[q + 2] = tabla[Math.min(255, d[q + 2] * pb) | 0]; }
+      // Nitidez suave (solo sobre la persona)
+      var o = new Uint8ClampedArray(d);
+      for (var y2 = 1; y2 < n - 1; y2++) for (var x2 = 1; x2 < n - 1; x2++) {
+        var ii = y2 * n + x2; if (alfa[ii] < 0.5) continue;
+        for (var ch = 0; ch < 3; ch++) { var p0 = ii * 4 + ch; var bl = (o[p0 - 4] + o[p0 + 4] + o[p0 - n * 4] + o[p0 + n * 4]) / 4; d[p0] = o[p0] + 0.35 * (o[p0] - bl); }
+      }
+      // Persona sobre el fondo de AutoAmigo
+      var f = document.createElement('canvas'); f.width = f.height = n; var gf = f.getContext('2d'); pintarFondo(gf, n, tipo);
+      var fp = gf.getImageData(0, 0, n, n), fd = fp.data;
+      for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4; fd[w] = fd[w] * (1 - al) + d[w] * al; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al; }
+      gf.putImageData(fp, 0, 0);
+      return f.toDataURL('image/jpeg', 0.85);
+    });
+  }
+  window.AAEncuadre = { arreglar: arreglar, cargar: cargar, estudio: estudio, cargarEstudio: segmentador };
 })();
