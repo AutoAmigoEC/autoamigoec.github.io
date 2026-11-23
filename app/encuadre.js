@@ -88,19 +88,20 @@
       if (m.close) m.close();
       // Luz: estira el brillo de la persona entre sus tonos oscuros y claros, y lleva el promedio a un punto agradable
       var hist = new Uint32Array(256), tot = 0, sr = 0, sg = 0, sb = 0;
-      for (var i = 0; i < n * n; i++) if (alfa[i] > 0.8) { var k = i * 4, l = Math.round(0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2]); hist[l]++; tot++; sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; }
+      // Se mide solo la zona de la cara (la camisa blanca u oscura no debe engañar al brillo)
+      for (var i = 0; i < n * n; i++) { var fy = Math.floor(i / n) / n, fx = (i % n) / n; if (alfa[i] < 0.8 || fy < 0.22 || fy > 0.58 || fx < 0.3 || fx > 0.7) continue; var k = i * 4, l = Math.round(0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2]); hist[l]++; tot++; sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; }
       var bajo = 0, alto = 255, acc = 0, medio = 128;
-      if (tot > 500) {
+      if (tot > 300) {
         for (var a = 0; a < 256; a++) { acc += hist[a]; if (acc >= tot * 0.01) { bajo = a; break; } }
         acc = 0; for (var b = 255; b >= 0; b--) { acc += hist[b]; if (acc >= tot * 0.01) { alto = b; break; } }
         acc = 0; for (var c2 = 0; c2 < 256; c2++) { acc += hist[c2]; if (acc >= tot * 0.5) { medio = c2; break; } }
       }
-      bajo = Math.min(bajo, 40); alto = Math.max(alto, 200);
+      bajo = Math.min(bajo, 25); alto = Math.max(alto, 235);
       var mN = Math.max(0.05, Math.min(0.95, (medio - bajo) / (alto - bajo)));
-      var gamma = Math.max(0.6, Math.min(1.5, Math.log(0.5) / Math.log(mN)));
+      var gamma = Math.max(0.7, Math.min(1.0, Math.log(0.55) / Math.log(mN)));   // aclara si está oscura; nunca oscurece
       // Color: quita la mitad del tinte (amarillo de focos, azul de sombra) sin tocar el tono de piel por completo
       var pr = 1, pg = 1, pb = 1;
-      if (tot > 500) { var mr = sr / tot, mg = sg / tot, mb = sb / tot, gris = (mr + mg + mb) / 3; pr = 1 + 0.35 * (gris / mr - 1); pg = 1 + 0.35 * (gris / mg - 1); pb = 1 + 0.35 * (gris / mb - 1); }
+      if (tot > 300) { var mr = sr / tot, mg = sg / tot, mb = sb / tot, gris = (mr + mg + mb) / 3; pr = 1 + 0.35 * (gris / mr - 1); pg = 1 + 0.35 * (gris / mg - 1); pb = 1 + 0.35 * (gris / mb - 1); }
       var tabla = new Uint8ClampedArray(256);
       for (var t = 0; t < 256; t++) tabla[t] = 255 * Math.pow(Math.max(0, Math.min(1, (t - bajo) / (alto - bajo))), gamma);
       for (var j = 0; j < n * n; j++) { var q = j * 4; d[q] = tabla[Math.min(255, d[q] * pr) | 0]; d[q + 1] = tabla[Math.min(255, d[q + 1] * pg) | 0]; d[q + 2] = tabla[Math.min(255, d[q + 2] * pb) | 0]; }
