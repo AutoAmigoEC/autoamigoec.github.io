@@ -101,7 +101,7 @@
       var gamma = Math.max(0.7, Math.min(1.0, Math.log(0.55) / Math.log(mN)));   // aclara si está oscura; nunca oscurece
       // Color: quita la mitad del tinte (amarillo de focos, azul de sombra) sin tocar el tono de piel por completo
       var pr = 1, pg = 1, pb = 1;
-      if (tot > 300) { var mr = sr / tot, mg = sg / tot, mb = sb / tot, gris = (mr + mg + mb) / 3; pr = 1 + 0.35 * (gris / mr - 1); pg = 1 + 0.35 * (gris / mg - 1); pb = 1 + 0.35 * (gris / mb - 1); }
+      if (tot > 300) { var mr = sr / tot, mg = sg / tot, mb = sb / tot, gris = (mr + mg + mb) / 3; pr = 1 + 0.15 * (gris / mr - 1); pg = 1 + 0.15 * (gris / mg - 1); pb = 1 + 0.15 * (gris / mb - 1); }
       var tabla = new Uint8ClampedArray(256);
       for (var t = 0; t < 256; t++) tabla[t] = 255 * Math.pow(Math.max(0, Math.min(1, (t - bajo) / (alto - bajo))), gamma);
       for (var j = 0; j < n * n; j++) { var q = j * 4; d[q] = tabla[Math.min(255, d[q] * pr) | 0]; d[q + 1] = tabla[Math.min(255, d[q + 1] * pg) | 0]; d[q + 2] = tabla[Math.min(255, d[q + 2] * pb) | 0]; }
@@ -115,8 +115,20 @@
       var f = document.createElement('canvas'); f.width = f.height = n; var gf = f.getContext('2d');
       if (tipo === 'retrato') {
         // Modo retrato: el fondo real, desenfocado y un poco más claro (como una cámara buena), sin inventar nada
-        gf.filter = 'blur(' + Math.round(n / 45) + 'px)'; gf.drawImage(c, -n * 0.03, -n * 0.03, n * 1.06, n * 1.06); gf.filter = 'none';
-        gf.fillStyle = 'rgba(255,255,255,0.12)'; gf.fillRect(0, 0, n, n);
+        // Se borra a la persona del fondo antes de desenfocar (si no, el pelo oscuro deja una sombra alrededor)
+        var sb = document.createElement('canvas'); sb.width = sb.height = n; var gs = sb.getContext('2d');
+        var bgd = gs.createImageData(n, n), od = g.getImageData(0, 0, n, n).data;
+        for (var e = 0; e < n * n; e++) { var r4 = e * 4, ab = alfa[e] > 0.05 ? 0 : 255; bgd.data[r4] = od[r4]; bgd.data[r4 + 1] = od[r4 + 1]; bgd.data[r4 + 2] = od[r4 + 2]; bgd.data[r4 + 3] = ab; }
+        gs.putImageData(bgd, 0, 0);
+        var sm = document.createElement('canvas'); sm.width = sm.height = n; var gm = sm.getContext('2d');
+        gm.filter = 'blur(' + Math.round(n / 14) + 'px)'; gm.drawImage(sb, 0, 0); gm.drawImage(sb, 0, 0); gm.filter = 'none';
+        var md = gm.getImageData(0, 0, n, n), mdd = md.data, tr = 0, tg = 0, tb = 0, tn = 0;
+        for (var e2 = 0; e2 < n * n; e2++) if (bgd.data[e2 * 4 + 3]) { tr += od[e2 * 4]; tg += od[e2 * 4 + 1]; tb += od[e2 * 4 + 2]; tn++; }
+        tr = tn ? tr / tn : 200; tg = tn ? tg / tn : 200; tb = tn ? tb / tn : 200;
+        for (var e3 = 0; e3 < n * n; e3++) { var r5 = e3 * 4; if (mdd[r5 + 3] < 8) { mdd[r5] = tr; mdd[r5 + 1] = tg; mdd[r5 + 2] = tb; } mdd[r5 + 3] = 255; }
+        gm.putImageData(md, 0, 0);
+        gf.filter = 'blur(' + Math.round(n / 60) + 'px)'; gf.drawImage(sm, 0, 0); gf.filter = 'none';
+        gf.fillStyle = 'rgba(255,255,255,0.06)'; gf.fillRect(0, 0, n, n);
       } else pintarFondo(gf, n, tipo);
       var fp = gf.getImageData(0, 0, n, n), fd = fp.data;
       for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4; fd[w] = fd[w] * (1 - al) + d[w] * al; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al; }
