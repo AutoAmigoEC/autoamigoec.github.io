@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="estilos.css?v=20261122210000">
+<link rel="stylesheet" href="estilos.css?v=20261122220000">
 </head>
 <body>
 
@@ -468,6 +468,11 @@
       <label id="cd-pass-fila">Contraseña (mín. 6) <input id="cd-pass" type="text" minlength="6" required></label>
     </div>
     <p class="muted" id="cd-nota"></p>
+    <div id="cd-clave" class="cd-clave" hidden>
+      <h3>Clave de la app</h3>
+      <div id="cd-clave-ver" class="cd-clave-fila"><button type="button" class="btn btn-chico" id="cd-clave-mostrar">Ver clave</button><span id="cd-clave-txt" class="muted"></span></div>
+      <div class="cd-clave-fila"><input id="cd-clave-nueva" type="text" minlength="6" maxlength="40" placeholder="Nueva clave (mín. 6)" autocomplete="off"><button type="button" class="btn btn-chico btn-peligro" id="cd-clave-cambiar">Cambiar clave</button></div>
+    </div>
     <p class="error" id="cd-error" hidden></p>
     <footer class="modal-pie">
       <button type="button" class="btn" data-cerrar>Cancelar</button>
@@ -519,11 +524,11 @@
 <script src="mapas.js?v=202610292359"></script>
 <script src="config.js?v=202610292359"></script>
 <script src="despacho.js?v=20261030190000"></script>
-<script src="app.js?v=20261122210500"></script>
+<script src="app.js?v=20261122220000"></script>
 <script src="turnos.js?v=20261103180000"></script>
-<script src="solicitudes.js?v=20261122203000"></script>
+<script src="solicitudes.js?v=20261122220000"></script>
 <script src="verificar.js?v=20261122212000"></script>
-<script src="restringir.js?v=20261122205900"></script>
+<script src="restringir.js?v=20261122220000"></script>
 <script src="documentacion.js?v=20261122205000"></script>
 </body>
 </html>

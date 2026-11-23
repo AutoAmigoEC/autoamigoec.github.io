@@ -21,6 +21,7 @@
       return fetch(x[0] + '/' + ruta, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + x[1] }, body: JSON.stringify(cuerpo || {}) });
     }).then(function (r) { return r.json(); }).then(function (j) { if (!j || !j.ok) throw new Error(j && j.error || 'No se pudo.'); return j; });
   }
+  window.AAServidor = { llamar: llamar };   // también lo usa la clave de los conductores
   function cargar() {
     return llamar('restringidos').then(function (j) {
       R.lista = j.lista || []; R.alertas = {}; R.cargado = true;

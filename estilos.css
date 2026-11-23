@@ -397,3 +397,8 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .sello-btn{border:0;cursor:pointer;font-family:inherit}
 .sello-btn:hover{filter:none;text-decoration:none}
 .sello.mal.sello-btn,.sello.mal.sello-btn:hover,.sello.mal.sello-btn:focus{background:#FEE4E2;color:#B42318;box-shadow:none;outline:none}
+.cd-clave{margin:6px 0 0;padding:12px 14px;border:1px solid #EAECF0;border-radius:12px;background:#F9FAFB}
+.cd-clave h3{margin:0 0 8px;font-size:14px}
+.cd-clave-fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.cd-clave-fila input{flex:1;min-width:140px;padding:8px 10px;border:1px solid #D0D5DD;border-radius:10px;font:inherit}
+.clave-vista{font-size:14px}

@@ -1710,7 +1710,9 @@
     $('#cd-pass').required = nuevo;
     $('#cd-nota').textContent = nuevo
       ? 'Entrégale al conductor su usuario y contraseña para entrar a la app. Empieza con saldo $0: envíale un código de recarga.'
-      : 'Usuario: ' + (S.conductores[uid].usuario || '') + '. Para cambiar la contraseña, bloquea este usuario y crea uno nuevo.';
+      : 'Usuario: ' + (S.conductores[uid].usuario || '') + '.';
+    $('#cd-clave').hidden = nuevo; $('#cd-clave-txt').textContent = ''; $('#cd-clave-txt').className = 'muted';
+    $('#cd-clave-nueva').value = nuevo ? '' : String(100000 + Math.floor(Math.random() * 900000));
     if (!nuevo) {
       var c = S.conductores[uid];
       $('#cd-nombre').value = c.nombre || '';
@@ -1721,6 +1723,46 @@
     }
     $('#modal-conductor').showModal();
   }
+
+  // ---------- Clave del conductor (dentro de Editar) ----------
+  // Ver la clave pide la clave del panel (la de Recargas y Configuración), salvo que ya la hayas puesto en esta sesión.
+  function pedirClavePanel() {
+    if (recargasAbiertas) return Promise.resolve();
+    if (!S.claveHash) return Promise.reject({ message: 'Primero crea la clave del panel en Recargas.' });
+    var c = prompt('Escribe la clave del panel (la de Recargas y Configuración):');
+    if (c === null) return Promise.reject(null);
+    return hashClave(c).then(function (h) { if (h !== S.claveHash) throw { message: 'Clave del panel incorrecta.' }; });
+  }
+  function textoClave(t, mal) { var e = $('#cd-clave-txt'); e.textContent = t; e.className = mal ? 'error' : 'muted'; }
+  $('#cd-clave-mostrar').addEventListener('click', function () {
+    var uid = editando; if (!uid || !window.AAServidor) return;
+    pedirClavePanel().then(function () {
+      textoClave('Buscando…');
+      return AAServidor.llamar('clave', { uid: uid, accion: 'ver' });
+    }).then(function (j) {
+      if (!j) return;
+      if (!j.clave) { textoClave('No hay copia de su clave actual (se puso antes de esta función). Cámbiala abajo y desde ahí la verás.'); return; }
+      var c = S.conductores[uid] || {};
+      $('#cd-clave-txt').className = 'clave-vista';
+      $('#cd-clave-txt').innerHTML = 'Usuario: <b>' + esc(c.usuario || '') + '</b> · Clave: <b>' + esc(j.clave) + '</b> <button type="button" class="btn btn-chico" id="cd-clave-copiar">Copiar</button>';
+      $('#cd-clave-copiar').onclick = function () { try { navigator.clipboard.writeText(j.clave); toast('Clave copiada.'); } catch (e) { } };
+    }).catch(function (e) { if (e) textoClave(errorTexto(e), true); });
+  });
+  $('#cd-clave-cambiar').addEventListener('click', function () {
+    var uid = editando, nueva = $('#cd-clave-nueva').value.trim(), c = S.conductores[uid] || {};
+    if (!uid || !window.AAServidor) return;
+    if (nueva.length < 6) { textoClave('La clave debe tener al menos 6 caracteres.', true); return; }
+    pedirClavePanel().then(function () {
+      if (!confirm('¿Cambiar la clave de ' + (c.nombre || 'este conductor') + '? Su clave anterior dejará de funcionar.')) throw null;
+      $('#cd-clave-cambiar').disabled = true; textoClave('Cambiando…');
+      return AAServidor.llamar('clave', { uid: uid, accion: 'cambiar', clave: nueva });
+    }).then(function () {
+      $('#cd-clave-cambiar').disabled = false;
+      $('#cd-clave-txt').className = 'clave-vista';
+      $('#cd-clave-txt').innerHTML = '✓ Clave cambiada. Usuario: <b>' + esc(c.usuario || '') + '</b> · Clave: <b>' + esc(nueva) + '</b>';
+      toast('Clave cambiada. Avísale al conductor su nueva clave.');
+    }).catch(function (e) { $('#cd-clave-cambiar').disabled = false; if (e) textoClave(errorTexto(e), true); else textoClave(''); });
+  });
 
   var appSecundaria = null;
   function authSecundaria() {
@@ -1747,8 +1789,10 @@
     } else {
       var email = usuario + '@' + AJ.dominioUsuarios;
       var a2 = authSecundaria();
-      p = a2.createUserWithEmailAndPassword(email, $('#cd-pass').value).then(function (cred) {
+      var passNueva = $('#cd-pass').value;
+      p = a2.createUserWithEmailAndPassword(email, passNueva).then(function (cred) {
         var uid = cred.user.uid;
+        if (window.AAServidor) AAServidor.llamar('clave', { uid: uid, accion: 'guardar', clave: passNueva }).catch(function () { });
         datos.usuario = usuario;
         datos.activo = true;
         datos.creado = TS;

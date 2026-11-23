@@ -36,6 +36,7 @@ export default {
       // Panel (solo administradores): restringir personas y ver la lista
       if (url.pathname.endsWith('/restringir')) return json(await restringir(await verificarAdmin(req, env), await req.json(), env));
       if (url.pathname.endsWith('/restringidos')) { await verificarAdmin(req, env); return json(await listaRestringidos(env)); }
+      if (url.pathname.endsWith('/clave')) { await verificarAdmin(req, env); return json(await claveConductor(await req.json(), env)); }
       const uid = await verificarConductor(req, env);
       const body = await req.json();
       if (url.pathname.endsWith('/perfil')) return json(await fotoPerfil(uid, body, env));
@@ -345,6 +346,28 @@ async function equipoConductor(req, uid, b, env) {
   return { ok: true };
 }
 
+// ---------------- Clave de los conductores (solo el dueño, desde el panel) ----------------
+// Firebase nunca guarda la clave real (solo una huella). Por eso, cuando el dueño crea o cambia una clave,
+// se guarda una copia en `clavesConductores/` (solo la cuenta de servicio la lee; el panel la pide aquí).
+async function claveConductor(b, env) {
+  const uid = String(b && b.uid || '').replace(/[.#$\[\]\/]/g, '');
+  if (!uid) throw new Error('datos');
+  if (b.accion === 'ver') { const c = await db(env, 'GET', 'clavesConductores/' + uid); return { ok: true, clave: c && c.clave || null, t: c && c.t || null }; }
+  const clave = String(b.clave || '');
+  if (clave.length < 6 || clave.length > 40) throw new Error('La clave debe tener al menos 6 caracteres.');
+  if (b.accion === 'cambiar') {
+    const c = await db(env, 'GET', 'conductores/' + uid);
+    if (!c) throw new Error('datos');
+    const r = await fetch('https://identitytoolkit.googleapis.com/v1/projects/' + PROYECTO + '/accounts:update', {
+      method: 'POST', headers: { authorization: 'Bearer ' + await token(env, true), 'content-type': 'application/json' },
+      body: JSON.stringify({ localId: uid, password: clave })
+    });
+    if (!r.ok) throw new Error('No se pudo cambiar la clave (' + r.status + ').');
+  } else if (b.accion !== 'guardar') throw new Error('datos');
+  await db(env, 'PUT', 'clavesConductores/' + uid, { clave, t: Date.now() });
+  return { ok: true };
+}
+
 // ---------------- Foto de perfil ----------------
 // El teléfono ya comparó la cara con la del registro y la cédula (cara.persona / cara.cedula).
 async function fotoPerfil(uid, b, env) {
@@ -561,13 +584,14 @@ async function verificarSesion(req) {
 }
 
 // ---------------- Firebase con la cuenta de servicio ----------------
-let acceso = null, accesoHasta = 0;
-async function token(env) {
-  if (acceso && Date.now() < accesoHasta) return acceso;
+let acceso = null, accesoHasta = 0, accesoAuth = null, accesoAuthHasta = 0;
+async function token(env, cuentas) {
+  if (!cuentas && acceso && Date.now() < accesoHasta) return acceso;
+  if (cuentas && accesoAuth && Date.now() < accesoAuthHasta) return accesoAuth;
   const sa = JSON.parse(env.FIREBASE_SA);
   const ahora = Math.floor(Date.now() / 1000);
   const cab = b64urlTexto(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const dat = b64urlTexto(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email', aud: 'https://oauth2.googleapis.com/token', iat: ahora, exp: ahora + 3600 }));
+  const dat = b64urlTexto(JSON.stringify({ iss: sa.client_email, scope: cuentas ? 'https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/cloud-platform' : 'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email', aud: 'https://oauth2.googleapis.com/token', iat: ahora, exp: ahora + 3600 }));
   const pem = sa.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
   const der = Uint8Array.from(atob(pem), ch => ch.charCodeAt(0));
   const k = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
@@ -576,6 +600,7 @@ async function token(env) {
   const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt });
   const j = await r.json();
   if (!j.access_token) throw new Error('firebase: cuenta de servicio');
+  if (cuentas) { accesoAuth = j.access_token; accesoAuthHasta = Date.now() + 50 * 60e3; return accesoAuth; }
   acceso = j.access_token; accesoHasta = Date.now() + 50 * 60e3;
   return acceso;
 }

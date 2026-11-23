@@ -139,6 +139,7 @@
     S.ocupado = true; pintar();
     return a2.createUserWithEmailAndPassword(usuario + '@' + AJ.dominioUsuarios, clave).then(function (cred) {
       var uid = cred.user.uid;
+      if (window.AAServidor) AAServidor.llamar('clave', { uid: uid, accion: 'guardar', clave: clave }).catch(function () { });
       return a2.signOut().then(function () {
         var t = Date.now(), up = {};
         up['conductores/' + uid] = { nombre: d.nombre, telefono: d.telefono, unidad: String(unidad), placa: d.placa, vehiculo: d.marca + ' ' + d.color, colorCarro: colorHex(d.color), usuario: usuario, activo: true, creado: firebase.database.ServerValue.TIMESTAMP };
