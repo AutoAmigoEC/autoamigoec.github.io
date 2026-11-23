@@ -251,10 +251,9 @@
     if (!PF.paso) { el.hidden = true; cerrarCam(); return; }
     el.hidden = false;
     if (PF.paso === 'requisitos') {
-      h = '<div class="vcab"><b>Foto de perfil</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Antes de tomar tu foto</h2><p>Es la foto que verán tus clientes. La central la aprueba.</p>' +
-        '<div class="vlista"><div><b>✓ Fondo blanco o gris claro</b><p>Párate frente a una pared clara, sin cosas detrás.</p></div><div><b>✓ Camisa manga larga sin estampado</b><p>Un solo color, sin dibujos, letras ni logos.</p></div><div><b>✓ De frente y sin gorra ni gafas</b><p>Revisaremos que seas la misma persona de tu cédula y tu licencia.</p></div></div>' +
-        '<div class="reglas"><span class="no">✕ Fondo de colores</span><span class="no">✕ Camiseta</span><span class="no">✕ Estampados</span></div>' +
-        '<button class="vbtn" data-f="camara">Tomar foto</button></div>';
+      h = '<div class="vcab"><b>Foto de perfil</b><button data-f="cerrar">✕</button></div><div class="vcuerpo">' +
+        (window.AAGuiaFoto ? AAGuiaFoto.html() : '<h2>Antes de tomar tu foto</h2>') +
+        '<button class="vbtn" data-f="camara">Abrir cámara</button></div>';
     } else if (PF.paso === 'camara') {
       cam = true; ej = EJ.persona;
       h = '<div class="vcab"><b>Foto de perfil</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Mira a la cámara</h2><p>Fondo claro y camisa manga larga sin estampado.</p>' +

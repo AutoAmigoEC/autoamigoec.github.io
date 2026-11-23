@@ -43,6 +43,18 @@
           n++; if (x < 0 || y < 0 || x > W || y > H) fuera++;
         }
         if (fuera / n > 0.3) return mal('Tu foto sale cortada. Aléjate un poco para que se vean tu cabeza y tus hombros.');
+        // Luz: cara oscura o a contraluz (ventana o foco detrás)
+        var lc = document.createElement('canvas'); lc.width = 64; lc.height = Math.round(64 * H / W); var gl = lc.getContext('2d'); gl.drawImage(im, 0, 0, lc.width, lc.height);
+        var ld = gl.getImageData(0, 0, lc.width, lc.height).data, k2 = lc.width / W, bx = r.detection.box;
+        var cs = 0, cn = 0, fs = 0, fn = 0;
+        for (var yy = 0; yy < lc.height; yy++) for (var xx = 0; xx < lc.width; xx++) {
+          var o = (yy * lc.width + xx) * 4, l = 0.299 * ld[o] + 0.587 * ld[o + 1] + 0.114 * ld[o + 2];
+          var dentro = xx >= bx.x * k2 && xx <= (bx.x + bx.width) * k2 && yy >= bx.y * k2 && yy <= (bx.y + bx.height) * k2;
+          if (dentro) { cs += l; cn++; } else { fs += l; fn++; }
+        }
+        var cara = cn ? cs / cn : 128, fondo = fn ? fs / fn : 128;
+        if (cara < 70) return mal('Tu foto salió oscura. Ponte mirando hacia una luz o una ventana y tómala otra vez.');
+        if (fondo - cara > 75) return mal('Tienes una luz o una ventana detrás y tu cara sale oscura. Ponte de espaldas a la pared y mirando hacia la luz.');
         var c = document.createElement('canvas'); c.width = c.height = TAM;
         var g = c.getContext('2d');
         g.fillStyle = FONDO; g.fillRect(0, 0, TAM, TAM);
