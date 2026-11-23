@@ -395,4 +395,4 @@ textarea{font:inherit;font-size:14px;border:1px solid #D0D5DD;border-radius:10px
 .rechazo .restr-check input{flex:0 0 18px;margin:2px 0 0}
 .rechazo .restr-check span{flex:1;min-width:0}
 .sello-btn{border:0;cursor:pointer;font-family:inherit}
-.sello-btn:hover{filter:brightness(.95);text-decoration:underline}
+.sello-btn:hover{filter:none;text-decoration:none}

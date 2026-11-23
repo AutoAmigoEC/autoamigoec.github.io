@@ -58,8 +58,8 @@
     sello: function (uid) {
       var a = R.alertas[uid];
       // Se puede hacer clic: si lo restringiste tú, quita la restricción; si entró desde el teléfono de un restringido, explica de quién
-      if (R.lista.some(function (r) { return r.id === 'c_' + uid; })) return '<button class="sello mal sello-btn" data-restr-quitar="c_' + esc(uid) + '" title="Clic para quitar la restricción">⛔ Restringido</button>';
-      return a ? '<button class="sello mal sello-btn" data-restr-info="' + esc(uid) + '" title="Entró desde el teléfono de ' + esc(a.nombre) + ', a quien restringiste">⛔ Restringido</button>' : '';
+      if (R.lista.some(function (r) { return r.id === 'c_' + uid; })) return '<button class="sello mal sello-btn" data-restr-quitar="c_' + esc(uid) + '">⛔ Restringido</button>';
+      return a ? '<button class="sello mal sello-btn" data-restr-info="' + esc(uid) + '">⛔ Restringido</button>' : '';
     },
     botonQuitar: function (uid) { return '<button class="btn btn-chico btn-peligro" data-restr-quitar="c_' + esc(uid) + '" data-restr-cambiar="' + esc(uid) + '">Quitar restricción</button>'; },
     boton: function (uid) { return '<button class="btn btn-chico btn-peligro" data-restr-uid="' + esc(uid) + '">Restringir</button>'; },
