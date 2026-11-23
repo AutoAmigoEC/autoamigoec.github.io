@@ -129,9 +129,28 @@
         gm.putImageData(md, 0, 0);
         gf.filter = 'blur(' + Math.round(n / 60) + 'px)'; gf.drawImage(sm, 0, 0); gf.filter = 'none';
         gf.fillStyle = 'rgba(255,255,255,0.06)'; gf.fillRect(0, 0, n, n);
+      } else if (tipo === 'estudio') {
+        // Fondo de estudio fotográfico: tela gris con manchas suaves (como las de los fotógrafos), más clara al centro
+        var gr2 = gf.createRadialGradient(n / 2, n * 0.38, n * 0.05, n / 2, n * 0.5, n * 0.8);
+        gr2.addColorStop(0, '#AEB3BA'); gr2.addColorStop(1, '#5F656E'); gf.fillStyle = gr2; gf.fillRect(0, 0, n, n);
+        var semilla = 7; function azar() { semilla = (semilla * 16807) % 2147483647; return semilla / 2147483647; }
+        var tela = document.createElement('canvas'); tela.width = tela.height = n; var gt = tela.getContext('2d');
+        for (var mk = 0; mk < 46; mk++) {
+          var bx = azar() * n, by = azar() * n, br = n * (0.08 + azar() * 0.22), claro = azar() > 0.5;
+          var rg = gt.createRadialGradient(bx, by, 0, bx, by, br);
+          rg.addColorStop(0, claro ? 'rgba(255,255,255,0.10)' : 'rgba(20,24,32,0.12)'); rg.addColorStop(1, 'rgba(0,0,0,0)');
+          gt.fillStyle = rg; gt.fillRect(0, 0, n, n);
+        }
+        gf.filter = 'blur(' + Math.round(n / 50) + 'px)'; gf.drawImage(tela, 0, 0); gf.filter = 'none';
+        // Sombra suave de la persona sobre la tela (así no parece pegada)
+        var so = document.createElement('canvas'); so.width = so.height = n; var gso = so.getContext('2d'), sod = gso.createImageData(n, n);
+        for (var e4 = 0; e4 < n * n; e4++) { sod.data[e4 * 4 + 3] = alfa[e4] * 255; }
+        gso.putImageData(sod, 0, 0);
+        gf.save(); gf.globalAlpha = 0.28; gf.filter = 'blur(' + Math.round(n / 35) + 'px)'; gf.drawImage(so, n * 0.025, n * 0.02); gf.restore();
       } else pintarFondo(gf, n, tipo);
       var fp = gf.getImageData(0, 0, n, n), fd = fp.data;
-      for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4; fd[w] = fd[w] * (1 - al) + d[w] * al; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al; }
+      var grano = tipo === 'estudio' ? 5 : 0;   // un grano fino igual en todo une a la persona con el fondo
+      for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4, gn = grano ? (Math.random() - 0.5) * grano : 0; fd[w] = fd[w] * (1 - al) + d[w] * al + gn; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al + gn; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al + gn; }
       gf.putImageData(fp, 0, 0);
       return f.toDataURL('image/jpeg', 0.85);
     });
