@@ -91,6 +91,7 @@
   function miSaldoC() { return Math.max(0, Number(W.saldos[W.uid] && W.saldos[W.uid].saldoC) || 0); }
   function miEstado() { return W.estados[W.uid] || null; }
   function estadoLibre() { return W.modoOcupado ? 'ocupado' : 'libre'; }
+  function mensajeSuspension(m) { return m === 'documentos' ? 'AutoAmigo está revisando tus documentos. Te avisaremos cuando esté listo.' : 'Tu cuenta está suspendida. Comunícate con la central de AutoAmigo.'; }
   function bloqueado() { return W.perfilCargado && (!W.perfil || W.perfil.activo === false); }
 
   // Verificación del turno
@@ -253,7 +254,7 @@
   }
   function evaluar() {
     if (!W.activo || !W.uid) return;
-    if (bloqueado()) { desconectar(); salir('Tu usuario fue bloqueado por la central.'); return; }
+    if (bloqueado()) { desconectar(); salir(mensajeSuspension(W.perfil && W.perfil.suspension)); return; }
     if (!W.cargado || !W.misCargadas) return;
     var t = ahora(), c = activa(), mi = miEstado();
     // 1) Estado coherente con mis carreras
@@ -432,7 +433,7 @@
   }
   function enviarEstado() {
     if (!W.paginaLista || !W.uid || !window.AA) return;
-    if (bloqueado()) { salir('Tu usuario fue bloqueado por la central.'); return; }
+    if (bloqueado()) { salir(mensajeSuspension(W.perfil && W.perfil.suspension)); return; }
     var t = ahora(), k = cfg(), p = W.perfil || {}, mi = miEstado(), c = activa(), u = W.uid, o = {};
     o.version = 'web';
     o.perfil = { nombre: p.nombre || '', unidad: p.unidad || '', placa: p.placa || '', colorCarro: p.colorCarro || '' };
@@ -543,7 +544,7 @@
     b.disabled = true; b.textContent = 'Entrando…';
     auth.signInWithEmailAndPassword(usuario.indexOf('@') >= 0 ? usuario : usuario + '@' + DOMINIO, clave).then(function (r) {
       return db.ref('conductores/' + r.user.uid).once('value').then(function (s) {
-        if (!s.exists() || s.val().activo === false) { auth.signOut(); pantallaLogin(s.exists() ? 'Tu usuario está bloqueado. Comunícate con la central.' : 'Este usuario no es de conductor.'); }
+        if (!s.exists() || s.val().activo === false) { auth.signOut(); pantallaLogin(s.exists() ? mensajeSuspension(s.val().suspension) : 'Este usuario no es de conductor.'); }
       });
     }).catch(function (e) {
       var c = (e && e.code) || '';

@@ -422,7 +422,8 @@ async function revisarPerfil(foto, env) {
 
 // ---------------- Documento renovado ----------------
 // v:2 → se revisa solo: si todo coincide se aprueba sin la central. Errores del conductor (foto mala, fecha mal escrita,
-// documento viejo) se le piden corregir a él. A la central SOLO llega si parece de otra persona u otro carro.
+// documento viejo) se le piden corregir a él. A la central SOLO llega si parece de otra persona u otro carro, y en ese
+// caso el conductor queda SUSPENDIDO hasta que la central lo revise (cambiar de carro = usuario nuevo, nunca desde la app).
 const NOMBRE_DOC = { cedula: 'cédula', licencia: 'licencia', matricula: 'matrícula' };
 async function documento(uid, b, env) {
   if (['cedula', 'licencia', 'matricula'].indexOf(b.doc) < 0 || !esImagen(b.foto) || !/^\d{4}-\d{2}-\d{2}$/.test(b.vence || '')) throw new Error('datos');
@@ -460,7 +461,13 @@ async function documento(uid, b, env) {
   }
   const vence = leida || b.vence;
   if (motivos.length) {
-    await db(env, 'PATCH', '', { ['docsPendientes/' + uid + '/' + b.doc]: { foto: b.foto, vence, t, revisar: motivos } });
+    // Parece de otra persona u otro carro: se suspende al conductor (él solo ve "AutoAmigo está revisando tus documentos")
+    await db(env, 'PATCH', '', {
+      ['docsPendientes/' + uid + '/' + b.doc]: { foto: b.foto, vence, t, revisar: motivos },
+      ['conductores/' + uid + '/activo']: false,
+      ['conductores/' + uid + '/suspension']: 'documentos',
+      ['estado/' + uid + '/online']: false
+    });
     return { ok: true, estado: 'pendiente' };
   }
   await db(env, 'PATCH', '', {

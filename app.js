@@ -725,7 +725,7 @@
       var c = S.conductores[uid];
       var e = S.estados[uid];
       var est = c.activo === false ? 'bloqueado' : estadoDe(uid);
-      var etiqueta = c.activo === false ? 'Bloqueado' : NOMBRE_ESTADO[est];
+      var etiqueta = c.activo === false ? (c.suspension === 'documentos' ? 'Suspendido · documentos' : 'Suspendido') : NOMBRE_ESTADO[est];
       var s = stats[uid] || { n: 0, total: 0 };
       var sal = saldoC(uid);
       var acc = '';
@@ -734,8 +734,8 @@
       if (window.AADocumentacion) acc += AADocumentacion.boton(uid);
       if (window.AAVerificar) acc += AAVerificar.botones(null, uid);
       acc += c.activo === false
-        ? '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="1">Desbloquear</button>'
-        : '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="0">Bloquear</button>';
+        ? '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="1">Reactivar</button>'
+        : '<button class="btn btn-chico btn-peligro" data-bloquear="' + uid + '" data-valor="0">Suspender</button>';
       return '<tr><td><strong>U' + esc(c.unidad || '') + '</strong></td>' +
         '<td>' + esc(c.nombre) + (window.AARestringir ? ' ' + AARestringir.sello(uid) : '') + '<small>' + esc(c.telefono || '') + '</small></td>' +
         '<td>' + esc(c.vehiculo || '') + '<small>' + esc(c.placa || '') + '</small></td>' +
@@ -1815,12 +1815,13 @@
 
   function bloquear(uid, activar) {
     var c = S.conductores[uid];
-    if (!activar && !confirm('¿Bloquear a ' + c.nombre + '? No podrá usar la app hasta que lo desbloquees.')) return;
-    if (activar && !confirm('¿Desbloquear a ' + c.nombre + '? Podrá volver a usar la app.')) return;
+    if (!activar && !confirm('¿Suspender a ' + c.nombre + '? No podrá usar la app hasta que lo reactives.')) return;
+    if (activar && !confirm('¿Reactivar a ' + c.nombre + '? Podrá volver a usar la app.')) return;
     var up = {};
     up['conductores/' + uid + '/activo'] = activar;
+    if (activar) up['conductores/' + uid + '/suspension'] = null;
     if (!activar) up['estado/' + uid + '/online'] = false;
-    db.ref().update(up).then(function () { toast(activar ? 'Conductor desbloqueado.' : 'Conductor bloqueado.'); })
+    db.ref().update(up).then(function () { toast(activar ? 'Conductor reactivado.' : 'Conductor suspendido.'); })
       .catch(function (e) { toast(errorTexto(e), true); });
   }
 

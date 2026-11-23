@@ -136,7 +136,7 @@
         <div><h1>Turnos por revisar</h1><p class="muted" id="turnos-sub"></p></div>
       </header>
       <div id="turnos-estado"></div>
-      <p class="muted" style="margin:0">La revisión automática (Gemini, gratis) aprueba sola lo que está bien y rechaza sola lo que está claramente mal (con gorra o carro sucio). Las fotos sin camisa o que no sirven se bloquean y se eliminan sin que nadie las vea. Aquí solo llegan los registros nuevos de identidad y los casos dudosos. Aplasta una foto para verla grande.</p>
+      <p class="muted" style="margin:0">La revisión automática (Gemini, gratis) aprueba sola lo que está bien y rechaza sola lo que está claramente mal (con gorra o carro sucio). Las fotos sin camisa o que no sirven se descartan y se eliminan sin que nadie las vea. Aquí solo llegan los registros nuevos de identidad y los casos dudosos. Aplasta una foto para verla grande.</p>
       <div id="bloqueadas-turnos" class="bloqueadas-turnos" hidden></div>
       <div id="lista-turnos" class="lista-turnos"></div>
       <div id="detector-turnos"></div>
@@ -192,7 +192,7 @@
           <h1>Recargas</h1>
           <p class="muted">Genera códigos de recarga y envíalos al conductor por WhatsApp.</p>
         </div>
-        <button class="btn" id="boton-bloquear-recargas" hidden>Bloquear sección</button>
+        <button class="btn" id="boton-bloquear-recargas" hidden>Cerrar sección</button>
       </header>
 
       <form id="form-clave" class="tarjeta form-grid candado">
@@ -260,7 +260,7 @@
     <!-- ---------- CONFIGURACIÓN ---------- -->
     <section id="vista-config" class="vista" hidden>
       <header class="cabecera"><div><h1>Configuración</h1></div>
-        <button class="btn" id="boton-bloquear-config" hidden>Bloquear sección</button>
+        <button class="btn" id="boton-bloquear-config" hidden>Cerrar sección</button>
       </header>
 
       <form id="form-clave-cfg" class="tarjeta form-grid candado">
@@ -524,11 +524,11 @@
 <script src="mapas.js?v=202610292359"></script>
 <script src="config.js?v=202610292359"></script>
 <script src="despacho.js?v=20261030190000"></script>
-<script src="app.js?v=20261122220000"></script>
-<script src="turnos.js?v=20261103180000"></script>
-<script src="solicitudes.js?v=20261123175000"></script>
+<script src="app.js?v=20261123180000"></script>
+<script src="turnos.js?v=20261123180000"></script>
+<script src="solicitudes.js?v=20261123180000"></script>
 <script src="verificar.js?v=20261122212000"></script>
 <script src="restringir.js?v=20261122220000"></script>
-<script src="documentacion.js?v=20261123173000"></script>
+<script src="documentacion.js?v=20261123180000"></script>
 </body>
 </html>

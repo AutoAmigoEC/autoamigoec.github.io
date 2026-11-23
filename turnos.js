@@ -119,13 +119,13 @@
     $('#turnos-sub').textContent = n ? n + ' por revisar.' : 'No hay nada por revisar.';
     var hist = Object.keys(T.hist).map(function (k) { return T.hist[k]; }).sort(function (a, b) { return b.t - a.t; });
     var nb = hist.filter(function (h) { return h.bloqueada; }).length;
-    var blq = $('#bloqueadas-turnos'); blq.hidden = !nb; blq.innerHTML = '<b>Gemini bloqueó ' + nb + ' foto' + (nb > 1 ? 's' : '') + ' hoy</b>. Se eliminaron al instante y no se muestran aquí; al conductor le llegó el motivo para corregir.';
+    var blq = $('#bloqueadas-turnos'); blq.hidden = !nb; blq.innerHTML = '<b>Gemini descartó ' + nb + ' foto' + (nb > 1 ? 's' : '') + ' hoy</b>. Se eliminaron al instante y no se muestran aquí; al conductor le llegó el motivo para corregir.';
     var lista = pi.map(tarjetaId).join('') + pt.map(tarjetaTurno).join('');
     var el = $('#lista-turnos'), html = lista || '<div class="vacio">No hay nada por revisar. Solo llegan aquí los registros nuevos y los casos que la revisión automática no pudo decidir.</div>';
     if (el.__h !== html) { el.innerHTML = html; el.__h = html; }
     $('#detector-turnos').innerHTML = detectorHTML();
     $('#turnos-hechos').innerHTML = hist.length ? '<table class="tabla"><thead><tr><th>Conductor</th><th>Resultado</th><th>Revisó</th><th>Hora</th></tr></thead><tbody>' + hist.map(function (h) {
-      var res = h.estado === 'aprobado' ? '<span class="pill libre">Aprobado</span>' : h.bloqueada ? '<span class="pill sinsaldo">Bloqueada</span> <small>' + esc(h.motivo) + ' · foto eliminada, no se muestra</small>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>';
+      var res = h.estado === 'aprobado' ? '<span class="pill libre">Aprobado</span>' : h.bloqueada ? '<span class="pill sinsaldo">Descartada</span> <small>' + esc(h.motivo) + ' · foto eliminada, no se muestra</small>' : '<span class="pill sinsaldo">Rechazado</span> <small>' + esc(h.motivo) + '</small>';
       return '<tr><td>' + esc(nombre(h.uid, h)) + '</td><td>' + res + '</td><td>' + (h.por === 'ia' ? 'Gemini' : 'Central') + '</td><td>' + hora(h.t) + '</td></tr>';
     }).join('') + '</tbody></table>' : '<p class="muted" style="padding:12px 14px;margin:0">Todavía no hay turnos revisados hoy.</p>';
   }

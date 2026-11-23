@@ -121,7 +121,7 @@
     var hd = docs.map(function (x) {
       var u = x[0], k = x[1], p = x[2], antes = ((S.fichas[u] || {}).docs || {})[k] || {};
       return '<article class="turno"><div class="fila"><div><strong>' + esc(nombreDe(u)) + '</strong><div class="meta">' + NOM[k] + ' renovada · nueva fecha de caducidad: <b>' + fecha(p.vence) + '</b> (antes ' + fecha(antes.vence) + ')</div></div></div>' +
-        (p.revisar && p.revisar.length ? '<div class="rev-docs sospechosa"><b>⚠ Revisar: puede ser de otra persona u otro carro</b><ul>' + p.revisar.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
+        (p.revisar && p.revisar.length ? '<div class="rev-docs sospechosa"><b>⚠ Revisar: puede ser de otra persona u otro carro · el conductor quedó suspendido</b><ul>' + p.revisar.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
         '<div class="fotos-turno"><div class="grupo"><h4>' + NOM[k] + ' nueva</h4><div class="g">' + figura(p.foto, NOM[k], nombreDe(u), true) + '</div></div></div>' +
         '<div class="acciones"><button class="btn btn-primario" data-doc-ok="' + u + '|' + k + '">✓ Aprobar documento</button><button class="btn btn-peligro" data-doc-no="' + u + '|' + k + '">Rechazar: no se lee</button></div></article>';
     }).join('') + (venc.length ? '<div class="tabla-caja"><table class="tabla"><thead><tr><th>Conductor</th><th>Documento</th><th>Caduca</th><th></th></tr></thead><tbody>' +
@@ -216,9 +216,13 @@
     }
     if ((id = b.getAttribute('data-doc-ok') || b.getAttribute('data-doc-no'))) {
       var p = id.split('|'), uid = p[0], doc = p[1], ok = b.hasAttribute('data-doc-ok'), pend = (S.docs[uid] || {})[doc] || {}, up4 = {};
-      if (ok) { up4['fichas/' + uid + '/docs/' + doc + '/vence'] = pend.vence; up4['fichaFotos/' + uid + '/' + doc] = pend.foto; }
+      var susp = (S.cond[uid] || {}).suspension === 'documentos';
+      if (ok) {
+        up4['fichas/' + uid + '/docs/' + doc + '/vence'] = pend.vence; up4['fichaFotos/' + uid + '/' + doc] = pend.foto;
+        if (susp) { up4['conductores/' + uid + '/activo'] = true; up4['conductores/' + uid + '/suspension'] = null; }   // estaba suspendido por este documento
+      }
       up4['docsPendientes/' + uid + '/' + doc] = null;
-      db.ref().update(up4).then(function () { toast(ok ? 'Documento aprobado. Se actualizó la fecha de vencimiento.' : 'Documento rechazado. El conductor deberá enviarlo otra vez.'); }); return;
+      db.ref().update(up4).then(function () { toast(ok ? 'Documento aprobado. Se actualizó la fecha de caducidad.' + (susp ? ' El conductor quedó reactivado.' : '') : 'Documento rechazado.' + (susp ? ' El conductor sigue suspendido (Reactivar en Conductores).' : ' El conductor deberá enviarlo otra vez.')); }); return;
     }
   });
   setInterval(pintar, 60000);
