@@ -218,7 +218,8 @@
         // Solo escribió mal la cédula o la placa: corrige ese recuadro y vuelve a enviar
         if (j && j.corregir && j.corregir.length) {
           R.corregir = j.corregir; R.error = j.error || 'Revisa los datos marcados en rojo.'; R.errores = {};
-          j.corregir.forEach(function (c) { R.errores[c] = c === 'cedula' ? 'No coincide con tu cédula y tu licencia.' : 'No coincide con la matrícula.'; });
+          var TXT = { cedula: 'No coincide con tu cédula y tu licencia.', placa: 'No coincide con la matrícula.', cedulaVence: 'No coincide con la fecha de tu cédula.', licenciaVence: 'No coincide con la fecha de tu licencia.', matriculaVence: 'No coincide con la fecha de tu matrícula.' };
+          j.corregir.forEach(function (c) { R.errores[c] = TXT[c] || 'Revisa este dato.'; });
           R.vista = 'form'; pintar(); var m = $('#registro .campo.mal'); if (m) m.scrollIntoView({ block: 'center' }); return;
         }
         if (!j || !j.ok) throw new Error(j && j.error && !/^(datos|falta|foto)/.test(j.error) ? j.error : 'No se pudo enviar. Revisa tus datos e intenta otra vez.');

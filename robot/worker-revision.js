@@ -125,7 +125,10 @@ async function solicitud(req, b, env) {
 // (cédula o placa) cuando las fotos están bien y cuadran entre sí. Todo lo demás llega al panel como "Sospechosa".
 const MENSAJE_CORREGIR = {
   cedula: 'El número de cédula que escribiste no coincide con tu cédula y tu licencia. Revísalo.',
-  placa: 'La placa que escribiste no coincide con la matrícula. Revísala.'
+  placa: 'La placa que escribiste no coincide con la matrícula. Revísala.',
+  cedulaVence: 'La fecha de vencimiento de la cédula que escribiste no coincide con tu cédula. Revísala.',
+  licenciaVence: 'La fecha de vencimiento de la licencia que escribiste no coincide con tu licencia. Revísala.',
+  matriculaVence: 'La fecha de vencimiento de la matrícula que escribiste no coincide con tu matrícula. Revísala.'
 };
 async function leerDocumentos(f, env) {
   const prompt = 'Lee 4 fotos de documentos de un conductor de taxi en Ecuador. Copia los datos EXACTAMENTE como están impresos; no inventes ni corrijas nada.\n' +
@@ -133,12 +136,13 @@ async function leerDocumentos(f, env) {
     'Foto 2: licencia de conducir ecuatoriana. numero = el número de la licencia (en Ecuador es el número de cédula). nombre = apellidos y nombres.\n' +
     'Foto 3: matrícula del vehículo. placa = la placa. propietario = el nombre del propietario.\n' +
     'Foto 4: el carro por fuera. placa = la placa que se ve en el carro.\n' +
+    'vence (fotos 1, 2 y 3) = la fecha de vencimiento, caducidad o expiración impresa en ese documento, en formato AAAA-MM-DD. Si no aparece o no se lee, déjalo vacío (no la inventes; no uses la fecha de expedición ni la de nacimiento).\n' +
     'es_documento: true solo si la foto es de verdad ese documento (o un carro en la foto 4). legible: true si se lee bien. Si un dato no se lee, déjalo vacío.';
   const doc = (campos) => ({ type: 'OBJECT', properties: Object.assign({ es_documento: { type: 'BOOLEAN' }, legible: { type: 'BOOLEAN' } }, campos), required: ['es_documento', 'legible'].concat(Object.keys(campos)) });
   const S = { type: 'STRING' };
   return await gemini(env, prompt, [f.cedula, f.licencia, f.matricula, f.carro], {
     type: 'OBJECT',
-    properties: { cedula: doc({ numero: S, nombre: S }), licencia: doc({ numero: S, nombre: S }), matricula: doc({ placa: S, propietario: S }), carro: doc({ placa: S }) },
+    properties: { cedula: doc({ numero: S, nombre: S, vence: S }), licencia: doc({ numero: S, nombre: S, vence: S }), matricula: doc({ placa: S, propietario: S, vence: S }), carro: doc({ placa: S }) },
     required: ['cedula', 'licencia', 'matricula', 'carro']
   });
 }
@@ -146,12 +150,23 @@ function limpiarLectura(l) {
   const s = (v) => String(v || '').trim().slice(0, 80);
   const o = (x) => x || {};
   return {
-    cedula: { numero: soloDigitos(o(l.cedula).numero), nombre: s(o(l.cedula).nombre), valido: o(l.cedula).es_documento !== false, legible: o(l.cedula).legible !== false },
-    licencia: { numero: soloDigitos(o(l.licencia).numero), nombre: s(o(l.licencia).nombre), valido: o(l.licencia).es_documento !== false, legible: o(l.licencia).legible !== false },
-    matricula: { placa: placaNorm(o(l.matricula).placa), propietario: s(o(l.matricula).propietario), valido: o(l.matricula).es_documento !== false, legible: o(l.matricula).legible !== false },
+    cedula: { numero: soloDigitos(o(l.cedula).numero), nombre: s(o(l.cedula).nombre), vence: fechaNorm(o(l.cedula).vence), valido: o(l.cedula).es_documento !== false, legible: o(l.cedula).legible !== false },
+    licencia: { numero: soloDigitos(o(l.licencia).numero), nombre: s(o(l.licencia).nombre), vence: fechaNorm(o(l.licencia).vence), valido: o(l.licencia).es_documento !== false, legible: o(l.licencia).legible !== false },
+    matricula: { placa: placaNorm(o(l.matricula).placa), propietario: s(o(l.matricula).propietario), vence: fechaNorm(o(l.matricula).vence), valido: o(l.matricula).es_documento !== false, legible: o(l.matricula).legible !== false },
     carro: { placa: placaNorm(o(l.carro).placa), valido: o(l.carro).es_documento !== false }
   };
 }
+// Fecha leída a AAAA-MM-DD (acepta también DD/MM/AAAA y DD-MM-AAAA); '' si no es una fecha válida
+function fechaNorm(v) {
+  const s = String(v || '').trim();
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/), y, mo, d;
+  if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else return '';
+  if (y < 1990 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return '';
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+function fechaTexto(iso) { const p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
 function soloDigitos(v) { return String(v || '').replace(/\D/g, ''); }
 function placaNorm(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 // Distancia de edición con intercambio de dos vecinos (0912 -> 0921 cuenta como 1)
@@ -212,10 +227,21 @@ function compararDocumentos(datos, lec, par) {
     if (distEdicion(placaEsc, placaDoc) <= 2) errDedo.push('placa');
     else sosp('Escribió la placa ' + datos.placa + ' pero la matrícula dice ' + placaDoc + '.');
   }
+  // Fechas de vencimiento: escrita contra la impresa en la foto
+  const hoy = diaEcuador(Date.now());
+  [['cedula', 'cédula'], ['licencia', 'licencia'], ['matricula', 'matrícula']].forEach(([k, nom]) => {
+    const leida = L[k].vence, escrita = datos[k + 'Vence'];
+    if (!leida) { if (k !== 'cedula') notas.push('No se pudo leer la fecha de vencimiento de la ' + nom + ' en la foto: revísala tú.'); return; }
+    if (leida === escrita) return;
+    if (leida < hoy) sosp('La ' + nom + ' de la foto venció el ' + fechaTexto(leida) + ', pero escribió que vence el ' + fechaTexto(escrita) + '.');
+    else errDedo.push(k + 'Vence');
+  });
   if (L.cedula.nombre && mismoNombre(datos.nombre, L.cedula.nombre) === false) sosp('Escribió el nombre ' + datos.nombre + ' pero la cédula dice ' + L.cedula.nombre + '.');
   // Si algo de las fotos no cuadra, NO se le avisa nada (ni siquiera el error de dedo)
   if (motivos.length) {
-    errDedo.forEach(c => notas.push(c === 'cedula' ? 'El número de cédula escrito (' + datos.cedula + ') no es igual al de la foto (' + docNum + ').' : 'La placa escrita (' + datos.placa + ') no es igual a la de la matrícula (' + placaDoc + ').'));
+    errDedo.forEach(c => notas.push(c === 'cedula' ? 'El número de cédula escrito (' + datos.cedula + ') no es igual al de la foto (' + docNum + ').'
+      : c === 'placa' ? 'La placa escrita (' + datos.placa + ') no es igual a la de la matrícula (' + placaDoc + ').'
+      : 'La fecha de vencimiento escrita (' + fechaTexto(datos[c]) + ') no es igual a la de la foto (' + fechaTexto(L[c.replace('Vence', '')].vence) + ').'));
     return { estado: 'sospechosa', motivos, notas, corregir: [] };
   }
   if (errDedo.length) return { estado: 'ok', motivos, notas, corregir: errDedo };
