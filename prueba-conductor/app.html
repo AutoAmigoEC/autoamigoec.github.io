@@ -2001,7 +2001,13 @@
 <script>
 /* Enlace directo: app.html#perfil abre la pantalla Mi perfil */
 (function () {
-  function abrir() { if (location.hash !== '#perfil') return; var b = document.querySelector('[data-ir="perfil"]'); if (b) b.click(); }
+  function abrir() {
+    if (location.hash !== '#perfil') return;
+    // Salta el inicio de sesión de la prueba (acepta cualquier usuario) y abre Mi perfil
+    var u = document.getElementById('ac-usuario'), c = document.getElementById('ac-clave'), e = document.querySelector('[data-r="entrar"]');
+    if (u && c && e && e.offsetParent !== null) { u.value = 'prueba'; c.value = 'prueba'; e.click(); }
+    setTimeout(function () { var b = document.querySelector('[data-ir="perfil"]'); if (b) b.click(); }, 150);
+  }
   window.addEventListener('load', function () { setTimeout(abrir, 400); });
   window.addEventListener('hashchange', abrir);
 })();
