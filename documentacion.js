@@ -64,7 +64,7 @@
       (window.AAVerificar && ficha.cedula ? '<h3>Revisar en páginas oficiales</h3><div class="acciones verif">' + AAVerificar.botones(ficha.cedula) + '</div>' : '') +
       (window.AARestringir ? '<h3>Restringir</h3>' + (AARestringir.alerta(uid) ? '<div class="restr fuerte"><b>⛔ Restringido:</b> entró desde el teléfono de ' + esc(AARestringir.alerta(uid).nombre) + ', a quien restringiste.</div>' : '') +
         '<p class="doc-nota">Restringir es en silencio: el conductor no se entera. Si vuelve a registrarse (aunque sea con otra cédula) o alguien entra desde su teléfono, te saldrá "⛔ Restringido". Para que no pueda trabajar, usa también "Bloquear".</p>' +
-        '<div class="acciones">' + (AARestringir.esta(uid) ? '<span class="sello mal">⛔ Ya está restringido</span>' : AARestringir.boton(uid)) + '</div>' : '') +
+        '<div class="acciones">' + (AARestringir.esta(uid) ? AARestringir.botonQuitar(uid) : AARestringir.boton(uid)) + '</div>' : '') +
       '</div>';
   }
 

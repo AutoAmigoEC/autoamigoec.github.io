@@ -60,6 +60,7 @@
       if (R.lista.some(function (r) { return r.id === 'c_' + uid; })) return '<span class="sello mal" title="Lo restringiste">⛔ Restringido</span>';
       return a ? '<span class="sello mal" title="Entró desde el teléfono de ' + esc(a.nombre) + ', a quien restringiste">⛔ Restringido</span>' : '';
     },
+    botonQuitar: function (uid) { return '<button class="btn btn-chico" data-restr-quitar="c_' + esc(uid) + '" data-restr-cambiar="' + esc(uid) + '">Quitar restricción</button>'; },
     boton: function (uid) { return '<button class="btn btn-chico btn-peligro" data-restr-uid="' + esc(uid) + '">Restringir</button>'; },
     alerta: function (uid) { return R.alertas[uid] || null; },
     esta: function (uid) { return R.lista.some(function (r) { return r.id === 'c_' + uid; }); }
@@ -71,13 +72,17 @@
     if ((id = b.getAttribute('data-restr-quitar'))) {
       if (!confirm('¿Quitar la restricción? Podrá volver a registrarse sin que te salga el aviso.')) return;
       b.disabled = true;
-      llamar('restringir', { quitar: id }).then(function () { toast('Restricción quitada.'); cargar(); }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
+      llamar('restringir', { quitar: id }).then(function () {
+        toast('Restricción quitada.');
+        var u = b.getAttribute('data-restr-cambiar'); if (u) b.outerHTML = AARestringir.boton(u);   // vuelve a "Restringir"
+        cargar();
+      }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
       return;
     }
     if ((id = b.getAttribute('data-restr-uid'))) {
       if (!confirm('¿Restringir a este conductor en silencio? Él no se entera. Si vuelve a registrarse o alguien entra desde su teléfono, te saldrá "⛔ Restringido". (Para que no pueda trabajar, desactívalo también.)')) return;
       b.disabled = true;
-      AARestringir.restringir({ uid: id }).then(function () { b.textContent = '⛔ Restringido'; toast('Conductor restringido en silencio.'); }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
+      AARestringir.restringir({ uid: id }).then(function () { b.outerHTML = AARestringir.botonQuitar(id); toast('Conductor restringido en silencio.'); }, function (er) { b.disabled = false; toast('No se pudo: ' + er.message, true); });
     }
   });
 })();
