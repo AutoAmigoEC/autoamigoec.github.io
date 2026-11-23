@@ -112,7 +112,12 @@
         for (var ch = 0; ch < 3; ch++) { var p0 = ii * 4 + ch; var bl = (o[p0 - 4] + o[p0 + 4] + o[p0 - n * 4] + o[p0 + n * 4]) / 4; d[p0] = o[p0] + 0.35 * (o[p0] - bl); }
       }
       // Persona sobre el fondo de AutoAmigo
-      var f = document.createElement('canvas'); f.width = f.height = n; var gf = f.getContext('2d'); pintarFondo(gf, n, tipo);
+      var f = document.createElement('canvas'); f.width = f.height = n; var gf = f.getContext('2d');
+      if (tipo === 'retrato') {
+        // Modo retrato: el fondo real, desenfocado y un poco más claro (como una cámara buena), sin inventar nada
+        gf.filter = 'blur(' + Math.round(n / 45) + 'px)'; gf.drawImage(c, -n * 0.03, -n * 0.03, n * 1.06, n * 1.06); gf.filter = 'none';
+        gf.fillStyle = 'rgba(255,255,255,0.12)'; gf.fillRect(0, 0, n, n);
+      } else pintarFondo(gf, n, tipo);
       var fp = gf.getImageData(0, 0, n, n), fd = fp.data;
       for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4; fd[w] = fd[w] * (1 - al) + d[w] * al; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al; }
       gf.putImageData(fp, 0, 0);
