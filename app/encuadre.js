@@ -77,7 +77,7 @@
   }
   // Texturas de pared reales (fotos de Unsplash, licencia libre): oscura para camisas claras, clara para camisas oscuras
   var PAREDES = {
-    oscura: 'https://images.unsplash.com/photo-1568090819305-e7edcc3b264b?w=900&q=80&fm=jpg',
+    oscura: 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=900&q=80&fm=jpg',
     clara: 'https://images.unsplash.com/photo-1533628635777-112b2239b1c7?w=900&q=80&fm=jpg'
   };
   var texturas = {};
