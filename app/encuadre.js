@@ -141,7 +141,7 @@
         tr = tn ? tr / tn : 200; tg = tn ? tg / tn : 200; tb = tn ? tb / tn : 200;
         for (var e3 = 0; e3 < n * n; e3++) { var r5 = e3 * 4; if (mdd[r5 + 3] < 8) { mdd[r5] = tr; mdd[r5 + 1] = tg; mdd[r5 + 2] = tb; } mdd[r5 + 3] = 255; }
         gm.putImageData(md, 0, 0);
-        gf.filter = 'blur(' + Math.round(n / 60) + 'px)'; gf.drawImage(sm, 0, 0); gf.filter = 'none';
+        gf.drawImage(sm, 0, 0); gf.filter = 'blur(' + Math.round(n / 60) + 'px)'; gf.drawImage(sm, -n * 0.04, -n * 0.04, n * 1.08, n * 1.08); gf.filter = 'none';   // sin bordes oscuros
         gf.fillStyle = 'rgba(255,255,255,0.06)'; gf.fillRect(0, 0, n, n);
       } else if (tipo === 'estudio') {
         // Fondo de estudio fotográfico: tela gris con manchas suaves (como las de los fotógrafos), más clara al centro
