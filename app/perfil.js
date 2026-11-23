@@ -21,9 +21,9 @@
     if (pend) return ['pend', 'En revisión'];
     if (!d || !d.vence) return ['pend', 'Sin fecha'];
     var n = diasHasta(d.vence);
-    if (n < 0) return ['mal', 'Vencida'];
-    if (n <= 30) return ['pronto', 'Vence en ' + n + ' día' + (n === 1 ? '' : 's')];
-    return ['ok', 'Vigente'];
+    if (n < 0) return ['mal', 'Caducada'];
+    if (n <= 10) return ['pronto', n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca mañana' : 'Caduca en ' + n + ' días'];
+    return ['ok', 'Caduca el ' + fecha(d.vence)];
   }
   function alertas() { if (!D || !D.ficha) return []; return DOCS.filter(function (x) { var e = estadoDoc(x[0])[0]; return e === 'mal' || e === 'pronto'; }); }
   function fila(et, v, k) {
@@ -54,7 +54,7 @@
       (ff.carro ? '<div class="pf-docfoto"><img src="' + ff.carro + '"><small>Foto del carro</small></div>' : '') + '</div>' +
       '<h3 class="pf-h">Documentos</h3><div class="pf-caja">' + DOCS.map(function (x) {
         var dd = (f.docs || {})[x[0]] || {}, e = estadoDoc(x[0]);
-        return '<div class="pf-doc">' + (ff[x[0]] ? '<img src="' + ff[x[0]] + '">' : '<span class="pf-doc-ic">📄</span>') + '<div><b>' + x[1] + '</b><small>Vence: ' + fecha(dd.vence) + '</small><span class="pf-chip ' + e[0] + '">' + e[1] + '</span></div>' +
+        return '<div class="pf-doc">' + (ff[x[0]] ? '<img src="' + ff[x[0]] + '">' : '<span class="pf-doc-ic">📄</span>') + '<div><b>' + x[1] + '</b>' + (e[0] === 'ok' ? '' : '<small>Caduca: ' + fecha(dd.vence) + '</small>') + '<span class="pf-chip ' + e[0] + '">' + e[1] + '</span></div>' +
           (e[0] === 'mal' || e[0] === 'pronto' ? '<button data-p="doc" data-k="' + x[0] + '">Actualizar</button>' : '') + '</div>';
       }).join('') + '</div>' +
       '<p class="pf-nota">Tus datos y fotos no se pueden cambiar. Solo puedes cambiar tu teléfono y tu correo. Si un documento vence, actualízalo aquí.</p>';
@@ -216,7 +216,7 @@
     var al = $('#doc-alerta'); if (!al || !D) return;
     var a = alertas(), venc = a.filter(function (x) { return estadoDoc(x[0])[0] === 'mal'; });
     al.hidden = !a.length;
-    if (a.length) { al.className = 'doc-alerta' + (venc.length ? ' mal' : ''); al.textContent = venc.length ? '⚠ Tu ' + venc[0][1].toLowerCase() + ' está vencida · Actualizar' : '⚠ Tu ' + a[0][1].toLowerCase() + ' vence pronto · Ver'; }
+    if (a.length) { al.className = 'doc-alerta' + (venc.length ? ' mal' : ''); al.textContent = venc.length ? '⚠ Tu ' + venc[0][1].toLowerCase() + ' está caducada · Actualizar' : '⚠ Tu ' + a[0][1].toLowerCase() + ' ' + estadoDoc(a[0][0])[1].toLowerCase() + ' · Ver'; }
   }, 1500);
   document.addEventListener('click', function (e) { if (e.target.closest('#doc-alerta') && window.AAIr) AAIr('perfil'); });
 })();

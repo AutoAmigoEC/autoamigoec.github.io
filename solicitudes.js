@@ -51,7 +51,7 @@
   function colorHex(c) { var k = String(c || '').toLowerCase().trim().split(/\s+/)[0]; return COLORES[k] || '#F4F5F7'; }
   function usuarioDe(nombre, unidad) { var n = String(nombre || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/)[0] || 'conductor'; return n.replace(/[^a-z]/g, '') + String(unidad).padStart(2, '0'); }
   function claveNueva() { var a = new Uint32Array(1); crypto.getRandomValues(a); return String(100000 + a[0] % 900000); }
-  function chipVence(iso) { if (!iso) return ''; var n = dias(iso); return n < 0 ? '<span class="pill sinsaldo">Vencida</span>' : n <= 30 ? '<span class="pill porvencer">Vence en ' + n + ' días</span>' : ''; }
+  function chipVence(iso) { if (!iso) return ''; var n = dias(iso); return n < 0 ? '<span class="pill sinsaldo">Caducada</span>' : n <= 10 ? '<span class="pill porvencer">' + (n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca mañana' : 'Caduca en ' + n + ' días') + '</span>' : n <= 30 ? '<span class="pill">Caduca en ' + n + ' días</span>' : ''; }
   function figura(src, txt, quien, ancha) { return '<figure' + (ancha ? ' class="ancha"' : '') + '><button class="foto-t" data-ver-foto="1" data-src="' + esc(src) + '" data-txt="' + esc(quien + ' · ' + txt) + '"><img src="' + esc(src) + '" alt=""></button><figcaption>' + txt + '</figcaption></figure>'; }
 
   function pendientes() { return Object.keys(S.sol).filter(function (id) { return S.sol[id].estado === 'pendiente'; }).sort(function (a, b) { return S.sol[a].t - S.sol[b].t; }); }
@@ -62,7 +62,7 @@
     var rev = s.revision || null;
     if (!rev && parecido != null && parecido > 0.62) al.push('La cara de la foto no se parece mucho a la de la cédula o la licencia. Revísalas bien.');
     if (!rev && parecido == null) al.push('El teléfono no encontró la cara en la cédula o la licencia: compáralas tú.');
-    [['cedulaVence', 'La cédula'], ['licenciaVence', 'La licencia'], ['matriculaVence', 'La matrícula']].forEach(function (x) { var n = dias(d[x[0]]); if (n <= 30) al.push(x[1] + (n < 0 ? ' está vencida.' : ' vence en ' + n + ' días.')); });
+    [['cedulaVence', 'La cédula'], ['licenciaVence', 'La licencia'], ['matriculaVence', 'La matrícula']].forEach(function (x) { var n = dias(d[x[0]]); if (n <= 30) al.push(x[1] + (n < 0 ? ' está caducada.' : ' caduca en ' + n + ' días.')); });
     var fila = function (a, b) { return '<div><span>' + a + '</span><b>' + esc(b) + '</b></div>'; };
     var acc;
     if (S.aprobando === id) acc = '<div class="aprobar-sol"><label>Número de unidad <input id="sol-unidad" inputmode="numeric" maxlength="3" placeholder="Ej.: 15"></label><div class="acciones"><button class="btn" data-sol-volver="1">Volver</button><button class="btn btn-primario" data-sol-crear="' + id + '"' + (S.ocupado ? ' disabled' : '') + '>' + (S.ocupado ? 'Creando…' : 'Crear usuario y clave') + '</button></div></div>';
@@ -90,7 +90,7 @@
       (al.length ? '<div class="duda-ia">' + al.map(esc).join(' ') + '</div>' : '') +
       '<div class="sol-datos">' + fila('Cédula', d.cedula) + fila('Nacimiento', fecha(d.nacimiento) + ' (' + edad(d.nacimiento) + ' años)') + fila('Teléfono', d.telefono) + fila('Correo', d.correo) + fila('Sector', d.sector) +
       fila('Vehículo', d.marca + ' · ' + d.color + ' · ' + d.anio) + fila('Placa', d.placa) +
-      '<div><span>Vencimientos</span><b>Cédula ' + fecha(d.cedulaVence) + ' ' + chipVence(d.cedulaVence) + '<br>Licencia ' + fecha(d.licenciaVence) + ' ' + chipVence(d.licenciaVence) + '<br>Matrícula ' + fecha(d.matriculaVence) + ' ' + chipVence(d.matriculaVence) + '</b></div></div>' +
+      '<div><span>Caducan</span><b>Cédula ' + fecha(d.cedulaVence) + ' ' + chipVence(d.cedulaVence) + '<br>Licencia ' + fecha(d.licenciaVence) + ' ' + chipVence(d.licenciaVence) + '<br>Matrícula ' + fecha(d.matriculaVence) + ' ' + chipVence(d.matriculaVence) + '</b></div></div>' +
       (window.AAVerificar && d.cedula ? '<div class="acciones verif"><span>Revisar en páginas oficiales:</span>' + AAVerificar.botones(d.cedula) + '</div>' : '') +
       (f && f !== 'cargando' ? '<div class="fotos-turno"><div class="grupo"><h4>Fotos tomadas en vivo</h4><div class="g">' + FOTOS.map(function (x) { return f[x[0]] ? figura(f[x[0]], x[1], d.nombre, x[0] !== 'persona') : ''; }).join('') + '</div></div></div>' : '<p class="muted">Cargando fotos…</p>') + acc + '</article>';
   }
@@ -123,7 +123,7 @@
       return '<article class="turno"><div class="fila"><div><strong>' + esc(nombreDe(u)) + '</strong><div class="meta">' + NOM[k] + ' renovada · nueva fecha de vencimiento: <b>' + fecha(p.vence) + '</b> (antes ' + fecha(antes.vence) + ')</div></div></div>' +
         '<div class="fotos-turno"><div class="grupo"><h4>' + NOM[k] + ' nueva</h4><div class="g">' + figura(p.foto, NOM[k], nombreDe(u), true) + '</div></div></div>' +
         '<div class="acciones"><button class="btn btn-primario" data-doc-ok="' + u + '|' + k + '">✓ Aprobar documento</button><button class="btn btn-peligro" data-doc-no="' + u + '|' + k + '">Rechazar: no se lee</button></div></article>';
-    }).join('') + (venc.length ? '<div class="tabla-caja"><table class="tabla"><thead><tr><th>Conductor</th><th>Documento</th><th>Vence</th><th></th></tr></thead><tbody>' +
+    }).join('') + (venc.length ? '<div class="tabla-caja"><table class="tabla"><thead><tr><th>Conductor</th><th>Documento</th><th>Caduca</th><th></th></tr></thead><tbody>' +
       venc.map(function (v) { return '<tr><td>' + esc(nombreDe(v[0])) + '</td><td>' + NOM[v[1]] + '</td><td>' + fecha(v[2]) + '</td><td>' + chipVence(v[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="vacio">Ningún documento vencido ni por vencer en los próximos 30 días.</div>');
     var ed = $('#sol-docs'); if (ed.__h !== hd) { ed.innerHTML = hd; ed.__h = hd; }
   }

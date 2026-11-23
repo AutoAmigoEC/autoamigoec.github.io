@@ -57,9 +57,9 @@
         '<div><span>Cédula</span><b>' + esc(ficha.cedula || '—') + '</b></div>' +
         '<div><span>Placa</span><b>' + esc(ficha.placa || cond.placa || '—') + '</b></div>' +
         '<div><span>Vehículo</span><b>' + esc([ficha.marca, ficha.color, ficha.anio].filter(Boolean).join(' · ') || cond.vehiculo || '—') + '</b></div>' +
-        '<div><span>Vence cédula</span><b>' + fecha(docs.cedula && docs.cedula.vence) + '</b></div>' +
-        '<div><span>Vence licencia</span><b>' + fecha(docs.licencia && docs.licencia.vence) + '</b></div>' +
-        '<div><span>Vence matrícula</span><b>' + fecha(docs.matricula && docs.matricula.vence) + '</b></div>' +
+        '<div><span>Caduca la cédula</span><b>' + fecha(docs.cedula && docs.cedula.vence) + '</b></div>' +
+        '<div><span>Caduca la licencia</span><b>' + fecha(docs.licencia && docs.licencia.vence) + '</b></div>' +
+        '<div><span>Caduca la matrícula</span><b>' + fecha(docs.matricula && docs.matricula.vence) + '</b></div>' +
       '</div>' +
       (window.AAVerificar && ficha.cedula ? '<h3>Revisar en páginas oficiales</h3><div class="acciones verif">' + AAVerificar.botones(ficha.cedula) + '</div>' : '') +
       (window.AARestringir ? '<h3>Restringir</h3>' + (AARestringir.alerta(uid) ? '<div class="restr fuerte"><b>⛔ Restringido:</b> entró desde el teléfono de ' + esc(AARestringir.alerta(uid).nombre) + ', a quien restringiste.</div>' : '') +
