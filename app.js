@@ -1772,6 +1772,7 @@
   function bloquear(uid, activar) {
     var c = S.conductores[uid];
     if (!activar && !confirm('¿Bloquear a ' + c.nombre + '? No podrá usar la app hasta que lo desbloquees.')) return;
+    if (activar && !confirm('¿Desbloquear a ' + c.nombre + '? Podrá volver a usar la app.')) return;
     var up = {};
     up['conductores/' + uid + '/activo'] = activar;
     if (!activar) up['estado/' + uid + '/online'] = false;

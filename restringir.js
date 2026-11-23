@@ -57,18 +57,20 @@
     // Sello en la tabla de Conductores: entró desde el teléfono de alguien restringido, o él mismo está restringido
     sello: function (uid) {
       var a = R.alertas[uid];
-      if (R.lista.some(function (r) { return r.id === 'c_' + uid; })) return '<span class="sello mal" title="Lo restringiste">⛔ Restringido</span>';
-      return a ? '<span class="sello mal" title="Entró desde el teléfono de ' + esc(a.nombre) + ', a quien restringiste">⛔ Restringido</span>' : '';
+      // Se puede hacer clic: si lo restringiste tú, quita la restricción; si entró desde el teléfono de un restringido, explica de quién
+      if (R.lista.some(function (r) { return r.id === 'c_' + uid; })) return '<button class="sello mal sello-btn" data-restr-quitar="c_' + esc(uid) + '" title="Clic para quitar la restricción">⛔ Restringido</button>';
+      return a ? '<button class="sello mal sello-btn" data-restr-info="' + esc(uid) + '" title="Entró desde el teléfono de ' + esc(a.nombre) + ', a quien restringiste">⛔ Restringido</button>' : '';
     },
-    botonQuitar: function (uid) { return '<button class="btn btn-chico" data-restr-quitar="c_' + esc(uid) + '" data-restr-cambiar="' + esc(uid) + '">Quitar restricción</button>'; },
+    botonQuitar: function (uid) { return '<button class="btn btn-chico btn-peligro" data-restr-quitar="c_' + esc(uid) + '" data-restr-cambiar="' + esc(uid) + '">Quitar restricción</button>'; },
     boton: function (uid) { return '<button class="btn btn-chico btn-peligro" data-restr-uid="' + esc(uid) + '">Restringir</button>'; },
     alerta: function (uid) { return R.alertas[uid] || null; },
     esta: function (uid) { return R.lista.some(function (r) { return r.id === 'c_' + uid; }); }
   };
 
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-restr-quitar],[data-restr-uid]'); if (!b) return;
+    var b = e.target.closest && e.target.closest('[data-restr-quitar],[data-restr-uid],[data-restr-info]'); if (!b) return;
     var id;
+    if ((id = b.getAttribute('data-restr-info'))) { var al = R.alertas[id]; if (al) toast('Este conductor entró desde el teléfono de ' + al.nombre + ', a quien restringiste. Para quitar el aviso, quita la restricción de ' + al.nombre + ' en Solicitudes → Restringidos.'); return; }
     if ((id = b.getAttribute('data-restr-quitar'))) {
       if (!confirm('¿Quitar la restricción? Podrá volver a registrarse sin que te salga el aviso.')) return;
       b.disabled = true;
