@@ -37,7 +37,7 @@
     if (CAM.sin || (CAM.stream && CAM.frente === frente)) return;
     cerrarCam(); CAM.frente = frente;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { CAM.sin = true; pintar(); return; }
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : 'environment' }, audio: false })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: frente ? 'user' : 'environment', width: { ideal: 1920 } }, audio: false })
       .then(function (s) { CAM.stream = s; CAM.video.srcObject = s; CAM.video.play().catch(function () {}); })
       .catch(function () { CAM.sin = true; pintar(); });
   }
@@ -48,6 +48,14 @@
     var w = 420, h = Math.round(w * v.videoHeight / v.videoWidth), c = document.createElement('canvas'); c.width = w; c.height = h;
     var g = c.getContext('2d'); if (CAM.frente) { g.translate(w, 0); g.scale(-1, 1); }
     g.drawImage(v, 0, 0, w, h); return c.toDataURL('image/jpeg', 0.6);
+  }
+  // Foto de perfil en calidad alta (1080 px y poca compresión): se ve nítida aunque se acerque la cara
+  function capturarAlta(ejemplo) {
+    var v = CAM.video;
+    if (!CAM.stream || !v || !v.videoWidth) return ejemplo;
+    var w = Math.min(1080, v.videoWidth), h = Math.round(w * v.videoHeight / v.videoWidth), c = document.createElement('canvas'); c.width = w; c.height = h;
+    var g = c.getContext('2d'); if (CAM.frente) { g.translate(w, 0); g.scale(-1, 1); }
+    g.drawImage(v, 0, 0, w, h); return c.toDataURL('image/jpeg', 0.92);
   }
   function camHTML(ancha, ovalo) { return '<div class="cam' + (ancha ? ' ancha' : '') + '" id="rcam">' + (ovalo ? '<div class="ovalo"></div>' : '<div class="marco"></div>') + '</div>'; }
   function montarCam(ejemplo) {
@@ -302,7 +310,7 @@
     if (x === 'camara') { PF.paso = 'camara'; PF.prev = null; PF.error = ''; pintarPF(); if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); return; }
     if (x === 'tomar') {
       PF.fecha = ($('#pf-fecha') || {}).value || PF.fecha;
-      var cap = capturar(PF.paso === 'doc' ? EJ[PF.doc] : EJ.persona);
+      var cap = PF.paso === 'camara' ? capturarAlta(EJ.persona) : capturar(PF.paso === 'doc' ? EJ[PF.doc] : EJ.persona);
       // Foto de perfil con cámara de verdad: se centra, se iguala el tamaño y se endereza sola
       if (PF.paso === 'camara' && CAM.stream && window.AAEncuadre) {
         PF.arreglando = true; PF.prev = null; PF.error = ''; pintarPF();

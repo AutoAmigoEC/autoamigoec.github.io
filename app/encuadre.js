@@ -6,7 +6,7 @@
  */
 (function () {
   var FA = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
-  var TAM = 600;            // foto final cuadrada (px)
+  var TAM = 800;            // foto final cuadrada (px)
   var OJOS = 0.14;          // distancia entre ojos = 14% del ancho → cara, hombros y camisa
   var ALTO_OJOS = 0.40;     // los ojos quedan a esta altura (desde arriba)
   var FONDO = '#EEF0F3';    // si al alejar falta un poco de imagen, se rellena con gris claro
@@ -49,7 +49,7 @@
         g.translate(TAM / 2, cy); g.rotate(-ang); g.scale(s, s); g.translate(-mid.x, -mid.y);
         g.imageSmoothingQuality = 'high';
         g.drawImage(im, 0, 0, W, H);
-        return { ok: true, foto: c.toDataURL('image/jpeg', 0.82) };
+        return { ok: true, foto: c.toDataURL('image/jpeg', 0.9) };
       });
     });
   }
@@ -93,7 +93,10 @@
       var px = g.getImageData(0, 0, n, n), d = px.data, alfa = new Float32Array(n * n);
       // Máscara de la persona (con borde suave)
       for (var yy = 0; yy < n; yy++) for (var xx = 0; xx < n; xx++) {
-        var v = conf[Math.min(mh - 1, Math.floor(yy * mh / n)) * mw + Math.min(mw - 1, Math.floor(xx * mw / n))];
+        // Máscara agrandada de forma suave (bilineal): el borde queda liso, sin escalones
+        var fx2 = Math.max(0, Math.min(mw - 1.001, (xx + 0.5) * mw / n - 0.5)), fy2 = Math.max(0, Math.min(mh - 1.001, (yy + 0.5) * mh / n - 0.5));
+        var x0 = Math.floor(fx2), y0 = Math.floor(fy2), ax = fx2 - x0, ay = fy2 - y0, i0 = y0 * mw + x0;
+        var v = (conf[i0] * (1 - ax) + conf[i0 + 1] * ax) * (1 - ay) + (conf[i0 + mw] * (1 - ax) + conf[i0 + mw + 1] * ax) * ay;
         alfa[yy * n + xx] = Math.max(0, Math.min(1, (v - 0.5) / 0.25));   // borde más justo: menos halo de la pared vieja
       }
       if (m.close) m.close();
@@ -116,12 +119,6 @@
       var tabla = new Uint8ClampedArray(256);
       for (var t = 0; t < 256; t++) tabla[t] = 255 * Math.pow(Math.max(0, Math.min(1, (t - bajo) / (alto - bajo))), gamma);
       for (var j = 0; j < n * n; j++) { var q = j * 4; d[q] = tabla[Math.min(255, d[q] * pr) | 0]; d[q + 1] = tabla[Math.min(255, d[q + 1] * pg) | 0]; d[q + 2] = tabla[Math.min(255, d[q + 2] * pb) | 0]; }
-      // Nitidez suave (solo sobre la persona)
-      var o = new Uint8ClampedArray(d);
-      for (var y2 = 1; y2 < n - 1; y2++) for (var x2 = 1; x2 < n - 1; x2++) {
-        var ii = y2 * n + x2; if (alfa[ii] < 0.5) continue;
-        for (var ch = 0; ch < 3; ch++) { var p0 = ii * 4 + ch; var bl = (o[p0 - 4] + o[p0 + 4] + o[p0 - n * 4] + o[p0 + n * 4]) / 4; d[p0] = o[p0] + 0.35 * (o[p0] - bl); }
-      }
       // Borde limpio: en el filo de la persona se quita el color de la pared vieja (si no, queda una silueta clara)
       var pc = document.createElement('canvas'); pc.width = pc.height = n; var gp = pc.getContext('2d'), pdat = gp.createImageData(n, n);
       for (var q1 = 0; q1 < n * n; q1++) { var r6 = q1 * 4; pdat.data[r6] = d[r6]; pdat.data[r6 + 1] = d[r6 + 1]; pdat.data[r6 + 2] = d[r6 + 2]; pdat.data[r6 + 3] = alfa[q1] > 0.97 ? 255 : 0; }
@@ -192,10 +189,10 @@
         gf.save(); gf.globalAlpha = 0.28; gf.filter = 'blur(' + Math.round(n / 35) + 'px)'; gf.drawImage(so, n * 0.025, n * 0.02); gf.restore();
       } else pintarFondo(gf, n, tipo);
       var fp = gf.getImageData(0, 0, n, n), fd = fp.data;
-      var grano = tipo === 'estudio' || tipo === 'pared' ? 5 : 0;   // un grano fino igual en todo une a la persona con el fondo
+      var grano = tipo === 'estudio' || tipo === 'pared' ? 2 : 0;   // grano muy fino (más grano resalta los cuadritos)   // un grano fino igual en todo une a la persona con el fondo
       for (var z = 0; z < n * n; z++) { var al = alfa[z], w = z * 4, gn = grano ? (Math.random() - 0.5) * grano : 0; fd[w] = fd[w] * (1 - al) + d[w] * al + gn; fd[w + 1] = fd[w + 1] * (1 - al) + d[w + 1] * al + gn; fd[w + 2] = fd[w + 2] * (1 - al) + d[w + 2] * al + gn; }
       gf.putImageData(fp, 0, 0);
-      return f.toDataURL('image/jpeg', 0.85);
+      return f.toDataURL('image/jpeg', 0.92);
     });
   }
   window.AAEncuadre = { arreglar: arreglar, cargar: cargar, estudio: estudio, cargarEstudio: segmentador };
