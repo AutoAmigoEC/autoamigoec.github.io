@@ -7,8 +7,8 @@
 (function () {
   var FA = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
   var TAM = 600;            // foto final cuadrada (px)
-  var OJOS = 0.17;          // distancia entre ojos = 17% del ancho → cara, hombros y camisa
-  var ALTO_OJOS = 0.42;     // los ojos quedan a esta altura (desde arriba)
+  var OJOS = 0.14;          // distancia entre ojos = 14% del ancho → cara, hombros y camisa
+  var ALTO_OJOS = 0.40;     // los ojos quedan a esta altura (desde arriba)
   var FONDO = '#EEF0F3';    // si al alejar falta un poco de imagen, se rellena con gris claro
   var carga = null;
   function cargar() {
