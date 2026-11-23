@@ -83,7 +83,7 @@
       // Máscara de la persona (con borde suave)
       for (var yy = 0; yy < n; yy++) for (var xx = 0; xx < n; xx++) {
         var v = conf[Math.min(mh - 1, Math.floor(yy * mh / n)) * mw + Math.min(mw - 1, Math.floor(xx * mw / n))];
-        alfa[yy * n + xx] = Math.max(0, Math.min(1, (v - 0.35) / 0.3));
+        alfa[yy * n + xx] = Math.max(0, Math.min(1, (v - 0.5) / 0.25));   // borde más justo: menos halo de la pared vieja
       }
       if (m.close) m.close();
       // Luz: estira el brillo de la persona entre sus tonos oscuros y claros, y lleva el promedio a un punto agradable
