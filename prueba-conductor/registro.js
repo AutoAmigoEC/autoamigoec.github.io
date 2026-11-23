@@ -250,11 +250,13 @@
     } else if (PF.paso === 'camara') {
       cam = true; ej = EJ.persona;
       h = '<div class="vcab"><b>Foto de perfil</b><button data-f="cerrar">✕</button></div><div class="vcuerpo"><h2>Mira a la cámara</h2><p>Fondo claro y camisa manga larga sin estampado.</p>' +
-        (PF.prev ? '<div class="cam"><img src="' + PF.prev + '"></div><div class="fila2"><button class="vbtn claro" data-f="repetir">Repetir</button><button class="vbtn" data-f="enviar">Enviar</button></div>' +
+        (PF.error ? '<div class="motivo-pf">' + esc(PF.error) + '</div>' : '') +
+        (PF.arreglando ? '<div class="cam"><div class="arreglando">Acomodando tu foto…</div></div>' :
+        PF.prev ? '<p class="asi-te-ven">Así te verán tus clientes:</p><div class="cam"><img src="' + PF.prev + '"></div><div class="fila2"><button class="vbtn claro" data-f="repetir">Repetir</button><button class="vbtn" data-f="enviar">Enviar</button></div>' +
           '<div class="soloprueba"><small>SOLO EN LA PRUEBA · elige qué ve la revisión</small><div class="reglas">' +
           [['bien', 'Todo bien'], ['fondo', 'Fondo de colores'], ['estampado', 'Camisa con estampado'], ['nocoincide', 'No coincide'], ['duda', 'Dudoso']].map(function (o) { return '<button data-f="sim" data-o="' + o[0] + '" style="height:34px;padding:0 11px;border-radius:999px;' + (P.simIA === o[0] ? 'background:var(--navy);color:#fff' : '') + '">' + o[1] + '</button>'; }).join('') + '</div></div>'
           : camHTML(false, true) + '<button class="vbtn" data-f="tomar">Tomar foto</button>') + '</div>';
-      if (PF.prev) cam = null;
+      if (PF.prev || PF.arreglando) cam = null;
     } else if (PF.paso === 'revisando') {
       h = '<div class="vcuerpo" style="padding-top:90px"><div class="grande espera"></div><h2 class="centro">Revisando tu foto…</h2><p class="centro">Comparamos tu cara con la de tu cédula y tu licencia.</p></div>';
     } else if (PF.paso === 'resultado') {
@@ -297,9 +299,23 @@
     var f = e.target.closest('#pfoto [data-f]'); if (!f) return;
     var x = f.getAttribute('data-f');
     if (x === 'cerrar') { PF.paso = null; pintarPF(); SIM.render(); return; }
-    if (x === 'camara') { PF.paso = 'camara'; PF.prev = null; pintarPF(); return; }
-    if (x === 'tomar') { PF.fecha = ($('#pf-fecha') || {}).value || PF.fecha; PF.prev = capturar(PF.paso === 'doc' ? EJ[PF.doc] : EJ.persona); pintarPF(); return; }
-    if (x === 'repetir') { PF.fecha = ($('#pf-fecha') || {}).value || PF.fecha; PF.prev = null; pintarPF(); return; }
+    if (x === 'camara') { PF.paso = 'camara'; PF.prev = null; PF.error = ''; pintarPF(); if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); return; }
+    if (x === 'tomar') {
+      PF.fecha = ($('#pf-fecha') || {}).value || PF.fecha;
+      var cap = capturar(PF.paso === 'doc' ? EJ[PF.doc] : EJ.persona);
+      // Foto de perfil con cámara de verdad: se centra, se iguala el tamaño y se endereza sola
+      if (PF.paso === 'camara' && CAM.stream && window.AAEncuadre) {
+        PF.arreglando = true; PF.prev = null; PF.error = ''; pintarPF();
+        AAEncuadre.arreglar(cap).then(function (r) {
+          PF.arreglando = false;
+          if (r.ok) { PF.prev = r.foto; PF.error = ''; } else { PF.prev = null; PF.error = r.motivo; }
+          pintarPF();
+        }, function () { PF.arreglando = false; PF.prev = cap; pintarPF(); });
+        return;
+      }
+      PF.prev = cap; pintarPF(); return;
+    }
+    if (x === 'repetir') { PF.fecha = ($('#pf-fecha') || {}).value || PF.fecha; PF.prev = null; PF.error = ''; pintarPF(); return; }
     if (x === 'sim') { P.simIA = f.getAttribute('data-o'); pintarPF(); return; }
     if (x === 'enviar') {
       var foto = PF.prev; PF.paso = 'revisando'; pintarPF();
