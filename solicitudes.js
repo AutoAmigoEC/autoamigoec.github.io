@@ -51,7 +51,7 @@
   function colorHex(c) { var k = String(c || '').toLowerCase().trim().split(/\s+/)[0]; return COLORES[k] || '#F4F5F7'; }
   function usuarioDe(nombre, unidad) { var n = String(nombre || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/)[0] || 'conductor'; return n.replace(/[^a-z]/g, '') + String(unidad).padStart(2, '0'); }
   function claveNueva() { var a = new Uint32Array(1); crypto.getRandomValues(a); return String(100000 + a[0] % 900000); }
-  function chipVence(iso) { if (!iso) return ''; var n = dias(iso); return n < 0 ? '<span class="pill sinsaldo">Caducada</span>' : n <= 10 ? '<span class="pill porvencer">' + (n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca mañana' : 'Caduca en ' + n + ' días') + '</span>' : n <= 30 ? '<span class="pill">Caduca en ' + n + ' días</span>' : ''; }
+  function chipVence(iso) { if (!iso) return ''; var n = dias(iso); return n < 0 ? '<span class="pill sinsaldo">Caducada</span>' : n <= 10 ? '<span class="pill porvencer">' + (n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca en 1 día' : 'Caduca en ' + n + ' días') + '</span>' : n <= 30 ? '<span class="pill">Caduca en ' + n + ' días</span>' : ''; }
   function figura(src, txt, quien, ancha) { return '<figure' + (ancha ? ' class="ancha"' : '') + '><button class="foto-t" data-ver-foto="1" data-src="' + esc(src) + '" data-txt="' + esc(quien + ' · ' + txt) + '"><img src="' + esc(src) + '" alt=""></button><figcaption>' + txt + '</figcaption></figure>'; }
 
   function pendientes() { return Object.keys(S.sol).filter(function (id) { return S.sol[id].estado === 'pendiente'; }).sort(function (a, b) { return S.sol[a].t - S.sol[b].t; }); }

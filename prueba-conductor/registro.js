@@ -210,7 +210,7 @@
     if (d.pendiente) return ['pend', 'En revisión'];
     var n = diasHasta(d.vence);
     if (n < 0) return ['mal', 'Caducada'];
-    if (n <= 10) return ['pronto', n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca mañana' : 'Caduca en ' + n + ' días'];
+    if (n <= 10) return ['pronto', n === 0 ? 'Caduca hoy' : n === 1 ? 'Caduca en 1 día' : 'Caduca en ' + n + ' días'];
     return ['ok', 'Caduca el ' + fecha(d.vence)];
   }
   function alertasDocs() {
