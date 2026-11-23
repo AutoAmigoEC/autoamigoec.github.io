@@ -6,7 +6,7 @@
 (function () {
   var PAGINAS = {
     antecedentes: { url: 'https://certificados.ministeriodelinterior.gob.ec/gestorcertificados/antecedentes/', nombre: 'Antecedentes penales' },
-    satje: { url: 'https://procesosjudiciales.funcionjudicial.gob.ec/busqueda', nombre: 'Procesos judiciales' }
+    satje: { url: 'https://procesosjudiciales.funcionjudicial.gob.ec/busqueda-filtros', nombre: 'Procesos judiciales' }
   };
   var CEDULAS = {};   // cédula de cada conductor ya aprobado (se lee de su ficha)
   var pedidas = {};
