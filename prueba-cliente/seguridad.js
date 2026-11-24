@@ -135,7 +135,8 @@
         '<label class="slbl" for="s-nombre">Nombre y apellido</label><input class="sent" id="s-nombre" autocomplete="name" value="' + esc(d.nombre || '') + '" placeholder="Ej. Ana María Ruiz">' +
         '<label class="slbl" for="s-cedula">Número de cédula</label><input class="sent" id="s-cedula" inputmode="numeric" maxlength="10" value="' + esc(d.cedula || '') + '" placeholder="10 dígitos">' +
         '<label class="slbl" for="s-tel">Número de celular</label><input class="sent" id="s-tel" inputmode="tel" maxlength="10" autocomplete="tel" value="' + esc(d.tel || '') + '" placeholder="Ej. 0991234567">' +
-        '<button class="sbtn" data-s="datosOk">' + (d.corrigiendo ? 'Corregir y continuar' : 'Continuar') + '</button>', 'Crear mi cuenta', 'bienvenida');
+        '<button class="sbtn" data-s="datosOk">' + (d.corrigiendo ? 'Corregir y continuar' : 'Continuar') + '</button>' +
+        '<button class="sbtn claro" data-s="seguirPrueba">Seguir (prueba)</button>', 'Crear mi cuenta', 'bienvenida');
     } else if (p === 'cedula') {
       el.className = 'seg negro';
       cam = G.prev ? null : false;
@@ -218,6 +219,14 @@
     if (a === 'ir') { ir(b.getAttribute('data-a')); return; }
     if (a === 'atras') { ir('datos'); return; }
     if (a === 'repetir') { G.prev = null; G.error = ''; pintar(); return; }
+    // Solo en la prueba: sigue como si hubiera llenado sus datos (usa los que escribió si están bien)
+    if (a === 'seguirPrueba') {
+      var n0 = $('#s-nombre').value.trim().replace(/\s+/g, ' '), c0 = $('#s-cedula').value.replace(/\D/g, ''), t0 = $('#s-tel').value.replace(/\D/g, '');
+      G.d.nombre = n0.split(' ').length > 1 ? n0 : 'Cliente de Prueba';
+      G.d.cedula = cedulaValida(c0) ? c0 : '0926687856';
+      G.d.tel = /^09\d{8}$/.test(t0) ? t0 : '0991234567';
+      ir('cedula'); return;
+    }
     if (a === 'datosOk') {
       var n = $('#s-nombre').value.trim().replace(/\s+/g, ' '), c = $('#s-cedula').value.replace(/\D/g, ''), t = $('#s-tel').value.replace(/\D/g, '');
       G.d.nombre = n; G.d.cedula = c; G.d.tel = t;
