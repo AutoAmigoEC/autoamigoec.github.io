@@ -197,7 +197,7 @@
     } else if (p === 'selfieOk') {
       el.className = 'seg negro';
       h = '<div class="fid"><div class="vcf-top"><span></span><button class="vcf-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button></div>' +
-        '<div class="fid-centro"><div class="fid-icono ok">' + ICONO_OK + '</div><b class="fid-txt">Eres ' + esc((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú') + '</b></div>' +
+        '<div class="fid-centro"><div class="fid-icono ok">' + ICONO_OK + '</div><b class="fid-txt">Eres cliente</b></div>' +
         '<div class="vcf-bot"><button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button></div></div>';
     } else if (p === 'selfieMal') {
       el.className = 'seg';
