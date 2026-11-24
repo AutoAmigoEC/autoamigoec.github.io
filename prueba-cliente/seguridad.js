@@ -360,6 +360,8 @@
     motivos: motivos, esNoche: esNoche, cedulaValida: cedulaValida, prueba: PRUEBA,
     cuenta: function () { return leer('aac_cuenta', null); },
     atras: function () { if (!G.paso) return false; cerrar(); return true; },
+    // Solo en el link de prueba: muestra una pantalla para verla (revisión, suspendida, selfie de otra persona)
+    simular: function (paso, al) { G.perfil = leer('aac_cuenta', null); G.al = al || null; clearInterval(espera); ir(paso); },
     // Solo en el link de prueba: aprueba la verificación que esté en pantalla y sigue (sin crear la cuenta otra vez)
     aprobarPrueba: function () {
       if (!G.paso) return false;
