@@ -142,11 +142,11 @@
     } else if (p === 'cara') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
-      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara' });
+      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas, sin gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara' });
     } else if (p === 'noCoincide') {
       el.className = 'seg';
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de tu cédula</h2>' +
-        '<p class="c">Ponte de frente a una luz, sin gafas ni gorra. Revisa también que la foto de la cédula se vea clara.</p>' +
+        '<p class="c">Ponte de frente a una luz, sin gafas, sin gorra. Revisa también que la foto de la cédula se vea clara.</p>' +
         '<button class="sbtn" data-s="ir" data-a="cara">Tomar mi foto otra vez</button>' +
         '<button class="sbtn claro" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>', 'Crear mi cuenta', 'datos');
     } else if (p === 'terminos') {
@@ -176,10 +176,10 @@
     } else if (p === 'selfieIntro') {
       el.className = 'seg';
       var txt = { noche: 'Es de noche', zona: 'Zona de riesgo', nueva: 'Tu cuenta es nueva', celular: 'Estás en un celular nuevo' };
-      h = tarjeta('<div class="sgrande" style="background:var(--navy)">🛡️</div><h2 class="c">Una foto rápida antes de pedir</h2>' +
+      h = tarjeta('<div class="sgrande" style="background:var(--navy)">🛡️</div><h2 class="c">Una foto rápida</h2>' +
         '<p class="c">Confirmamos que eres tú para proteger a nuestros conductores. Son 5 segundos.</p>' +
         '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
-        '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', 'Antes de pedir');
+        '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', '');
     } else if (p === 'selfie') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
@@ -191,7 +191,7 @@
     } else if (p === 'selfieMal') {
       el.className = 'seg';
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Solo el dueño de la cuenta puede pedir el viaje.</h2>' +
-        '<button class="sbtn" data-s="ir" data-a="selfie">Intentar otra vez</button><button class="sbtn claro" data-s="cancelarPedido">Cancelar</button>', 'Antes de pedir');
+        '<button class="sbtn" data-s="ir" data-a="selfie">Intentar otra vez</button><button class="sbtn claro" data-s="cancelarPedido">Cancelar</button>', '');
     }
     if (el.__h !== h) { var foco = document.activeElement && document.activeElement.id, val = foco && $('#' + foco) ? $('#' + foco).value : null; el.innerHTML = h; el.__h = h; if (foco && $('#' + foco) && val != null) { $('#' + foco).value = val; $('#' + foco).focus(); } }
     if (cam !== null) { abrirCam(cam).then(montarCam, function () { }); montarCam(); } else cerrarCam();
@@ -244,7 +244,7 @@
       var fr = cuadro(1600, 0.92); G.prev = fr.url(); G.analizando = 'Revisando tu foto…'; pintar();
       cargarFA().then(function () { return leerCara(fr.c); }).then(function (r) {
         G.analizando = '';
-        if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz, sin gafas ni gorra, y toma otra.'; pintar(); return; }
+        if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz, sin gafas, sin gorra, y toma otra.'; pintar(); return; }
         var desc = Array.prototype.slice.call(r.descriptor);
         G.d.parecido = Math.round(distancia(desc, G.fotos.descCedula) * 1000) / 1000;
         // Encuadre y luz (como la foto del conductor). Si sale mal 2 veces, se usa igual.
