@@ -466,17 +466,17 @@
   .seg .vcf-saltar{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:999px;height:40px;padding:0 18px;font-weight:700;font-size:14px;font-family:inherit}
   /* Verificación tipo Face ID: un cuadro encima de la app, con el mapa borroso detrás (no se ve la cámara) */
   .seg.fidvelo{background:rgba(16,24,40,.18);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);align-items:center;justify-content:center;padding:24px}
-  .seg .fid{position:relative;overflow:hidden;width:min(272px,100%);padding:38px 22px 26px;border-radius:30px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-    box-shadow:0 20px 60px rgba(16,24,40,.28);display:flex;flex-direction:column;align-items:center;gap:20px;color:var(--navy);text-align:center;animation:fidEntra .28s cubic-bezier(.2,.9,.3,1.2)}
+  .seg .fid{position:relative;overflow:hidden;width:min(272px,100%);padding:38px 22px 26px;border-radius:30px;background:rgba(10,15,60,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+    box-shadow:0 20px 60px rgba(10,15,60,.4);display:flex;flex-direction:column;align-items:center;gap:20px;color:#fff;text-align:center;animation:fidEntra .28s cubic-bezier(.2,.9,.3,1.2)}
   .seg .fid video{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}
-  .seg .fid-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(16,24,40,.08);color:#475467;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .seg .fid-icono{width:92px;height:92px;color:var(--navy);transition:color .25s}
+  .seg .fid-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .seg .fid-icono{width:92px;height:92px;color:#fff;transition:color .25s}
   .seg .fid-icono svg{width:100%;height:100%;display:block}
   .seg .fid-icono.buscar{animation:fidLatido 1.6s ease-in-out infinite}
   .seg .fid-icono.revisando{animation:fidLatido .7s ease-in-out infinite}
-  .seg .fid-icono.ok{color:#12B76A;animation:fidOk .35s ease-out}
+  .seg .fid-icono.ok{color:#32D74B;animation:fidOk .35s ease-out}
   .seg .fid-txt{font-size:17px;font-weight:700;letter-spacing:-.01em;min-height:22px}
-  .seg .fid-error{margin:-8px 0 0;font-size:13px;color:#B42318}
+  .seg .fid-error{margin:-8px 0 0;font-size:13px;color:#FDA29B}
   .seg .fid .sbtn{width:100%;margin:4px 0 0}
   @keyframes fidEntra{0%{transform:scale(.88);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes fidLatido{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
@@ -811,7 +811,8 @@
     <button id="sim-revision">Ver: "Estamos revisando tu cuenta"</button>
     <button id="sim-suspendida">Ver: cuenta suspendida</button>
     <button id="sim-ajena">Ver: selfie de otra persona</button>
-    <button id="sim-selfie">Ver: foto antes de pedir</button>
+    <button id="sim-selfie">Ver: foto antes de pedir (1ª vez)</button>
+    <button id="sim-fid">Ver: Face ID (las siguientes veces)</button>
     <button class="prin" id="sim-acepta">Un conductor acepta</button>
     <button id="sim-llego">El conductor llegó</button>
     <button id="sim-inicia">El conductor inicia el taxímetro</button>
@@ -836,7 +837,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=15"></script>
+<script src="seguridad.js?v=16"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
@@ -2217,6 +2218,7 @@
   $('#sim-suspendida').addEventListener('click', function () { simular('suspendido'); });
   $('#sim-ajena').addEventListener('click', function () { simular('selfieMal'); });
   $('#sim-selfie').addEventListener('click', function () { simular('selfieIntro'); });
+  $('#sim-fid').addEventListener('click', function () { simular('fid'); });
   $('#sim-seguir').addEventListener('click', function () { if (!AASeg.seguirPrueba()) aviso('Funciona mientras creas la cuenta.'); });
   $('#sim-aprobar').addEventListener('click', function () {
     if (AASeg.aprobarPrueba()) { $('#controles').classList.remove('abierto'); aviso('Aprobado para la prueba.'); }

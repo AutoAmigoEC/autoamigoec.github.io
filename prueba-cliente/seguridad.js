@@ -114,9 +114,10 @@
   var G = { paso: null, d: {}, fotos: {}, prev: null, analizando: '', error: '', fallos: 0, al: null, viaje: null, motivos: [] };
   function ir(p) {
     G.paso = p; G.prev = null; G.error = ''; G.analizando = '';
-    if (p === 'selfie') { G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false }; cargarFA().catch(function () { }); }
+    if (p === 'selfie') { G.primera = !(G.perfil && G.perfil.fidListo); }
+    if (p === 'selfie' && !G.primera) { G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false }; cargarFA().catch(function () { }); }
     pintar();
-    if (p === 'selfie') vigilar();
+    if (p === 'selfie' && !G.primera) vigilar();
   }
   function cerrar() { G.paso = null; pintar(); }
 
@@ -187,8 +188,16 @@
         '<p class="c">Confirmamos que eres tú para proteger a nuestros conductores. Son 5 segundos.</p>' +
         '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', '');
+    } else if (p === 'selfie' && G.primera) {
+      // Primera vez: la cámara de siempre (se ve su cara y toca el botón)
+      el.className = 'seg negro';
+      cam = G.prev ? null : true;
+      h = camaraHTML({ foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
+    } else if (p === 'selfieOk' && G.primera) {
+      el.className = 'seg negro';
+      h = camaraHTML({ titulo: '✓ Eres cliente', ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
+        abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
     } else if (p === 'selfie') {
-      // Como Face ID: no se ve la cámara ni la foto. Solo el ícono y un texto corto; la foto se toma sola.
       // Un cuadro pequeño encima de la app (el mapa se ve borroso detrás), como Apple Pay
       el.className = 'seg fidvelo';
       cam = true;
@@ -261,7 +270,7 @@
       }
       if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
       try { navigator.vibrate && navigator.vibrate(40); } catch (e) { }
-      ir('selfieOk');
+      G.primera = false; ir('selfieOk');
     }, function () { G.fid.buenos = 0; fidPoner('buscar', 'Revisa tu internet'); setTimeout(vigilar, 1500); });
   }
 
@@ -387,7 +396,7 @@
           ir('selfieMal'); return;
         }
         if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
-        G.vista = cuadro(720, 0.8, f.c).url();
+        G.vista = cuadro(720, 0.8, f.c).url(); pf.fidListo = true; guardar('aac_cuenta', pf);
         ir('selfieOk');
       }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
       return;
@@ -441,7 +450,7 @@
       G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null;
       if (!m.length) { ok(perfil); return; }
       cargarFA().catch(function () { });
-      ir('selfieIntro');
+      ir(perfil && perfil.fidListo ? 'selfie' : 'selfieIntro');
       }
     },
     paraOtraPermitido: function (v) { if (esNoche()) return 'De noche solo puede pedir el dueño de la cuenta.'; if (enZonaRiesgo(v)) return 'En zonas de riesgo solo puede pedir el dueño de la cuenta.'; return ''; },
@@ -459,7 +468,9 @@
       if (G.paso === 'terminos') { var c = $('#s-acepto'); if (c) c.checked = true; clic('crear'); return true; }
       return false;
     },
-    simular: function (paso, al) { G.perfil = leer('aac_cuenta', null); G.al = al || null; clearInterval(espera); ir(paso); },
+    simular: function (paso, al) { G.perfil = leer('aac_cuenta', null);
+      if (paso === 'fid' && G.perfil) { G.perfil.fidListo = true; guardar('aac_cuenta', G.perfil); paso = 'selfie'; }
+      if (paso === 'selfieIntro' && G.perfil) { G.perfil.fidListo = false; guardar('aac_cuenta', G.perfil); } G.al = al || null; clearInterval(espera); ir(paso); },
     // Solo en el link de prueba: aprueba la verificación que esté en pantalla y sigue (sin crear la cuenta otra vez)
     aprobarPrueba: function () {
       if (!G.paso) return false;
