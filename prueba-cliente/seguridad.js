@@ -102,7 +102,7 @@
     var abajo = o.abajo || (G.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">' + esc(G.analizando) + '</b>'
       : '<button class="disparo" data-s="' + o.disparo + '" aria-label="Tomar foto"></button>');
     return '<div class="vcf" id="scam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
-      '<div class="vcf-top">' + (G.analizando ? '' : '<div class="vcf-tit">' + (o.paso ? '<small>' + esc(o.paso) + '</small>' : '') + '<b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
+      '<div class="vcf-top">' + (G.analizando || !o.titulo ? '<span></span>' : '<div class="vcf-tit">' + (o.paso ? '<small>' + esc(o.paso) + '</small>' : '') + '<b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
       (/^(cancelarPedido|atras)$/.test(o.cerrar || 'atras') ? '<button class="vcf-x" data-s="' + (o.cerrar || 'atras') + '"' : '<button class="vcf-x" data-s="ir" data-a="' + o.cerrar + '"') + ' aria-label="Cerrar">✕</button></div>' +
       (o.indica ? '<div class="vcf-indica" id="sindica">' + esc(o.indica) + '</div>' : '') +
       (G.error ? '<div class="vcf-error">' + esc(G.error) + '</div>' : '') +
@@ -183,7 +183,7 @@
     } else if (p === 'selfie') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
-      h = camaraHTML({ titulo: 'Tu cara', ayuda: 'Mira de frente, con buena luz, sin gafas, sin gorra.', foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
+      h = camaraHTML({ foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieOk') {
       el.className = 'seg negro';
       h = camaraHTML({ titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
