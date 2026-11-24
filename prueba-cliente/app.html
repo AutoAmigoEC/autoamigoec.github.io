@@ -464,6 +464,18 @@
   .seg .disparo:active::after{transform:scale(.88)}
   .seg .vcf-txt{color:#fff;font-size:15px}
   .seg .vcf-saltar{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:999px;height:40px;padding:0 18px;font-weight:700;font-size:14px;font-family:inherit}
+  /* Verificación tipo Face ID: no se ve la cámara, solo el ícono */
+  .seg .fid{position:absolute;inset:0;background:#000;overflow:hidden;color:#fff}
+  .seg .fid video{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none}
+  .seg .fid-centro{position:absolute;left:0;right:0;top:50%;transform:translateY(-58%);display:flex;flex-direction:column;align-items:center;gap:26px;z-index:1}
+  .seg .fid-icono{width:112px;height:112px;color:#fff;transition:color .25s,transform .25s}
+  .seg .fid-icono svg{width:100%;height:100%;display:block}
+  .seg .fid-icono.buscar{animation:fidLatido 1.6s ease-in-out infinite}
+  .seg .fid-icono.revisando{animation:fidLatido .7s ease-in-out infinite}
+  .seg .fid-icono.ok{color:#32D74B;animation:fidOk .35s ease-out}
+  .seg .fid-txt{font-size:19px;font-weight:600;letter-spacing:-.01em;min-height:24px;text-align:center;padding:0 24px}
+  @keyframes fidLatido{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+  @keyframes fidOk{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
   .seg .vcf-espera{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
   /* Pedir para otra persona */
   .otra{margin-top:12px;border:1.5px solid var(--linea);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
@@ -819,7 +831,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=12"></script>
+<script src="seguridad.js?v=13"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };

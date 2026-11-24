@@ -112,7 +112,12 @@
 
   // ---------- Estado ----------
   var G = { paso: null, d: {}, fotos: {}, prev: null, analizando: '', error: '', fallos: 0, al: null, viaje: null, motivos: [] };
-  function ir(p) { G.paso = p; G.prev = null; G.error = ''; G.analizando = ''; pintar(); }
+  function ir(p) {
+    G.paso = p; G.prev = null; G.error = ''; G.analizando = '';
+    if (p === 'selfie') { G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false }; cargarFA().catch(function () { }); }
+    pintar();
+    if (p === 'selfie') vigilar();
+  }
   function cerrar() { G.paso = null; pintar(); }
 
   function tarjeta(cuerpo, titulo, atras) {
@@ -183,13 +188,17 @@
         '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', '');
     } else if (p === 'selfie') {
+      // Como Face ID: no se ve la cámara ni la foto. Solo el ícono y un texto corto; la foto se toma sola.
       el.className = 'seg negro';
-      cam = G.prev ? null : true;
-      h = camaraHTML({ foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
+      cam = true;
+      h = '<div class="fid" id="scam"><div class="vcf-top"><span></span><button class="vcf-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button></div>' +
+        '<div class="fid-centro"><div class="fid-icono ' + G.fid.estado + '" id="fidico">' + ICONO_FID + '</div><b class="fid-txt" id="fidtxt">' + esc(G.fid.txt) + '</b></div>' +
+        (G.error ? '<div class="vcf-error">' + esc(G.error) + '</div>' : '') + '</div>';
     } else if (p === 'selfieOk') {
       el.className = 'seg negro';
-      h = camaraHTML({ titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
-        abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
+      h = '<div class="fid"><div class="vcf-top"><span></span><button class="vcf-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button></div>' +
+        '<div class="fid-centro"><div class="fid-icono ok">' + ICONO_OK + '</div><b class="fid-txt">Eres ' + esc((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú') + '</b></div>' +
+        '<div class="vcf-bot"><button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button></div></div>';
     } else if (p === 'selfieMal') {
       el.className = 'seg';
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Solo el dueño de la cuenta puede pedir el viaje.</h2>' +
@@ -197,6 +206,62 @@
     }
     if (el.__h !== h) { var foco = document.activeElement && document.activeElement.id, val = foco && $('#' + foco) ? $('#' + foco).value : null; el.innerHTML = h; el.__h = h; if (foco && $('#' + foco) && val != null) { $('#' + foco).value = val; $('#' + foco).focus(); } }
     if (cam !== null) { abrirCam(cam).then(montarCam, function () { }); montarCam(); } else cerrarCam();
+  }
+
+  // ---------- Verificación tipo Face ID (antes de pedir) ----------
+  var ICONO_FID = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M8 30V18a10 10 0 0 1 10-10h12M70 8h12a10 10 0 0 1 10 10v12M92 70v12a10 10 0 0 1-10 10H70M30 92H18A10 10 0 0 1 8 82V70"/>' +
+    '<path d="M34 36v8M66 36v8M50 36v20h-5M37 68q13 10 26 0"/></svg>';
+  var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="5"/><path d="M30 52l13 13 27-29"/></svg>';
+  G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false };
+  function fidPoner(estado, txt) {
+    G.fid.estado = estado; G.fid.txt = txt;
+    var i = $('#fidico'), x = $('#fidtxt'); if (i) i.className = 'fid-icono ' + estado; if (x) x.textContent = txt;
+  }
+  function luzDe(v, box) {
+    try { var c = document.createElement('canvas'); c.width = c.height = 24; var g = c.getContext('2d'); g.drawImage(v, box.x, box.y, box.width, box.height, 0, 0, 24, 24);
+      var d = g.getImageData(0, 0, 24, 24).data, s = 0; for (var i = 0; i < d.length; i += 4) s += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114; return s / (d.length / 4); } catch (e) { return 128; }
+  }
+  // Mira la cámara (sin mostrarla) varias veces por segundo; cuando la cara está bien, toma la foto sola
+  function vigilar() {
+    if (G.paso !== 'selfie') return;
+    var v = C.video;
+    if (G.fid.ocupado || !window.faceapi || !faceapi.nets.tinyFaceDetector.isLoaded || !v || !v.videoWidth) { setTimeout(vigilar, 250); return; }
+    G.fid.ocupado = true;
+    faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })).then(function (r) {
+      G.fid.ocupado = false;
+      if (G.paso !== 'selfie') return;
+      var vw = v.videoWidth, vh = v.videoHeight, txt = '';
+      if (!r) txt = 'Mira a la pantalla';
+      else {
+        var bx = r.box, ancho = bx.width / Math.min(vw, vh), cx = (bx.x + bx.width / 2) / vw - 0.5, cy = (bx.y + bx.height / 2) / vh - 0.5;
+        if (ancho < 0.28) txt = 'Acércate un poco';
+        else if (ancho > 0.8) txt = 'Aléjate un poco';
+        else if (Math.abs(cx) > 0.18 || Math.abs(cy) > 0.2) txt = 'Pon tu cara en el centro';
+        else if (luzDe(v, bx) < 60) txt = 'Busca más luz';
+      }
+      if (txt) { G.fid.buenos = 0; fidPoner('buscar', txt); setTimeout(vigilar, 200); return; }
+      if (++G.fid.buenos < 2) { setTimeout(vigilar, 120); return; }
+      revisarFid(cuadro(960, 0.85));
+    }, function () { G.fid.ocupado = false; setTimeout(vigilar, 400); });
+  }
+  function revisarFid(f) {
+    fidPoner('revisando', 'Revisando…');
+    leerCara(f.c).then(function (r) {
+      if (G.paso !== 'selfie') return;
+      if (!r) { G.fid.buenos = 0; fidPoner('buscar', 'Mira a la pantalla'); setTimeout(vigilar, 200); return; }
+      var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
+      if (!pf.descriptor) { pf.descriptor = desc; guardar('aac_cuenta', pf); }   // cuenta de prueba aprobada sin cara: esta queda como su cara
+      var ok = distancia(desc, pf.descriptor) <= UMBRAL && (!pf.descCedula || distancia(desc, pf.descCedula) <= UMBRAL_CEDULA);
+      if (!ok) {
+        if (pf.srv) llamar('cliente/intento', { id: pf.srv.id, token: pf.srv.token, foto: cuadro(640, 0.8, f.c).url() }).catch(function () { });
+        try { navigator.vibrate && navigator.vibrate([60, 80, 60]); } catch (e) { }
+        ir('selfieMal'); return;
+      }
+      if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
+      try { navigator.vibrate && navigator.vibrate(40); } catch (e) { }
+      ir('selfieOk');
+    }, function () { G.fid.buenos = 0; fidPoner('buscar', 'Revisa tu internet'); setTimeout(vigilar, 1500); });
   }
 
   // ---------- Riesgo del viaje ----------
