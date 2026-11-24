@@ -102,7 +102,7 @@
     var abajo = o.abajo || (G.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">' + esc(G.analizando) + '</b>'
       : '<button class="disparo" data-s="' + o.disparo + '" aria-label="Tomar foto"></button>');
     return '<div class="vcf" id="scam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
-      '<div class="vcf-top">' + (G.analizando ? '' : '<div class="vcf-tit"><small>' + esc(o.paso || '') + '</small><b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
+      '<div class="vcf-top">' + (G.analizando ? '' : '<div class="vcf-tit">' + (o.paso ? '<small>' + esc(o.paso) + '</small>' : '') + '<b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
       (/^(cancelarPedido|atras)$/.test(o.cerrar || 'atras') ? '<button class="vcf-x" data-s="' + (o.cerrar || 'atras') + '"' : '<button class="vcf-x" data-s="ir" data-a="' + o.cerrar + '"') + ' aria-label="Cerrar">✕</button></div>' +
       (o.indica ? '<div class="vcf-indica" id="sindica">' + esc(o.indica) + '</div>' : '') +
       (G.error ? '<div class="vcf-error">' + esc(G.error) + '</div>' : '') +
@@ -177,16 +177,16 @@
       el.className = 'seg';
       var txt = { noche: 'Es de noche', zona: 'Zona de riesgo', nueva: 'Tu cuenta es nueva', celular: 'Estás en un celular nuevo' };
       h = tarjeta('<div class="sgrande" style="background:var(--navy)">🛡️</div><h2 class="c">Una foto rápida antes de pedir</h2>' +
-        '<p class="c">Confirmamos que eres tú para cuidar al conductor. Son 5 segundos.</p>' +
+        '<p class="c">Confirmamos que eres tú para proteger a nuestros conductores. Son 5 segundos.</p>' +
         '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', 'Antes de pedir');
     } else if (p === 'selfie') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
-      h = camaraHTML({ paso: 'Antes de pedir', titulo: 'Tu cara', ayuda: 'Mira de frente, con buena luz, sin gafas ni gorra.', foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
+      h = camaraHTML({ titulo: 'Tu cara', ayuda: 'Mira de frente, con buena luz, sin gafas, sin gorra.', foto: G.prev, disparo: 'fotoSelfie', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieOk') {
       el.className = 'seg negro';
-      h = camaraHTML({ paso: 'Antes de pedir', titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
+      h = camaraHTML({ titulo: '✓ Eres ' + ((G.perfil && G.perfil.nombre || '').split(' ')[0] || 'tú'), ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
         abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
     } else if (p === 'selfieMal') {
       el.className = 'seg';
@@ -287,7 +287,7 @@
     }
     if (a === 'fotoSelfie') {
       if (!C.video || !C.video.videoWidth || G.analizando) return;
-      var f = cuadro(960, 0.85); G.prev = f.url(); G.analizando = 'Revisando tu cara…'; pintar();
+      var f = cuadro(960, 0.85); G.prev = f.url(); G.analizando = 'Revisando…'; pintar();
       cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
         G.analizando = '';
         if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz y toma otra.'; pintar(); return; }
