@@ -463,6 +463,7 @@
   .seg .disparo::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#fff;transition:transform .1s}
   .seg .disparo:active::after{transform:scale(.88)}
   .seg .vcf-txt{color:#fff;font-size:15px}
+  .seg .vcf-saltar{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:999px;height:40px;padding:0 18px;font-weight:700;font-size:14px;font-family:inherit}
   .seg .vcf-espera{width:54px;height:54px;border-radius:50%;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:gira .9s linear infinite}
   /* Pedir para otra persona */
   .otra{margin-top:12px;border:1.5px solid var(--linea);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
@@ -817,7 +818,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=9"></script>
+<script src="seguridad.js?v=10"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };

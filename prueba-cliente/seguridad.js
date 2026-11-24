@@ -100,7 +100,8 @@
   function camaraHTML(o) {
     var foto = o.foto ? '<img class="vfoto" src="' + o.foto + '">' : '';
     var abajo = o.abajo || (G.analizando ? '<div class="vcf-espera"></div><b class="vcf-txt">' + esc(G.analizando) + '</b>'
-      : '<button class="disparo" data-s="' + o.disparo + '" aria-label="Tomar foto"></button>');
+      : '<button class="disparo" data-s="' + o.disparo + '" aria-label="Tomar foto"></button>' +
+        (o.saltar ? '<button class="vcf-saltar" data-s="saltar" data-a="' + o.saltar + '">Aprobar y seguir (prueba)</button>' : ''));
     return '<div class="vcf" id="scam">' + foto + (o.marco ? '<div class="vcf-marco"></div>' : '') +
       '<div class="vcf-top">' + (G.analizando || !o.titulo ? '<span></span>' : '<div class="vcf-tit">' + (o.paso ? '<small>' + esc(o.paso) + '</small>' : '') + '<b>' + esc(o.titulo) + '</b>' + (o.ayuda ? '<span>' + esc(o.ayuda) + '</span>' : '') + '</div>') +
       (/^(cancelarPedido|atras)$/.test(o.cerrar || 'atras') ? '<button class="vcf-x" data-s="' + (o.cerrar || 'atras') + '"' : '<button class="vcf-x" data-s="ir" data-a="' + o.cerrar + '"') + ' aria-label="Cerrar">✕</button></div>' +
@@ -138,11 +139,11 @@
     } else if (p === 'cedula') {
       el.className = 'seg negro';
       cam = G.prev ? null : false;
-      h = camaraHTML({ paso: 'Paso 1 de 2', titulo: 'Frente de tu cédula', ayuda: 'Ponla dentro del recuadro, que se vea tu foto. Sin reflejos.', marco: !G.prev, foto: G.prev, cerrar: 'datos', disparo: 'fotoCedula' });
+      h = camaraHTML({ paso: 'Paso 1 de 2', titulo: 'Frente de tu cédula', ayuda: 'Ponla dentro del recuadro, que se vea tu foto. Sin reflejos.', marco: !G.prev, foto: G.prev, cerrar: 'datos', disparo: 'fotoCedula', saltar: 'cedula' });
     } else if (p === 'cara') {
       el.className = 'seg negro';
       cam = G.prev ? null : true;
-      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas, sin gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara' });
+      h = camaraHTML({ paso: 'Paso 2 de 2', titulo: 'Tu foto', ayuda: 'Mira de frente, con buena luz, sin gafas, sin gorra.', foto: G.prev, cerrar: 'datos', disparo: 'fotoCara', saltar: 'cara' });
     } else if (p === 'noCoincide') {
       el.className = 'seg';
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Tu cara no coincide con la de tu cédula</h2>' +
@@ -151,7 +152,7 @@
         '<button class="sbtn claro" data-s="ir" data-a="cedula">Tomar la cédula otra vez</button>', 'Crear mi cuenta', 'datos');
     } else if (p === 'terminos') {
       el.className = 'seg';
-      h = tarjeta((G.d.noCoincide ? '' : '<div class="sok">✓ Tu cara coincide con la de tu cédula</div>') + '<h2>Último paso</h2>' +
+      h = tarjeta((G.d.noCoincide || G.saltado ? '' : '<div class="sok">✓ Tu cara coincide con la de tu cédula</div>') + '<h2>Último paso</h2>' +
         '<div class="slista"><div><b>Tu cuenta es personal</b><p>No la prestes. Si alguien más va a viajar, pídelo con la opción "Para otra persona".</p></div>' +
         '<div><b>Eres responsable de tu cuenta</b><p>Si tu cuenta se usa para hacerle daño a un conductor, tus datos se entregarán a la Policía.</p></div>' +
         '<div><b>Tu cuenta queda en este celular</b><p>Si entras desde otro teléfono, te pediremos tu cara otra vez.</p></div>' +
@@ -246,7 +247,7 @@
         G.analizando = '';
         if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz, sin gafas, sin gorra, y toma otra.'; pintar(); return; }
         var desc = Array.prototype.slice.call(r.descriptor);
-        G.d.parecido = Math.round(distancia(desc, G.fotos.descCedula) * 1000) / 1000;
+        G.d.parecido = G.fotos.descCedula ? Math.round(distancia(desc, G.fotos.descCedula) * 1000) / 1000 : 0;
         // Encuadre y luz (como la foto del conductor). Si sale mal 2 veces, se usa igual.
         var enc = window.AAEncuadre ? AAEncuadre.arreglar(fr.url()) : Promise.resolve({ ok: true, foto: cuadro(480, 0.8, fr.c).url() });
         return enc.then(function (e) {
@@ -261,9 +262,21 @@
       }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
       return;
     }
+    // Solo en la prueba: salta la foto de la cédula o de la cara
+    if (a === 'saltar') {
+      G.saltado = true;
+      if (b.getAttribute('data-a') === 'cedula') { G.fotos.descCedula = null; G.fotos.cedula = null; ir('cara'); }
+      else { G.d.parecido = 0; G.d.noCoincide = false; ir('terminos'); }
+      return;
+    }
     if (a === 'crear') {
       if (G.creando) return;
       if (!$('#s-acepto').checked) { G.error = 'Para crear tu cuenta tienes que aceptar las condiciones.'; pintar(); return; }
+      if (G.saltado || !G.fotos.cedula || !G.fotos.cara) {   // prueba sin fotos: la cuenta queda solo en este celular (no llega al panel)
+        var pp = { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel, descriptor: G.fotos.descriptor || null, descCedula: G.fotos.descCedula || null, fotoCedula: G.fotos.cedula || null,
+          foto: G.fotos.cara || null, celular: idCelular(), creado: Date.now(), acepto: Date.now(), prueba: true, estado: 'aprobado' };
+        guardar('aac_cuenta', pp); var al0 = G.al; cerrar(); if (al0) al0(pp); return;
+      }
       G.d.acepto = true; G.creando = true; G.error = ''; pintar();
       equipo().then(function (eq) {
         return llamar('cliente/registro', { v: 1, prueba: true, equipo: eq, datos: { nombre: G.d.nombre, cedula: G.d.cedula, tel: G.d.tel },
@@ -335,7 +348,7 @@
 
   // ---------- Lo que usa la app ----------
   window.AASeg = {
-    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.fallos = 0; G.fallosFoto = 0; G.creando = false; if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); ir('bienvenida'); cargarFA().catch(function () { }); },   // se carga mientras llena sus datos
+    registro: function (al) { G.al = al; G.d = {}; G.fotos = {}; G.saltado = false; G.fallos = 0; G.fallosFoto = 0; G.creando = false; if (window.AAEncuadre) AAEncuadre.cargar().catch(function () { }); ir('bienvenida'); cargarFA().catch(function () { }); },   // se carga mientras llena sus datos
     // Antes de pedir: si el viaje es de riesgo, selfie. Si viaja otra persona, no se permite de noche ni en zona de riesgo.
     // Al abrir la app: si la cuenta está en revisión o suspendida, no puede pedir viajes
     verificar: function (perfil, ok) {
