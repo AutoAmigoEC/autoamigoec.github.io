@@ -383,6 +383,16 @@
     cuenta: function () { return leer('aac_cuenta', null); },
     atras: function () { if (!G.paso) return false; cerrar(); return true; },
     // Solo en el link de prueba: muestra una pantalla para verla (revisión, suspendida, selfie de otra persona)
+    // Solo en el link de prueba: avanza un paso del registro como si lo hubiera llenado
+    seguirPrueba: function () {
+      var clic = function (s, a) { var b = document.createElement('button'); b.setAttribute('data-s', s); if (a) b.setAttribute('data-a', a); $('#seg .scuerpo, #seg .vcf, #seg .sbien').appendChild(b); b.click(); if (b.parentNode) b.parentNode.removeChild(b); };
+      if (G.paso === 'bienvenida') { ir('datos'); return true; }
+      if (G.paso === 'datos') { clic('seguirPrueba'); return true; }
+      if (G.paso === 'cedula') { clic('saltar', 'cedula'); return true; }
+      if (G.paso === 'cara' || G.paso === 'noCoincide') { clic('saltar', 'cara'); return true; }
+      if (G.paso === 'terminos') { var c = $('#s-acepto'); if (c) c.checked = true; clic('crear'); return true; }
+      return false;
+    },
     simular: function (paso, al) { G.perfil = leer('aac_cuenta', null); G.al = al || null; clearInterval(espera); ir(paso); },
     // Solo en el link de prueba: aprueba la verificación que esté en pantalla y sigue (sin crear la cuenta otra vez)
     aprobarPrueba: function () {

@@ -789,6 +789,7 @@
   <div class="controles" id="controles">
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Hacen lo que haría el conductor desde su app. La búsqueda de lugares, la ruta y el precio estimado son reales (mismo cálculo del panel).</p>
+    <button class="prin" id="sim-seguir">Seguir (como si llenara este paso)</button>
     <button class="prin" id="sim-aprobar" style="background:var(--verde)">Aprobar y seguir (saltar la verificación de cara)</button>
     <button id="sim-revision">Ver: "Estamos revisando tu cuenta"</button>
     <button id="sim-suspendida">Ver: cuenta suspendida</button>
@@ -818,7 +819,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=11"></script>
+<script src="seguridad.js?v=12"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
@@ -2199,6 +2200,7 @@
   $('#sim-suspendida').addEventListener('click', function () { simular('suspendido'); });
   $('#sim-ajena').addEventListener('click', function () { simular('selfieMal'); });
   $('#sim-selfie').addEventListener('click', function () { simular('selfieIntro'); });
+  $('#sim-seguir').addEventListener('click', function () { if (!AASeg.seguirPrueba()) aviso('Funciona mientras creas la cuenta.'); });
   $('#sim-aprobar').addEventListener('click', function () {
     if (AASeg.aprobarPrueba()) { $('#controles').classList.remove('abierto'); aviso('Aprobado para la prueba.'); }
     else aviso('Funciona cuando hay una pantalla de verificación abierta.');
