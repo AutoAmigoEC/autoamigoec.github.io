@@ -2219,6 +2219,10 @@
       S.perfil = p; render(); aviso('¡Bienvenido, ' + p.nombre.split(' ')[0] + '!');
     });
   }
+  if (/nuevo/.test(location.hash)) {   // link de prueba "como cliente nuevo": borra la cuenta guardada y empieza a crear la cuenta
+    ['aac2_perfil', 'aac_cuenta', 'aac2_viajes', 'aac2_casa', 'aac2_trabajo'].forEach(function (k) { guardar(k, null); });
+    S.perfil = null; S.viajes = []; try { history.replaceState(null, '', location.pathname); } catch (e) { }
+  }
   if ((!S.perfil || !S.perfil.cedula) && /directo/.test(location.hash)) { registrar(); AASeg.aprobarPrueba(); }   // link de prueba sin crear cuenta
   else if (!S.perfil || !S.perfil.cedula) registrar();
   else AASeg.verificar(S.perfil, function (p) { S.perfil = p; render(); });   // en revisión o suspendida: no puede pedir
