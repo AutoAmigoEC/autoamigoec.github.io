@@ -189,16 +189,17 @@
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', '');
     } else if (p === 'selfie') {
       // Como Face ID: no se ve la cámara ni la foto. Solo el ícono y un texto corto; la foto se toma sola.
-      el.className = 'seg negro';
+      // Un cuadro pequeño encima de la app (el mapa se ve borroso detrás), como Apple Pay
+      el.className = 'seg fidvelo';
       cam = true;
-      h = '<div class="fid" id="scam"><div class="vcf-top"><span></span><button class="vcf-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button></div>' +
-        '<div class="fid-centro"><div class="fid-icono ' + G.fid.estado + '" id="fidico">' + ICONO_FID + '</div><b class="fid-txt" id="fidtxt">' + esc(G.fid.txt) + '</b></div>' +
-        (G.error ? '<div class="vcf-error">' + esc(G.error) + '</div>' : '') + '</div>';
+      h = '<div class="fid" id="scam"><button class="fid-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button>' +
+        '<div class="fid-icono ' + G.fid.estado + '" id="fidico">' + ICONO_FID + '</div><b class="fid-txt" id="fidtxt">' + esc(G.fid.txt) + '</b>' +
+        (G.error ? '<p class="fid-error">' + esc(G.error) + '</p>' : '') + '</div>';
     } else if (p === 'selfieOk') {
-      el.className = 'seg negro';
-      h = '<div class="fid"><div class="vcf-top"><span></span><button class="vcf-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button></div>' +
-        '<div class="fid-centro"><div class="fid-icono ok">' + ICONO_OK + '</div><b class="fid-txt">Eres cliente</b></div>' +
-        '<div class="vcf-bot"><button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button></div></div>';
+      el.className = 'seg fidvelo';
+      h = '<div class="fid"><button class="fid-x" data-s="cancelarPedido" aria-label="Cerrar">✕</button>' +
+        '<div class="fid-icono ok">' + ICONO_OK + '</div><b class="fid-txt">Eres cliente</b>' +
+        '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button></div>';
     } else if (p === 'selfieMal') {
       el.className = 'seg';
       h = tarjeta('<div class="sgrande mal">✕</div><h2 class="c">Solo el dueño de la cuenta puede pedir el viaje.</h2>' +
