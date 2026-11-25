@@ -919,8 +919,8 @@
   }
   function puntosViaje(c) {
     if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; ponerRuta(null); return; }
-    if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom' }).setLngLat([c.o.lng, c.o.lat]).addTo(M);
-    if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom' }).setLngLat([c.d.lng, c.d.lat]).addTo(M);
+    if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom', subpixelPositioning: true }).setLngLat([c.o.lng, c.o.lat]).addTo(M);
+    if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom', subpixelPositioning: true }).setLngLat([c.d.lng, c.d.lat]).addTo(M);
     mkO.setLngLat([c.o.lng, c.o.lat]); mkD.setLngLat([c.d.lng, c.d.lat]);
     trazar(c.o, c.d);
   }
@@ -1416,7 +1416,7 @@
       // el carro se acerca al cliente (con navegación: por las calles)
       if (NAV.activo) moverSim();
       else if (!NAV.activo) avanzarSim(c.o);
-      if (distKm(S.yo, c.o) < 0.05) { c.llegue = true; aviso('Llegaste donde el cliente.'); }
+      if (!c.llegue && faltaSim(c.o) < 40) { c.llegue = true; aviso('Llegaste donde el cliente.'); }   // por lo que falta de calle, no en línea recta
       render(); seguirFuera();
     } else if (c.estado === 'ejecucion') {
       c.seg++;
@@ -1574,7 +1574,7 @@
     NAV.falta = falta;
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
     while (NAV.paso < NAV.pasos.length - 1 && metrosEntre(pos, { lat: NAV.pasos[NAV.paso].loc[1], lng: NAV.pasos[NAV.paso].loc[0] }) < 20) NAV.paso++;
-    NAV.llego = falta < 50 || (S.carrera && NAV.obj === 'o' && S.carrera.llegue);
+    NAV.llego = falta < 50;   // por la ruta que falta (en línea recta puede estar cerca pero al otro lado de la avenida)
     // Siguiendo: el mapa gira para que la flecha vaya siempre hacia adelante, plano (sin inclinarse)
     if (NAV.sigue && Date.now() >= SV.trans && !CAM.anim && Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05) M.easeTo(vistaNav(900));   // nunca corta un movimiento que ya está en camino   // al entrar: acerca y acomoda una vez
     pintarNav();
@@ -1672,6 +1672,13 @@
   // Solo en la prueba: sin navegar, el carro también avanza por las calles hacia la recogida (antes iba en línea recta y cruzaba el río)
   var CALLE = { meta: null, ruta: null, pidiendo: false };
   // Si ya hay una ruta de la navegación hacia el mismo lugar y vas sobre ella, sigue por esa; si no, por su propio camino de calles
+  // Prueba: cuánto falta de verdad por la calle hasta la recogida (la ruta de la navegación o el camino del carro simulado)
+  function largo(r, desde) { var s = 0, a = desde; for (var i = 0; i < r.length; i++) { var b = { lat: r[i][1], lng: r[i][0] }; s += metrosEntre(a, b); a = b; } return s; }
+  function faltaSim(meta) {
+    if (NAV.activo && NAV.ruta && NAV.obj === 'o' && NAV.falta) return NAV.falta;
+    if (CALLE.ruta && CALLE.meta && CALLE.meta.lat === meta.lat && CALLE.meta.lng === meta.lng) return largo(CALLE.ruta.slice(1), S.yo);
+    return distKm(S.yo, meta) * 1000;
+  }
   function avanzarSim(meta) {
     var r = NAV.ruta;
     if (r && r.length > 1 && metrosEntre({ lat: r[r.length - 1][1], lng: r[r.length - 1][0] }, meta) < 80 && proyectar(S.yo, r).d < 30) { CALLE.ruta = null; CALLE.meta = null; moverPorRuta(VEL_PRUEBA); return; }
