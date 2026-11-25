@@ -189,8 +189,9 @@
   .bm-valor b{display:block;font-size:24px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
   .bm-valor small{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gris);font-weight:700}
   .bm-taxi{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;font-weight:700;color:#079455;font-variant-numeric:tabular-nums;touch-action:none;cursor:pointer}
-  .bm-valor b.sube{animation:bmSube .6s ease-out}
-  @keyframes bmSube{0%{transform:translateY(60%);opacity:0}60%{transform:none;opacity:1}}   /* sube en su mismo azul oscuro, sin verde */
+  .bm-valor b.sube{animation:bmSube .65s cubic-bezier(.3,1.4,.5,1)}
+  @keyframes bmSube{0%{transform:translateY(60%) scale(1);opacity:0;color:#000}45%{transform:translateY(-8%) scale(1.18);opacity:1;color:#000}75%{transform:none;color:#000}100%{color:var(--navy)}}   /* salta marcado en negro y vuelve a su azul oscuro */
+  .bm-valor b{transform-origin:right center}
   .bm-vivo{width:7px;height:7px;border-radius:50%;background:#12B76A;animation:bmVivo 1.2s ease-in-out infinite}
   @keyframes bmVivo{0%,100%{opacity:1}50%{opacity:.25}}
   .bm-dir{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:14px;font-weight:600;color:#344054;touch-action:none;cursor:pointer}
