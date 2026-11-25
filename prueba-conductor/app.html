@@ -914,12 +914,13 @@
   }
   function centrar() {
     if (S.carrera) {   // en la carrera: va al carro y lo sigue de frente (hasta que muevas el mapa)
-      if (NAV.activo) { NAV.sigue = true; seguirNav(); M.easeTo(vistaNav(600)); return; }
+      // Centrar con calma (1,2 s, empieza y termina suave), no de golpe
+      if (NAV.activo) { NAV.sigue = true; seguirNav(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); return; }
       NAV.sigueFuera = true; NAV.girar = true;
-      M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
+      M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1200, easing: suaveK, padding: rellenoCarro() });
       return;
     }
-    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), bearing: 0, pitch: 0, duration: 600 });
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), bearing: 0, pitch: 0, duration: 1200, easing: suaveK });
   }
   // Fuera de la navegación: sigue al carro de frente (flechita) o muestra carro y recogida juntos
   function seguirFuera() {
@@ -1257,6 +1258,7 @@
     S.oferta = null;
     if (o.deBandeja) { var i = BANDEJA.indexOf(o.deBandeja); if (i >= 0) BANDEJA.splice(i, 1); delete o.deBandeja; }
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
+    $('#hoja').classList.remove('mini', 'fundiendo'); SV.camB = null; SV.rLento = null;   // cada carrera empieza igual que la primera
     puntosViaje(o); NAV.autoFit = true; NAV.girar = true; NAV.sigueFuera = false; NAV.antF = null;
     if (distKm(S.yo, o.o) > 0.003) NAV.rumbo = rumboEntre(S.yo, o.o);
     render(); setTimeout(function () { vistaRecogida(600); }, 60);
@@ -1625,7 +1627,7 @@
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba
 
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); M.easeTo(vistaNav(600)); });   // vuelve suave al carro
+  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); });   // vuelve suave al carro
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
   // Simulación del GPS en la prueba: el carro avanza por la ruta a ~40 km/h

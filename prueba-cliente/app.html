@@ -1143,12 +1143,13 @@
   }
   function centrar() {
     if (S.v && S.v.pos) {   // en el viaje: va al carro y lo sigue (hasta que muevas el mapa)
-      if (SEG.activo) { SEG.sigue = true; seguir(); M.easeTo(vistaNav(600)); return; }
+      // Centrar con calma (1,2 s, empieza y termina suave), no de golpe
+      if (SEG.activo) { SEG.sigue = true; seguir(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); return; }
       SEG.sigueFuera = true; SEG.girar = true;
-      M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
+      M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1200, easing: suaveK, padding: rellenoCarro() });
       return;
     }
-    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 1200, easing: suaveK });
   }
   function rumboEntre(a, b) {
     var r = Math.PI / 180, y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
@@ -1379,7 +1380,7 @@
     return { top: Math.min(170, Math.round(alto * 0.22)), bottom: Math.min(Math.round(alto * 0.62), abajo), left: 40, right: 40 };
   }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); if (S.v && S.v.pos) M.easeTo(vistaNav(600)); });   // vuelve suave al carro
+  $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); if (S.v && S.v.pos) M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); });   // vuelve suave al carro
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba (no se ve de lado al doblar)
 
   $('#b-nav').addEventListener('click', iniciarNav);
@@ -2075,7 +2076,8 @@
     var a = Math.random() * Math.PI * 2;
     v.cond = c; v.fase = 'aceptada'; v.llego = false; v.pos = { lat: v.o.lat + Math.sin(a) * 0.011, lng: v.o.lng + Math.cos(a) * 0.011 };
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
-    SEG.autoFit = true; SEG.girar = true;
+    SEG.autoFit = true; SEG.girar = true; SEG.activo = false; SEG.sigue = true; SEG.sigueFuera = false; SV.camB = null; SV.rLento = null;
+    $('#hoja').classList.remove('mini', 'fundiendo');
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
     // Como en la app del conductor: apenas acepta, el mapa se aleja despacio y muestra juntos el carro y tu punto de recogida
     setTimeout(function () { SEG.autoFit = true; vistaRecogida(1200); }, 60);
