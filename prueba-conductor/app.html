@@ -1093,8 +1093,9 @@
   function hojaOferta(o) {
     var km = distKm(S.yo, o.o), resta = Math.max(0, Math.ceil((o.vence - Date.now()) / 1000));
     var L = 2 * Math.PI * 18;
-    // Nueva carrera: cuadro fijo en su forma pequeña (sin rayita, no se sube ni se baja): es para decidir rápido
-    return '<span class="etiqueta" style="margin-top:14px">Nueva carrera</span>' +
+    // Nueva carrera: se ve como siempre, pero fija (no se sube ni se baja): es para decidir rápido
+    return '<div class="tirador" aria-hidden="true"></div>' +
+      '<span class="etiqueta">Nueva carrera</span>' +
       '<div class="datos"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min para recoger</div></div>' +
       '<div class="valor"><b>' + dineroC(o.fijo || o.estC) + '</b><small>' + (o.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>' +
       puntosHTML(o) +
@@ -1218,7 +1219,7 @@
     // Hoja de viaje
     $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
     if (!S.carrera) { ponAbajo($('#b-centrar'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); ponAbajo($('#b-ruta'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); }
-    if (S.oferta) $('#hoja').classList.add('mini');   // la nueva carrera siempre en su forma pequeña
+    if (S.oferta) $('#hoja').classList.remove('mini');   // la nueva carrera siempre con su forma de siempre
     var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
     if (html !== ultimaHoja) { ponerHTML($('#hoja'), html); ultimaHoja = html; ajustarFlecha(); }
     // Al empezar o terminar un viaje, el mapa se limpia del margen que dejó la navegación anterior (si no, la siguiente
@@ -1861,6 +1862,7 @@
     hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador,.tirador-zona')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
     hoja.addEventListener('pointerup', function (e) {
       if (y0 == null) return; var dy = e.clientY - y0; y0 = null;
+      if (S.oferta) return;   // la nueva carrera no se sube ni se baja
       if (dy > 25) poner(true); else if (dy < -25) poner(false); else poner(!hoja.classList.contains('mini'));
     });
   })();
