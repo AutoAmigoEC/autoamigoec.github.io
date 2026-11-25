@@ -607,6 +607,7 @@
     <h3>Controles de la prueba</h3>
     <p>Esto no sale en la app. Al estar libre, la carrera sale sola en la pantalla (primero las de la bandeja, de la más cercana). Con estos botones puedes hacerla llegar al instante.</p>
     <p><b>Verificación del turno:</b> al deslizar "Conectarme" la primera vez del día te pide cara, camisa y carro.</p>
+    <button class="prin" id="sim-saltar" style="background:var(--verde)">Aprobar verificación y conectarme (saltar fotos)</button>
     <button id="sim-dia">Nuevo día: pedir verificación otra vez</button>
     <button id="sim-falla">Simular: la cara no coincide</button>
     <button class="prin" id="sim-escenario" style="background:#B42318">Escenario: acepto y me quedo sin internet</button>
@@ -2061,6 +2062,12 @@
     if (a === 'llamar') { aviso('En la app aquí se llama a la central.'); return; }
   });
   $('#sim-falla').addEventListener('click', function () { V.simFalla = !V.simFalla; this.textContent = V.simFalla ? 'Simular: la cara SÍ coincide' : 'Simular: la cara no coincide'; aviso(V.simFalla ? 'La próxima verificación de cara va a fallar.' : 'La cara va a coincidir.'); });
+  // Solo en la prueba: da por aprobada la verificación del turno (cara, camisa y carro) y conecta, sin tomar fotos
+  $('#sim-saltar').addEventListener('click', function () {
+    cerrarCam(); V.porIA = false; V.aprobado = true; V.aprobadoA = Date.now(); V.paso = null; V.oculta = false; V.guiando = false; vRender();
+    if (S.estado !== 'conectado') ponerEstado('conectado');
+    aviso('Verificación aprobada para la prueba. Estás conectado.');
+  });
   $('#sim-dia').addEventListener('click', function () {
     V.aprobado = false; V.aprobadoA = 0; V.paso = null; V.oculta = false; V.fotos = { carro: [] };
     if (S.estado === 'conectado' && !S.carrera) ponerEstado('desconectado', true);
