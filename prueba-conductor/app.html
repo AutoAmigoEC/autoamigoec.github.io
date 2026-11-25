@@ -1147,6 +1147,27 @@
     return h;
   }
 
+  // Pone el contenido del cuadro sin reconstruirlo: si es la misma estructura, solo cambia los textos que cambiaron
+  // (el taxímetro, los km...). Así no se rehace todo cada segundo ni se traba una animación a la mitad.
+  function igualarNodos(a, b) {
+    var ca = a.childNodes, cb = b.childNodes; if (ca.length !== cb.length) return false;
+    for (var i = 0; i < ca.length; i++) {
+      var x = ca[i], y = cb[i]; if (x.nodeType !== y.nodeType) return false;
+      if (x.nodeType === 3) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
+      if (x.nodeType !== 1) continue;
+      if (x.tagName !== y.tagName) return false;
+      for (var k = 0; k < y.attributes.length; k++) { var at = y.attributes[k]; if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); }
+      for (k = x.attributes.length - 1; k >= 0; k--) { var n = x.attributes[k].name; if (!y.hasAttribute(n)) x.removeAttribute(n); }
+      if (x.tagName === 'INPUT' || x.tagName === 'TEXTAREA') continue;
+      if (!igualarNodos(x, y)) return false;
+    }
+    return true;
+  }
+  function ponerHTML(el, html) {
+    if (!el.firstChild) { el.innerHTML = html; return; }
+    var t = document.createElement('div'); t.innerHTML = html;
+    if (!igualarNodos(el, t)) el.innerHTML = html;
+  }
   // ---------- Render general ----------
   var ultimaHoja = '', ultimaSec = '';
   function render() {
@@ -1192,7 +1213,7 @@
     $('#b-centrar').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
     $('#b-ruta').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
     var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
-    if (html !== ultimaHoja) { $('#hoja').innerHTML = html; ultimaHoja = html; ajustarFlecha(); }
+    if (html !== ultimaHoja) { ponerHTML($('#hoja'), html); ultimaHoja = html; ajustarFlecha(); }
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
   }
 
