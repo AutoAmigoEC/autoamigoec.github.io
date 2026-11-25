@@ -219,10 +219,6 @@
   .bm-dir span{flex:1;min-width:0}
   /* Con el taxímetro iniciado: al achicar el cuadro, lo de arriba aparece suave */
   .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
-  /* Al agrandar o minimizar: lo que aparece entra suave (sin cambio brusco) y el cuadro se desliza en la tarjeta gráfica */
-  .hoja{will-change:transform}
-  .hoja.fundiendo .solo-mini,.hoja.fundiendo .solo-grande{animation:hojaAparece .32s ease-out both}
-  @keyframes hojaAparece{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -1131,9 +1127,7 @@
   function vistaRecogida(dur) {
     var v = S.v; if (!v || !v.pos || !v.o) return;
     var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
-    // El mapa no gira mientras la unidad viene: se queda con la orientación que tiene (el que gira es el carrito).
-    // Antes giraba con cada vuelta del carro y en una vuelta en U daba media vuelta de golpe.
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: M.getBearing ? M.getBearing() : 0, duration: dur });
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: rumboSeguir(), duration: dur });
   }
   // Con el taxímetro iniciado, al seguir al carro el mapa gira para que el carro vaya siempre de frente (hacia arriba)
   function rumboSeguir() { return S.v && SEG.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (SEG.rumbo || 0)) : 0; }
@@ -1145,13 +1139,12 @@
   }
   function centrar() {
     if (S.v && S.v.pos) {   // en el viaje: va al carro y lo sigue (hasta que muevas el mapa)
-      // Centrar con calma (1,2 s, empieza y termina suave), no de golpe
-      if (SEG.activo) { SEG.sigue = true; seguir(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); return; }
+      if (SEG.activo) { SEG.sigue = true; seguir(); M.easeTo(vistaNav(600)); return; }
       SEG.sigueFuera = true; SEG.girar = true;
-      M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1200, easing: suaveK, padding: rellenoCarro() });
+      M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
       return;
     }
-    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 1200, easing: suaveK });
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), duration: 600 });
   }
   function rumboEntre(a, b) {
     var r = Math.PI / 180, y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
@@ -1382,7 +1375,7 @@
     return { top: Math.min(170, Math.round(alto * 0.22)), bottom: Math.min(Math.round(alto * 0.62), abajo), left: 40, right: 40 };
   }
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); if (S.v && S.v.pos) M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); });   // vuelve suave al carro
+  $('#nav-centrar').addEventListener('click', function () { SEG.sigue = true; pintarNav(); seguir(); if (S.v && S.v.pos) M.easeTo(vistaNav(600)); });   // vuelve suave al carro
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba (no se ve de lado al doblar)
 
   $('#b-nav').addEventListener('click', iniciarNav);
@@ -1552,27 +1545,6 @@
       '<div class="bm-dir">' + linea + nav + '</div></div>';
   }
 
-  // Pone el contenido del cuadro sin reconstruirlo: si es la misma estructura, solo cambia los textos que cambiaron
-  // (el taxímetro, los km...). Así no se rehace todo cada segundo ni se traba una animación a la mitad.
-  function igualarNodos(a, b) {
-    var ca = a.childNodes, cb = b.childNodes; if (ca.length !== cb.length) return false;
-    for (var i = 0; i < ca.length; i++) {
-      var x = ca[i], y = cb[i]; if (x.nodeType !== y.nodeType) return false;
-      if (x.nodeType === 3) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
-      if (x.nodeType !== 1) continue;
-      if (x.tagName !== y.tagName) return false;
-      for (var k = 0; k < y.attributes.length; k++) { var at = y.attributes[k]; if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); }
-      for (k = x.attributes.length - 1; k >= 0; k--) { var n = x.attributes[k].name; if (!y.hasAttribute(n)) x.removeAttribute(n); }
-      if (x.tagName === 'INPUT' || x.tagName === 'TEXTAREA') continue;
-      if (!igualarNodos(x, y)) return false;
-    }
-    return true;
-  }
-  function ponerHTML(el, html) {
-    if (!el.firstChild) { el.innerHTML = html; return; }
-    var t = document.createElement('div'); t.innerHTML = html;
-    if (!igualarNodos(el, t)) el.innerHTML = html;
-  }
   // ---------- Render general ----------
   var ultimaHoja = '', ultimaSec = '';
   function render() {
@@ -1610,7 +1582,7 @@
     }
     $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
     var html = enViaje ? hojaHTML() : '';
-    if (html !== ultimaHoja) { var refVal = $('#in-ref') ? $('#in-ref').value : null; ponerHTML($('#hoja'), html); ultimaHoja = html; if (refVal != null && $('#in-ref')) $('#in-ref').value = refVal; ajustarFlecha(); }
+    if (html !== ultimaHoja) { var refVal = $('#in-ref') ? $('#in-ref').value : null; $('#hoja').innerHTML = html; ultimaHoja = html; if (refVal != null && $('#in-ref')) $('#in-ref').value = refVal; ajustarFlecha(); }
     var px = enViaje ? ($('#hoja').offsetHeight || 0) + 16 : 16;
     pintarNav();
     var conUnidad = v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion');
@@ -2078,11 +2050,8 @@
     var a = Math.random() * Math.PI * 2;
     v.cond = c; v.fase = 'aceptada'; v.llego = false; v.pos = { lat: v.o.lat + Math.sin(a) * 0.011, lng: v.o.lng + Math.cos(a) * 0.011 };
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
-    SEG.autoFit = true; SEG.girar = true; SEG.activo = false; SEG.sigue = true; SEG.sigueFuera = false; SV.camB = null; SV.rLento = null;
-    $('#hoja').classList.remove('mini', 'fundiendo');
+    SEG.autoFit = true; SEG.girar = true;
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
-    // Como en la app del conductor: apenas acepta, el mapa se aleja despacio y muestra juntos el carro y tu punto de recogida
-    setTimeout(function () { SEG.autoFit = true; vistaRecogida(1200); }, 60);
   }
   function llego() {
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
@@ -2298,26 +2267,26 @@
     }
     // Con el taxímetro iniciado: achicar también es suave (el cuadro baja deslizándose y el mapa se mueve con calma)
     function achicarSuave() {
-      deslizarHoja(function () { hoja.classList.add('mini'); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
-      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada), con calma, como antes
+      deslizarHoja(function () { hoja.classList.add('mini'); ultimaHoja = ''; render(); posBotones(); });
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
       if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
       else if (S.v && S.v.pos) {
         if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
         else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
         else verRuta(1000);
       }
-      clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { render(); posBotones(); }, 500);
+      clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { ultimaHoja = ''; render(); posBotones(); }, 500);
     }
     function agrandar() {
-      deslizarHoja(function () { hoja.classList.remove('mini'); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
-      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada), con calma, como antes
+      deslizarHoja(function () { hoja.classList.remove('mini'); ultimaHoja = ''; render(); posBotones(); });
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
         else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
-      clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { render(); posBotones(); }, 500);
+      clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { ultimaHoja = ''; render(); posBotones(); }, 500);
     }
     hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador,.tirador-zona')); }, { passive: true });
     hoja.addEventListener('touchmove', function (e) { if (hoja.__tir) e.preventDefault(); }, { passive: false });   // arrastrar la rayita no mueve la página

@@ -207,10 +207,6 @@
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   .brujula{right:16px}
   .brujula[hidden]{display:none}
-  /* Al agrandar o minimizar: lo que aparece entra suave (sin cambio brusco) y el cuadro se desliza en la tarjeta gráfica */
-  .hoja{will-change:transform}
-  .hoja.fundiendo .solo-mini,.hoja.fundiendo .solo-grande{animation:hojaAparece .32s ease-out both}
-  @keyframes hojaAparece{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -914,13 +910,12 @@
   }
   function centrar() {
     if (S.carrera) {   // en la carrera: va al carro y lo sigue de frente (hasta que muevas el mapa)
-      // Centrar con calma (1,2 s, empieza y termina suave), no de golpe
-      if (NAV.activo) { NAV.sigue = true; seguirNav(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); return; }
+      if (NAV.activo) { NAV.sigue = true; seguirNav(); M.easeTo(vistaNav(600)); return; }
       NAV.sigueFuera = true; NAV.girar = true;
-      M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1200, easing: suaveK, padding: rellenoCarro() });
+      M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
       return;
     }
-    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), bearing: 0, pitch: 0, duration: 1200, easing: suaveK });
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), bearing: 0, pitch: 0, duration: 600 });
   }
   // Fuera de la navegación: sigue al carro de frente (flechita) o muestra carro y recogida juntos
   function seguirFuera() {
@@ -1148,27 +1143,6 @@
     return h;
   }
 
-  // Pone el contenido del cuadro sin reconstruirlo: si es la misma estructura, solo cambia los textos que cambiaron
-  // (el taxímetro, los km...). Así no se rehace todo cada segundo ni se traba una animación a la mitad.
-  function igualarNodos(a, b) {
-    var ca = a.childNodes, cb = b.childNodes; if (ca.length !== cb.length) return false;
-    for (var i = 0; i < ca.length; i++) {
-      var x = ca[i], y = cb[i]; if (x.nodeType !== y.nodeType) return false;
-      if (x.nodeType === 3) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; continue; }
-      if (x.nodeType !== 1) continue;
-      if (x.tagName !== y.tagName) return false;
-      for (var k = 0; k < y.attributes.length; k++) { var at = y.attributes[k]; if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); }
-      for (k = x.attributes.length - 1; k >= 0; k--) { var n = x.attributes[k].name; if (!y.hasAttribute(n)) x.removeAttribute(n); }
-      if (x.tagName === 'INPUT' || x.tagName === 'TEXTAREA') continue;
-      if (!igualarNodos(x, y)) return false;
-    }
-    return true;
-  }
-  function ponerHTML(el, html) {
-    if (!el.firstChild) { el.innerHTML = html; return; }
-    var t = document.createElement('div'); t.innerHTML = html;
-    if (!igualarNodos(el, t)) el.innerHTML = html;
-  }
   // ---------- Render general ----------
   var ultimaHoja = '', ultimaSec = '';
   function render() {
@@ -1214,7 +1188,7 @@
     $('#b-centrar').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
     $('#b-ruta').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
     var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
-    if (html !== ultimaHoja) { ponerHTML($('#hoja'), html); ultimaHoja = html; ajustarFlecha(); }
+    if (html !== ultimaHoja) { $('#hoja').innerHTML = html; ultimaHoja = html; ajustarFlecha(); }
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
   }
 
@@ -1258,7 +1232,6 @@
     S.oferta = null;
     if (o.deBandeja) { var i = BANDEJA.indexOf(o.deBandeja); if (i >= 0) BANDEJA.splice(i, 1); delete o.deBandeja; }
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
-    $('#hoja').classList.remove('mini', 'fundiendo'); SV.camB = null; SV.rLento = null;   // cada carrera empieza igual que la primera
     puntosViaje(o); NAV.autoFit = true; NAV.girar = true; NAV.sigueFuera = false; NAV.antF = null;
     if (distKm(S.yo, o.o) > 0.003) NAV.rumbo = rumboEntre(S.yo, o.o);
     render(); setTimeout(function () { vistaRecogida(600); }, 60);
@@ -1627,7 +1600,7 @@
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba
 
   ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(function (ev) { try { M.on(ev, dejarDeSeguir); } catch (er) {} });
-  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); M.easeTo(Object.assign(vistaNav(1200), { easing: suaveK })); });   // vuelve suave al carro
+  $('#nav-centrar').addEventListener('click', function () { NAV.sigue = true; pintarNav(); seguirNav(); M.easeTo(vistaNav(600)); });   // vuelve suave al carro
   $('#b-nav').addEventListener('click', iniciarNav);
   $('#nav-salir').addEventListener('click', salirNav);
   // Simulación del GPS en la prueba: el carro avanza por la ruta a ~40 km/h
@@ -1835,10 +1808,9 @@
     }
     // Sube o baja deslizándose (0,45 s)
     function animar(mini) {
-      // En el mismo cuadro solo se cambia la clase (el contenido grande y el de la barrita ya están): nada pesado que trabe la animación
-      deslizarHoja(function () { hoja.classList.toggle('mini', mini); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
-      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada), con calma, como antes
-      clearTimeout(animar.t); animar.t = setTimeout(function () { render(); posBotones(); }, 500);
+      deslizarHoja(function () { hoja.classList.toggle('mini', mini); ultimaHoja = ''; render(); posBotones(); });
+      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
+      clearTimeout(animar.t); animar.t = setTimeout(function () { ultimaHoja = ''; render(); posBotones(); }, 500);
     }
     function poner(mini) {
       if (mini === hoja.classList.contains('mini')) return;
