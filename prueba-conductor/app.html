@@ -882,10 +882,21 @@
   // El mapa gira para que el carro vaya siempre de frente (la brújula lo endereza)
   function rumboSeguir() { return NAV.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (NAV.rumbo || 0)) : 0; }
   // Yendo a la recogida: el carro y el punto de recogida juntos, de frente
-  function vistaRecogida(dur) {
+  // Tu carro y la recogida a la vista. Al aceptar o al agrandar/minimizar se acomoda siempre; mientras manejas, el mapa
+  // solo se mueve si uno de los dos se va a salir o ya se puede acercar bastante (antes se movía cada segundo y saltaba)
+  function aLaVista(pts, pad) {
+    var cont = M.getContainer(), w = cont.clientWidth, h = cont.clientHeight;
+    return pts.every(function (q) { var px = M.project([q.lng, q.lat]); return px.x >= pad.left && px.x <= w - pad.right && px.y >= pad.top && px.y <= h - pad.bottom; });
+  }
+  function vistaRecogida(dur, forzar) {
     var c = S.carrera; if (!c) return;
     var b = new maplibregl.LngLatBounds(); b.extend([S.yo.lng, S.yo.lat]); b.extend([c.o.lng, c.o.lat]);
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: rumboSeguir(), duration: dur });
+    var pad = relleno(), op = { padding: pad, maxZoom: 16.5, bearing: forzar ? rumboSeguir() : (M.getBearing ? M.getBearing() : 0) };
+    if (!forzar) {
+      var cam = null; try { cam = M.cameraForBounds(b, op); } catch (e) {}
+      if (aLaVista([S.yo, c.o], pad) && (!cam || cam.zoom - M.getZoom() < 0.8)) return;   // se ven los dos: el mapa se queda quieto
+    }
+    M.fitBounds(b, Object.assign(op, { duration: dur || 1200, easing: suaveK }));
   }
   function ponerRuta(coords) {
     listo(function () {
@@ -934,7 +945,7 @@
     if (NAV.antF && metrosEntre(NAV.antF, S.yo) > 3) NAV.rumbo = rumboEntre(NAV.antF, S.yo);
     NAV.antF = { lat: S.yo.lat, lng: S.yo.lng };
     if (NAV.sigueFuera) {}   // lo acompaña cuadro por cuadro
-    else if (NAV.autoFit !== false && c.estado === 'aceptada' && Date.now() >= SV.trans) vistaRecogida(900);
+    else if (NAV.autoFit !== false && c.estado === 'aceptada' && Date.now() >= SV.trans) vistaRecogida(1200);
   }
 
   // ---------- Estado del conductor ----------
@@ -1268,10 +1279,10 @@
     // Cada carrera empieza desde cero: el cuadro abierto y arriba, y el mapa sin nada de la carrera anterior
     var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
     try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
-    NAV.sigue = true; SV.camB = null; SV.rLento = null; SV.resto = null; CAM.anim = null; altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
+    NAV.sigue = true; NAV.ruta = null; SV.camB = null; SV.rLento = null; SV.resto = null; CAM.anim = null; altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
     puntosViaje(o); NAV.autoFit = true; NAV.girar = true; NAV.sigueFuera = false; NAV.antF = null;
     if (distKm(S.yo, o.o) > 0.003) NAV.rumbo = rumboEntre(S.yo, o.o);
-    render(); setTimeout(function () { vistaRecogida(600); }, 60);
+    render(); setTimeout(function () { vistaRecogida(1200, true); }, 60);
   }
   function tomarDeBandeja(i) {
     if (S.carrera) { aviso('Ya tienes una carrera en curso.'); return; }
@@ -1404,13 +1415,13 @@
     if (c.estado === 'aceptada' && !c.llegue) {
       // el carro se acerca al cliente (con navegación: por las calles)
       if (NAV.activo) moverSim();
-      else if (!NAV.activo) irPorCalles(c.o);
+      else if (!NAV.activo) avanzarSim(c.o);
       if (distKm(S.yo, c.o) < 0.05) { c.llegue = true; aviso('Llegaste donde el cliente.'); }
       render(); seguirFuera();
     } else if (c.estado === 'ejecucion') {
       c.seg++;
       var parado = (c.seg % 90) > 70;
-      if (!parado) { if (NAV.activo) { moverSim(); } else { S.yo.lat += (c.d.lat - S.yo.lat) * 0.01; S.yo.lng += (c.d.lng - S.yo.lng) * 0.01; } }
+      if (!parado) { if (NAV.activo) { moverSim(); } else avanzarSim(c.d); }
       if (c.seg > CFG.gratisSeg) { if (parado) c.espera++; else c.metros += 8.5; }
       if (c.mostradoC === 0 && c.seg >= 3) c.mostradoC = CFG.arranqueC;
       if (c.seg - c.ultMostrar >= 10) { c.ultMostrar = c.seg; c.mostradoC = c.seg <= CFG.gratisSeg ? CFG.arranqueC : taximetroC(c.metros, c.espera); }
@@ -1518,7 +1529,9 @@
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
     render();
-    if (!NAV.rumbo) NAV.rumbo = rumboEntre(S.yo, metaNav());
+    // Arranca mirando hacia donde de verdad vas manejando; si todavía no te mueves, hacia la recogida o el destino
+    NAV.rumbo = SV.rumboFlecha != null ? SV.rumboFlecha : rumboEntre(S.yo, metaNav());
+    SV.camB = NAV.rumbo; SV.rLento = NAV.rumbo; SV.estableDesde = 0;
     // Igual que al minimizar: el cuadro baja deslizándose y el mapa se acerca con calma, al mismo tiempo y suave
     if (!yaMini && hojaAnimar) hojaAnimar(true);
     M.easeTo(Object.assign(vistaNav(1000), { easing: suaveK }));
@@ -1658,6 +1671,12 @@
   var VEL_PRUEBA = 45, desvio = 0, rumboDesvio = 0;
   // Solo en la prueba: sin navegar, el carro también avanza por las calles hacia la recogida (antes iba en línea recta y cruzaba el río)
   var CALLE = { meta: null, ruta: null, pidiendo: false };
+  // Si ya hay una ruta de la navegación hacia el mismo lugar y vas sobre ella, sigue por esa; si no, por su propio camino de calles
+  function avanzarSim(meta) {
+    var r = NAV.ruta;
+    if (r && r.length > 1 && metrosEntre({ lat: r[r.length - 1][1], lng: r[r.length - 1][0] }, meta) < 80 && proyectar(S.yo, r).d < 30) { CALLE.ruta = null; CALLE.meta = null; moverPorRuta(VEL_PRUEBA); return; }
+    irPorCalles(meta);
+  }
   function irPorCalles(meta) {
     if (!CALLE.meta || CALLE.meta.lat !== meta.lat || CALLE.meta.lng !== meta.lng) { CALLE.meta = { lat: meta.lat, lng: meta.lng }; CALLE.ruta = null; CALLE.pidiendo = false; }
     if (!CALLE.ruta) {
@@ -1855,7 +1874,7 @@
       if (!S.carrera) return;
       if (NAV.activo) { if (NAV.sigue && NAV.ruta) M.easeTo(vistaNav(1000)); return; }
       if (NAV.sigueFuera) M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-      else if (S.carrera.estado === 'aceptada') { NAV.autoFit = true; vistaRecogida(1000); }
+      else if (S.carrera.estado === 'aceptada') { NAV.autoFit = true; vistaRecogida(1000, true); }
       else verRuta(1000);
     }
     // Sube o baja deslizándose (0,45 s)
