@@ -877,8 +877,8 @@
       var datos = { type: 'FeatureCollection', features: coords ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }] : [] };
       if (M.getSource('v-ruta')) { M.getSource('v-ruta').setData(datos); return; }
       M.addSource('v-ruta', { type: 'geojson', data: datos });
-      M.addLayer({ id: 'v-ruta-brillo', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 18, 'line-blur': 8, 'line-opacity': .5 } });
-      M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 9.5 } });   // gruesa como Google Maps
+      M.addLayer({ id: 'v-ruta-brillo', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 12, 'line-blur': 7, 'line-opacity': .55 } });
+      M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
     });
   }
   // Ruta por las calles (servicio gratuito OSRM); si falla, línea recta
@@ -1526,8 +1526,7 @@
   }
   function vistaNav(dur) {
     var gr = $('#pantalla').classList.contains('hoja-grande');
-    return { center: [S.yo.lng, S.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17.8, duration: dur,   // minimizado: tan cerca como Google Maps (se ven las casas)
-     
+    return { center: [S.yo.lng, S.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
       padding: gr ? { top: libreArriba(), bottom: ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26, left: 20, right: 20 } : abajoFlecha() };
   }
   // Cuadro minimizado: la flecha queda en el tercio de abajo del espacio libre y se ve más calle por delante
