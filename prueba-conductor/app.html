@@ -1220,7 +1220,9 @@
     if (!S.carrera) { ponAbajo($('#b-centrar'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); ponAbajo($('#b-ruta'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); }
     var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
     if (html !== ultimaHoja) { ponerHTML($('#hoja'), html); ultimaHoja = html; ajustarFlecha(); }
-    if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
+    // Al empezar o terminar un viaje, el mapa se limpia del margen que dejó la navegación anterior (si no, la siguiente
+    // carrera no podía mostrar la recogida y se quedaba pegada al carro)
+    if (antes !== enViaje) setTimeout(function () { M.resize(); try { M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {} if (enViaje) verRuta(); else centrar(); }, 30);
   }
 
   // ---------- Ofertas ----------
@@ -1265,6 +1267,7 @@
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
     // Cada carrera empieza desde cero: el cuadro abierto y arriba, y el mapa sin nada de la carrera anterior
     var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
+    try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
     NAV.sigue = true; SV.camB = null; SV.rLento = null; SV.resto = null; CAM.anim = null; altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
     puntosViaje(o); NAV.autoFit = true; NAV.girar = true; NAV.sigueFuera = false; NAV.antF = null;
     if (distKm(S.yo, o.o) > 0.003) NAV.rumbo = rumboEntre(S.yo, o.o);
