@@ -1131,7 +1131,9 @@
   function vistaRecogida(dur) {
     var v = S.v; if (!v || !v.pos || !v.o) return;
     var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: rumboSeguir(), duration: dur });
+    // El mapa no gira mientras la unidad viene: se queda con la orientación que tiene (el que gira es el carrito).
+    // Antes giraba con cada vuelta del carro y en una vuelta en U daba media vuelta de golpe.
+    M.fitBounds(b, { padding: relleno(), maxZoom: 16.5, bearing: M.getBearing ? M.getBearing() : 0, duration: dur });
   }
   // Con el taxímetro iniciado, al seguir al carro el mapa gira para que el carro vaya siempre de frente (hacia arriba)
   function rumboSeguir() { return S.v && SEG.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (SEG.rumbo || 0)) : 0; }
