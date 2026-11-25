@@ -179,26 +179,27 @@
   .hoja-grande .hoja{max-height:58%}
   /* Minimizado: solo la barrita, el mapa casi completo */
   .viaje .hoja.mini{padding:0 14px calc(env(safe-area-inset-bottom,0px) + 10px);overflow:hidden}
-  .hoja.mini .tirador{margin:2px auto 2px;height:16px}
+  .hoja.mini .tirador{margin:2px auto 4px;height:16px}
   .hoja.mini .tirador::after{top:5px}
-  .bm-barra{display:flex;align-items:center;gap:8px}
-  .bm-eta{flex:1;min-width:0;touch-action:none;cursor:pointer}
-  .bm-eta b{display:block;font-size:20px;font-weight:800;color:#079455;line-height:1.1}
+  .bm-fila{display:flex;align-items:center;gap:10px;touch-action:none;cursor:pointer}
+  .bm-eta{flex:1;min-width:0}
+  .bm-eta b{display:block;font-size:22px;font-weight:800;color:#079455;line-height:1.1}
   .bm-eta small{display:block;font-size:13px;color:var(--gris);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bm-nav{flex:none;height:46px;min-width:46px;border:0;border-radius:15px;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0 12px}
+  .bm-valor{text-align:right;flex:none}
+  .bm-valor b{display:block;font-size:24px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+  .bm-valor small{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gris);font-weight:700}
+  .bm-vivo{width:7px;height:7px;border-radius:50%;background:#12B76A;animation:bmVivo 1.2s ease-in-out infinite}
+  @keyframes bmVivo{0%,100%{opacity:1}50%{opacity:.25}}
+  .bm-dir{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:14px;font-weight:600;color:#344054;touch-action:none;cursor:pointer}
+  .bm-dir svg{flex:none;width:16px;height:20px}
+  .bm-dir span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm-botones{display:flex;gap:8px;margin-top:10px}
+  .bm-nav{flex:none;height:50px;min-width:52px;border:0;border-radius:16px;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0 14px}
   .bm-nav.ir{background:#12B76A}
   .bm-nav.salir{background:#FDECEC;color:#B42318}
-  .bm-acc{flex:none;height:46px;border:0;border-radius:15px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:0 14px;max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 14px rgba(10,15,60,.22)}
+  .bm-acc{flex:1;min-width:0;height:50px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:16px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 14px rgba(10,15,60,.22)}
   /* Con el cuadro minimizado, la barra de minutos va dentro de la barrita (no flota aparte) */
   .viaje.con-carrera:not(.hoja-grande) .nav-pie,.viaje.navegando:not(.hoja-grande) .nav-pie{display:none!important}
-  /* Con el cuadro abierto, la instrucción de arriba queda en una sola línea (más mapa para ver la flecha) */
-  .navegando.hoja-grande .nav-top{padding:8px 12px;gap:10px;border-radius:16px}
-  .navegando.hoja-grande .nav-top .ic{width:38px;height:38px;border-radius:11px}
-  .navegando.hoja-grande .nav-top .ic svg{width:22px;height:22px}
-  .navegando.hoja-grande .nav-top .dist{display:inline;font-size:18px}
-  .navegando.hoja-grande .nav-top .txt{display:inline;font-size:14px;margin:0 0 0 6px}
-  .navegando.hoja-grande .nav-top .calle{display:none}
-  .navegando.hoja-grande .nav-top>div:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   .brujula{right:16px}
@@ -1091,13 +1092,18 @@
   }
   // Cuadro minimizado: una sola barrita (minutos, km y hora de llegada + navegar/Salir + el botón principal); el mapa ocupa casi todo
   function barraMini(c, km, enCurso) {
-    var mn = minutos(km), lg = new Date(Date.now() + mn * 60000);
+    var mn = minutos(km), lg = new Date(Date.now() + mn * 60000), meta = enCurso ? c.d : c.o;
+    var valor = enCurso ? valorDe(c) : (c.fijo || c.estC);
+    var etq = c.fijo ? 'Pactada' : (enCurso ? '<i class="bm-vivo"></i>Taxímetro' : 'Estimado');
     var nav = NAV.activo
       ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
       : '<button class="bm-nav ir" data-bm="nav" aria-label="Navegar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg></button>';
-    var acc = enCurso ? 'Finalizar · ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
-    return '<div class="bm-barra solo-mini"><div class="bm-eta tirador-zona"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
-      nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '">' + acc + '</button></div>';
+    var acc = enCurso ? 'Finalizar · cobrar ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
+    return '<div class="bm solo-mini">' +
+      '<div class="bm-fila tirador-zona"><div class="bm-eta"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
+      '<div class="bm-valor"><b>' + dineroC(valor) + '</b><small>' + etq + '</small></div></div>' +
+      '<div class="bm-dir tirador-zona">' + ICONO_PIN(enCurso ? '#1570EF' : '#E5252A') + '<span>' + esc(meta.dir) + '</span></div>' +
+      '<div class="bm-botones">' + nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '">' + acc + '</button></div></div>';
   }
   function hojaCarrera(c) {
     var enCurso = c.estado === 'ejecucion';
@@ -1521,7 +1527,12 @@
   function vistaNav(dur) {
     var gr = $('#pantalla').classList.contains('hoja-grande');
     return { center: [S.yo.lng, S.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
-      padding: { top: gr ? libreArriba() : 200, bottom: gr ? ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26 : ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
+      padding: gr ? { top: libreArriba(), bottom: ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26, left: 20, right: 20 } : abajoFlecha() };
+  }
+  // Cuadro minimizado: la flecha queda en el tercio de abajo del espacio libre y se ve más calle por delante
+  function abajoFlecha() {
+    var alto = M.getContainer().clientHeight, abajo = ($('#hoja').offsetHeight || 150) + 30;
+    return { top: Math.max(200, Math.round(alto * 0.4 + abajo * 0.2)), bottom: abajo, left: 20, right: 20 };
   }
   function pintarNav() {
     var p = $('#pantalla');
