@@ -188,6 +188,9 @@
   .bm-valor{text-align:right;flex:none}
   .bm-valor b{display:block;font-size:24px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
   .bm-valor small{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--gris);font-weight:700}
+  .bm-taxi{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;font-weight:700;color:#079455;font-variant-numeric:tabular-nums;touch-action:none;cursor:pointer}
+  .bm-valor b.sube{animation:bmSube .6s ease-out}
+  @keyframes bmSube{0%{transform:translateY(60%);opacity:0;color:#12B76A}60%{transform:none;opacity:1;color:#12B76A}100%{color:var(--navy)}}
   .bm-vivo{width:7px;height:7px;border-radius:50%;background:#12B76A;animation:bmVivo 1.2s ease-in-out infinite}
   @keyframes bmVivo{0%,100%{opacity:1}50%{opacity:.25}}
   .bm-dir{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:14px;font-weight:600;color:#344054;touch-action:none;cursor:pointer}
@@ -1093,15 +1096,21 @@
   // Cuadro minimizado: una sola barrita (minutos, km y hora de llegada + navegar/Salir + el botón principal); el mapa ocupa casi todo
   function barraMini(c, km, enCurso) {
     var mn = minutos(km), lg = new Date(Date.now() + mn * 60000), meta = enCurso ? c.d : c.o;
-    var valor = enCurso ? valorDe(c) : (c.fijo || c.estC);
-    var etq = c.fijo ? 'Pactada' : (enCurso ? '<i class="bm-vivo"></i>Taxímetro' : 'Estimado');
+    // Con el taxímetro corriendo se ve lo que va marcando (no el mínimo), y cada vez que sube, el número sube y brilla
+    var taxi = enCurso && !c.fijo, marca = taxi ? (c.mostradoC || CFG.arranqueC) : 0;
+    var valor = taxi ? marca : enCurso ? valorDe(c) : (c.fijo || c.estC);
+    if (taxi && barraMini.ult != null && marca > barraMini.ult) barraMini.tSube = Date.now();
+    if (taxi) barraMini.ult = marca; else barraMini.ult = null;
+    var sube = taxi && Date.now() - (barraMini.tSube || 0) < 650;
+    var etq = c.fijo ? 'Pactada' : (taxi ? (marca < CFG.minimaC ? 'Mínimo ' + dineroC(CFG.minimaC) : 'Taxímetro') : 'Estimado');
     var nav = NAV.activo
       ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
       : '<button class="bm-nav ir" data-bm="nav" aria-label="Navegar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg></button>';
     var acc = enCurso ? 'Finalizar · cobrar ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
     return '<div class="bm solo-mini">' +
       '<div class="bm-fila tirador-zona"><div class="bm-eta"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
-      '<div class="bm-valor"><b>' + dineroC(valor) + '</b><small>' + etq + '</small></div></div>' +
+      '<div class="bm-valor"><b' + (sube ? ' class="sube"' : '') + '>' + dineroC(valor) + '</b><small>' + etq + '</small></div></div>' +
+      (taxi ? '<div class="bm-taxi tirador-zona"><i class="bm-vivo"></i>Taxímetro · ' + (c.metros / 1000).toFixed(2) + ' km · ' + Math.floor(c.espera / 60) + ':' + String(c.espera % 60).padStart(2, '0') + ' detenido</div>' : '') +
       '<div class="bm-dir tirador-zona">' + ICONO_PIN(enCurso ? '#1570EF' : '#E5252A') + '<span>' + esc(meta.dir) + '</span></div>' +
       '<div class="bm-botones">' + nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '">' + acc + '</button></div></div>';
   }
