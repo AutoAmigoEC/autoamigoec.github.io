@@ -198,7 +198,7 @@
   .bm-dir span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bm-botones{display:flex;gap:10px;margin-top:14px}
   .bm-nav{flex:none;height:56px;min-width:58px;border:0;border-radius:18px;font:inherit;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center;padding:0 14px}
-  .bm-nav.ir{background:#12B76A}
+  .bm-nav.ir{background:#12B76A;color:#fff;gap:6px}
   .bm-nav.salir{background:#FDECEC;color:#B42318}
   .bm-acc{flex:1;min-width:0;height:56px;border:0;border-radius:18px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:17px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 14px rgba(10,15,60,.22)}
   /* Con el cuadro minimizado, la barra de minutos va dentro de la barrita (no flota aparte) */
@@ -1106,7 +1106,7 @@
     var etq = c.fijo ? 'Pactada' : (taxi ? (marca < CFG.minimaC ? 'Mínimo ' + dineroC(CFG.minimaC) : 'Taxímetro') : 'Estimado');
     var nav = NAV.activo
       ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
-      : '<button class="bm-nav ir" data-bm="nav" aria-label="Navegar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg></button>';
+      : '<button class="bm-nav ir" data-bm="nav" aria-label="Ir"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Ir</button>';
     var acc = enCurso ? 'Finalizar · cobrar ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
     return '<div class="bm solo-mini">' +
       '<div class="bm-fila tirador-zona"><div class="bm-eta"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
