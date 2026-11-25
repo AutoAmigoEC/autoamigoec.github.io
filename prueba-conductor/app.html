@@ -297,10 +297,6 @@
   .nav-centrar[hidden]{display:none}
   .yo.flecha{width:46px;height:46px}
   .yo.flecha .halo,.yo.flecha .punto{display:none}
-  .haz{width:150px;height:150px;pointer-events:none;color:#12B76A;transition:opacity .4s;opacity:0}
-  .haz.gris{color:#8A94A6}
-  .haz svg{display:block}
-  .redondo.centrado{color:#1570EF}
   .yo .nav-ic{display:none}
   .yo.flecha .nav-ic{display:block}
   /* La flecha se mueve con la tarjeta gráfica y su sombra va dibujada adentro (en iPhone el efecto de sombra la hacía parpadear) */
@@ -594,7 +590,6 @@
     <button id="sim-pactada">Llega carrera (pactada $4.00)</button>
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
     <button id="sim-desvio">Simular: me salgo de la ruta</button>
-    <button id="sim-brujula">Simular: giro el celular 45°</button>
     <p>Recargas de prueba: <b>2020202020</b> ($20) y <b>5050505050</b> ($50). <b>1111111111</b> ya está usada.</p>
     <label>Color del carro del conductor
       <select id="sim-color">
@@ -696,43 +691,6 @@
   function listo(f) { if (M.__listo) f(); else M.__listos.push(f); }
   var yoEl = document.createElement('div'); yoEl.className = 'yo gris'; yoEl.innerHTML = '<div class="halo"></div><div class="punto"></div><svg class="nav-ic" width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="24.6" r="21" fill="rgba(0,0,0,.28)"/><circle cx="23" cy="23" r="21" fill="#fff"/><path d="M23 7 12.5 35a1 1 0 0 0 1.5 1.2L23 30.6l9 5.6a1 1 0 0 0 1.5-1.2z" fill="#1570EF"/></svg>';
   var yoMk = new maplibregl.Marker({ element: yoEl, subpixelPositioning: true }).setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
-  // Haz de dirección como Google Maps: un cono suave que sale del punto hacia donde apunta el celular (brújula).
-  // Va en su propio marcador, pegado al mapa (gira e inclina con él), debajo del punto.
-  var hazEl = document.createElement('div'); hazEl.className = 'haz';
-  hazEl.innerHTML = '<svg width="150" height="150" viewBox="0 0 150 150"><defs><radialGradient id="hazG" cx="75" cy="75" r="68" gradientUnits="userSpaceOnUse">' +
-    '<stop offset=".12" stop-color="currentColor" stop-opacity=".55"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>' +
-    '<path d="M75 75 L49.5 12 A68 68 0 0 1 100.5 12 Z" fill="url(#hazG)"/></svg>';
-  var hazMk = new maplibregl.Marker({ element: hazEl, rotationAlignment: 'map', pitchAlignment: 'map', subpixelPositioning: true }).setLngLat([S.yo.lng, S.yo.lat]).addTo(M);
-  try { hazEl.parentNode && yoEl.parentNode && yoEl.parentNode.insertBefore(hazEl, yoEl); } catch (e) {}
-  var BR = { rumbo: null, t: 0, crudo: null, pedido: false };   // rumbo de la brújula (0 = norte)
-  function leerBrujula(e) {
-    var h = null;
-    if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;   // iPhone
-    else if ((e.absolute || e.type === 'deviceorientationabsolute') && typeof e.alpha === 'number') h = 360 - e.alpha;   // Android
-    if (h == null || isNaN(h)) return;
-    var giro = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    BR.crudo = ((h + giro) % 360 + 360) % 360; BR.t = Date.now();
-  }
-  if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', leerBrujula, true);
-  else window.addEventListener('deviceorientation', leerBrujula, true);
-  function pedirBrujula() {   // el iPhone pide permiso la primera vez (con un toque)
-    if (BR.pedido) return; BR.pedido = true;
-    try { if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().catch(function () {}); } catch (e) {}
-  }
-  document.addEventListener('touchend', pedirBrujula, { once: true, passive: true });
-  document.addEventListener('click', pedirBrujula, { once: true });
-  // Botón de centrar como Google Maps: 1er toque te centra (norte arriba); 2º toque, modo brújula (el mapa gira con el celular)
-  var CEN = { centrado: false, brujula: false };
-  function pintarCentrar() {
-    var b = $('#b-centrar'); if (!b) return;
-    var modo = CEN.brujula ? 'brujula' : CEN.centrado ? 'centrado' : '';
-    if (b.__modo === modo) return; b.__modo = modo;
-    b.classList.toggle('centrado', !!modo);
-    b.innerHTML = CEN.brujula
-      ? '<svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2.5 16.5 12h-9z" fill="currentColor"/><path d="M12 21.5 7.5 12h9z" fill="currentColor" opacity=".35"/></svg>'
-      : '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>';
-  }
-  function soltarCentro() { if (CEN.centrado || CEN.brujula) { CEN.centrado = false; CEN.brujula = false; pintarCentrar(); } }
   function pinV(color) {
     var el = document.createElement('div');
     el.innerHTML = '<svg class="pin-v" width="40" height="52" viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 1 1 32 0c0 12-16 31-16 31z" fill="' + color + '" stroke="#fff" stroke-width="2"/><circle cx="20" cy="19" r="6.5" fill="#fff"/></svg>';
@@ -825,7 +783,7 @@
   (function () {
     var caja = document.getElementById('mapa').parentNode, x0 = 0, y0 = 0;   // el mapa y lo que flota encima
     function abajo(x, y) { SV.dedo = true; SV.pCam = null; CAM.anim = null; x0 = x; y0 = y; }
-    function mueve(x, y, varios) { if (!SV.dedo) return; if (varios || Math.abs(x - x0) + Math.abs(y - y0) > 6) { soltarCentro(); if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } } }
+    function mueve(x, y, varios) { if (!SV.dedo) return; if (varios || Math.abs(x - x0) + Math.abs(y - y0) > 6) { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } } }
     function arriba() { setTimeout(function () { SV.dedo = false; }, 60); }
     caja.addEventListener('touchstart', function (e) { var t = e.touches[0]; abajo(t.clientX, t.clientY); if (e.touches.length > 1) mueve(0, 0, true); }, { passive: true });
     caja.addEventListener('touchmove', function (e) { var t = e.touches[0]; mueve(t.clientX, t.clientY, e.touches.length > 1); }, { passive: true });
@@ -834,9 +792,8 @@
     caja.addEventListener('mousedown', function (e) { abajo(e.clientX, e.clientY); });
     window.addEventListener('mousemove', function (e) { mueve(e.clientX, e.clientY, false); });
     window.addEventListener('mouseup', arriba);
-    caja.addEventListener('wheel', function () { soltarCentro(); if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } }, { passive: true });
+    caja.addEventListener('wheel', function () { if (siguiendo()) { NAV.sigueFuera = false; NAV.autoFit = false; if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); } } }, { passive: true });
   })();
-  var NAV_PITCH = 50;   // inclinación 3D al navegar, como Google Maps
   function NAV_META() { return NAV.activo ? (SV.rumboFlecha != null ? SV.rumboFlecha : (NAV.rumbo || 0)) : rumboSeguir(); }
   (function cuadro() {
     var ahora = Date.now();
@@ -848,38 +805,14 @@
       // La flecha gira con la calle donde está (se ve doblar); el mapa la sigue con calma (~1 s) y vuelve a quedar derecha
       if (SV.tan != null) { if (SV.rumboFlecha == null) SV.rumboFlecha = SV.tan; else { var dfl = ((SV.tan - SV.rumboFlecha + 540) % 360) - 180; SV.rumboFlecha = (SV.rumboFlecha + dfl * (1 - Math.exp(-dt / 300)) + 360) % 360; } }
       if (SV.rumboFlecha != null) { try { yoMk.setRotation(SV.rumboFlecha); } catch (e) {} }
-      // Brújula suavizada (sin temblar) y el haz: solo con el punto (no con la flecha de navegar)
-      var brVivo = BR.crudo != null && ahora - BR.t < 3000;
-      if (brVivo) { if (BR.rumbo == null) BR.rumbo = BR.crudo; else { var dbr = ((BR.crudo - BR.rumbo + 540) % 360) - 180; BR.rumbo = (BR.rumbo + dbr * (1 - Math.exp(-dt / 160)) + 360) % 360; } }
-      var verHaz = brVivo && !NAV.activo;
-      if (hazEl.__ver !== verHaz) { hazEl.__ver = verHaz; hazEl.style.opacity = verHaz ? '1' : '0'; }
-      hazEl.classList.toggle('gris', yoEl.classList.contains('gris'));
-      if (verHaz) { hazMk.setLngLat([p.lng, p.lat]); try { hazMk.setRotation(BR.rumbo); } catch (e) {} }
-      // Modo brújula (2º toque de centrar): el mapa te sigue y gira con el celular
-      if (CEN.brujula && !SV.dedo && !siguiendo() && ahora >= SV.trans) {
-        var cb = M.getBearing ? M.getBearing() : 0, mb = brVivo ? BR.rumbo : cb, db = ((mb - cb + 540) % 360) - 180;
-        M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(db) < 0.2 ? mb : cb + db * (1 - Math.exp(-dt / 220)) });
-      } else if (CEN.centrado && !CEN.brujula && !SV.dedo && !siguiendo() && ahora >= SV.trans && (!SV.pCen || SV.pCen.lat !== p.lat || SV.pCen.lng !== p.lng)) {
-        SV.pCen = p; M.jumpTo({ center: [p.lng, p.lat] });   // centrado: te acompaña al moverte
-      }
       if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
       var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
       if (camT) M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding });
-      else if (siguiendo() && ahora >= SV.trans && !SV.dedo && ((NAV.activo && NAV.sigue) || !SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
+      else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
         var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META(), dif = ((meta - cur + 540) % 360) - 180;
-        // Como Google Maps: la flecha dobla primero y el mapa la alcanza con calma (por eso al girar la flecha no va de frente)
-        var paso = dif * (1 - Math.exp(-dt / 1300)), tope = 70 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
-        var cam = { center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso };
-        // Navegando: vista 3D y el zoom según la velocidad (más cerca despacio, más lejos rápido)
-        if (NAV.activo && NAV.sigue && !$('#pantalla').classList.contains('hoja-grande')) {
-          var vel = SV.de && SV.dur ? metrosEntre(SV.de, SV.a) / (SV.dur / 1000) : 0;
-          var zMeta = vel < 5.5 ? 17.4 : vel < 12 ? 17 : vel < 20 ? 16.5 : 16, zAhora = M.getZoom(), pAhora = M.getPitch ? M.getPitch() : 0;
-          SV.vel = SV.vel == null ? vel : SV.vel + (vel - SV.vel) * (1 - Math.exp(-dt / 2500));
-          cam.zoom = zAhora + (zMeta - zAhora) * (1 - Math.exp(-dt / 2500));
-          cam.pitch = pAhora + (NAV_PITCH - pAhora) * (1 - Math.exp(-dt / 600));
-        }
-        M.jumpTo(cam);
+        var paso = dif * (1 - Math.exp(-dt / 650)), tope = 110 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
+        M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso });
       }
     }
     requestAnimationFrame(cuadro);
@@ -944,15 +877,7 @@
       M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() });
       return;
     }
-    pedirBrujula();
-    if (CEN.centrado && !CEN.brujula) {   // 2º toque: modo brújula
-      CEN.brujula = true; pintarCentrar();
-      if (BR.crudo == null || Date.now() - BR.t > 3000) aviso('Este celular no tiene brújula: el mapa queda centrado.');
-      return;
-    }
-    if (CEN.brujula) { CEN.brujula = false; CEN.centrado = true; pintarCentrar(); M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); return; }   // 3er toque: vuelve al norte
-    CEN.centrado = true; CEN.brujula = false; pintarCentrar();
-    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 16), bearing: 0, pitch: 0, duration: 600 });
+    M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: Math.max(M.getZoom(), 15), bearing: 0, pitch: 0, duration: 600 });
   }
   // Fuera de la navegación: sigue al carro de frente (flechita) o muestra carro y recogida juntos
   function seguirFuera() {
@@ -1536,7 +1461,7 @@
   }
   function vistaNav(dur) {
     var gr = $('#pantalla').classList.contains('hoja-grande');
-    return { center: [S.yo.lng, S.yo.lat], bearing: NAV.rumbo, pitch: gr ? 0 : NAV_PITCH, zoom: gr ? 15.5 : 17, duration: dur,
+    return { center: [S.yo.lng, S.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
       padding: { top: gr ? libreArriba() : 200, bottom: gr ? ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26 : ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
   }
   function pintarNav() {
@@ -1581,7 +1506,6 @@
   // Si mueves o acercas el mapa con los dedos, deja de seguirte hasta que toques "Centrar"
   function dejarDeSeguir(e) {
     if (!e || !e.originalEvent) return;
-    soltarCentro();
     NAV.sigueFuera = false; NAV.autoFit = false;
     if (NAV.activo && NAV.sigue) { NAV.sigue = false; pintarNav(); }
   }
@@ -1613,10 +1537,6 @@
     }
     if (!NAV.recalc) moverPorRuta(VEL_PRUEBA);
   }
-  $('#sim-brujula').addEventListener('click', function () {   // sin brújula de verdad (compu): finge que el celular gira
-    var h = ((BR.simular || 0) + 45) % 360; BR.simular = h; BR.crudo = h; BR.t = Date.now();
-    clearInterval(BR.reloj); BR.reloj = setInterval(function () { BR.t = Date.now(); }, 1000);
-  });
   $('#sim-desvio').addEventListener('click', function () {
     if (!NAV.activo) { aviso('Primero toca "Iniciar" en el mapa.'); return; }
     desvio = 4; rumboDesvio = NAV.rumbo + (Math.random() < 0.5 ? 90 : -90); // dobla por otra calle
@@ -1746,7 +1666,7 @@
     b.style.bottom = (parseFloat($('#b-centrar').style.bottom || '16') + 58) + 'px';
   }
   try { M.on('rotate', pintarBrujula); M.on('pitch', pintarBrujula); M.on('moveend', pintarBrujula); } catch (e) {}
-  $('#b-brujula').addEventListener('click', function () { if (CEN.brujula) { CEN.brujula = false; pintarCentrar(); } NAV.girar = false; M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
+  $('#b-brujula').addEventListener('click', function () { NAV.girar = false; M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
 
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
   // Flechita, brújula y tarjeta Iniciar/Salir pegadas al borde del cuadro
