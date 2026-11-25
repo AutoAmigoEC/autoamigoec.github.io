@@ -1874,7 +1874,12 @@
       if (!S.carrera) return;
       if (NAV.activo) { if (NAV.sigue && NAV.ruta) M.easeTo(vistaNav(1000)); return; }
       if (NAV.sigueFuera) M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-      else if (S.carrera.estado === 'aceptada') { NAV.autoFit = true; vistaRecogida(1000, true); }
+      else if (S.carrera.estado === 'aceptada') {
+        // Camino al pasajero: la vista del carro y la recogida juntos se queda hasta que el conductor toca algo;
+        // desde ahí el mapa se comporta igual que con el taxímetro (sigue al carro de frente)
+        NAV.sigueFuera = true; NAV.girar = true; NAV.antF = null;
+        M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() });
+      }
       else verRuta(1000);
     }
     // Sube o baja deslizándose (0,45 s)
