@@ -811,7 +811,7 @@
       else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
         var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META(), dif = ((meta - cur + 540) % 360) - 180;
-        var paso = dif * (1 - Math.exp(-dt / 650)), tope = 110 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
+        var paso = dif * (1 - Math.exp(-dt / 1300)), tope = 70 * dt / 1000;   // como Google Maps: en las curvas la flecha se ve de lado un momento paso = Math.max(-tope, Math.min(tope, paso));
         M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso });
       }
     }
@@ -1368,8 +1368,7 @@
       NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; NAV.paso = 1; NAV.recalc = false; NAV.fuera = 0; ponerMargen();
       ponerRuta(NAV.ruta); seguirNav();
     };
-    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true')
-      .then(function (r) { return r.json(); })
+    pedirRuta(a, b)
       .then(function (j) {
         if (pedido !== NAV.pedido) return;
         if (!j.routes || !j.routes[0]) { recta(); return; }
@@ -1380,13 +1379,30 @@
         ponerRuta(NAV.ruta); seguirNav();
       }).catch(recta);
   }
+  // Dos servidores de rutas gratuitos a la vez: gana el primero que responde. Si ninguno responde en 3 s, se pide otra vez (2 intentos).
+  var SERVIDORES_RUTA = ['https://router.project-osrm.org/route/v1/driving/', 'https://routing.openstreetmap.de/routed-car/route/v1/driving/'];
+  function pedirRuta(a, b, intento) {
+    intento = intento || 1;
+    var q = a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true';
+    return new Promise(function (ok, mal) {
+      var listo = false, fallos = 0, ctls = [];
+      var reloj = setTimeout(function () { if (listo) return; listo = true; ctls.forEach(function (c) { try { c.abort(); } catch (e) {} }); if (intento < 2) pedirRuta(a, b, intento + 1).then(ok, mal); else mal(new Error('tiempo')); }, 3000);
+      SERVIDORES_RUTA.forEach(function (s) {
+        var c = window.AbortController ? new AbortController() : null; if (c) ctls.push(c);
+        fetch(s + q, c ? { signal: c.signal } : {}).then(function (r) { return r.json(); }).then(function (j) {
+          if (listo) return; if (!j || !j.routes || !j.routes[0]) throw new Error('sin ruta');
+          listo = true; clearTimeout(reloj); ctls.forEach(function (x) { try { x.abort(); } catch (e) {} }); ok(j);
+        }).catch(function () { if (listo) return; if (++fallos === SERVIDORES_RUTA.length) { listo = true; clearTimeout(reloj); mal(new Error('fallo')); } });
+      });
+    });
+  }
   // La ruta empieza en la calle más cercana: si estás lejos de ella al empezar, no se cuenta como desvío
   function cercaRuta(pos) {
     var mejor = 1e9, idx = 0;
     for (var i = 0; i < NAV.ruta.length; i++) { var d = metrosEntre(pos, { lat: NAV.ruta[i][1], lng: NAV.ruta[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
     return { d: mejor, i: idx };
   }
-  function ponerMargen() { NAV.margen = Math.min(100, Math.max(40, proyectar(S.yo, NAV.ruta).d + 25)); NAV.fueraDesde = 0; }
+  function ponerMargen() { NAV.margen = Math.min(100, Math.max(25, proyectar(S.yo, NAV.ruta).d + 20)); NAV.fueraDesde = 0; }
   // Punto de la ruta más cercano a tu posición (sobre los tramos, no solo las esquinas)
   function proyectar(pos, r) {
     var mejor = { d: 1e9, i: 0, pt: { lat: r[0][1], lng: r[0][0] } }, kx = Math.cos(pos.lat * Math.PI / 180) * 111320, ky = 110540;
@@ -1428,9 +1444,9 @@
     // Punto de la ruta más cercano
     var pr = proyectar(pos, NAV.ruta), mejor = pr.d;
     if (!NAV.recalc) {
-      // Te saliste de la ruta: recalcula rápido (1,5 s fuera, o enseguida si ya vas lejos), como Google Maps
-      if (mejor > NAV.margen) { if (!NAV.fueraDesde) NAV.fueraDesde = Date.now(); if (Date.now() - NAV.fueraDesde >= 1500 || mejor > NAV.margen + 60) { NAV.fueraDesde = 0; rutaNav(pos, metaNav()); return; } }
-      else { NAV.fueraDesde = 0; NAV.fuera = 0; if (mejor < 40) NAV.margen = 40; }
+      // Te saliste de la ruta: recalcula rápido (0,8 s a más de 25 m, o enseguida si ya vas lejos), como Google Maps
+      if (mejor > NAV.margen) { if (!NAV.fueraDesde) NAV.fueraDesde = Date.now(); if (Date.now() - NAV.fueraDesde >= 800 || mejor > NAV.margen + 40) { NAV.fueraDesde = 0; rutaNav(pos, metaNav()); return; } }
+      else { NAV.fueraDesde = 0; NAV.fuera = 0; if (mejor < 25) NAV.margen = 25; }
     }
     // Hacia dónde va: la dirección de la calle unos 25 m más adelante en la ruta (no salta de lado en las esquinas ni con el GPS)
     if (mejor < 30) {
