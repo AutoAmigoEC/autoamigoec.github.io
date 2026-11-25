@@ -637,6 +637,12 @@
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
+  // Sin trabones: solo se toca la pantalla cuando algo de verdad cambió (antes se reescribían textos y posiciones cada segundo,
+  // y los botones del mapa se movían a la mitad de la animación del cuadro)
+  var ANIM_HOJA_HASTA = 0;
+  function ponTxt(el, v) { if (el && el.textContent !== String(v)) el.textContent = v; }
+  function ponAbajo(el, v) { if (!el || Date.now() < ANIM_HOJA_HASTA) return; if (el.style.bottom !== v) el.style.bottom = v; }
+  function ponHTMLsi(el, h) { if (el && el.__h !== h) { el.innerHTML = h; el.__h = h; } }
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var CFG = { arranqueC: 50, kmC: 50, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30, minimaC: 250, comisionMinC: 50, comisionPct: 10, comisionDesdeC: 500 };
   var S = {
@@ -712,8 +718,8 @@
   function saludo() {
     var h = new Date().getHours();
     var s = h >= 6 && h < 12 ? 'Buenos días' : (h >= 12 && h < 18 ? 'Buenas tardes' : 'Buenas noches');
-    $('#saludo-txt').textContent = '¡' + s + ', que tengas una excelente jornada!';
-    var d = new Date(); $('#hora-tel').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    ponTxt($('#saludo-txt'), '¡' + s + ', que tengas una excelente jornada!');
+    var d = new Date(); ponTxt($('#hora-tel'), d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'));
   }
 
   // ---------- Mapa ----------
@@ -1174,7 +1180,7 @@
     renderBase();
     pintarNav();
     // Los botones del mapa van encima de la barra de minutos
-    if (S.carrera) { var px = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22, cabe = $('#pantalla').clientHeight - px > 120; $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px'; $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = cabe ? '' : 'hidden'; $('#b-brujula').style.bottom = (px + 58) + 'px'; } else { $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = ''; }
+    if (S.carrera) { var px = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22, cabe = $('#pantalla').clientHeight - px > 120; ponAbajo($('#b-centrar'), px + 'px'); ponAbajo($('#b-ruta'), px + 'px'); $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = cabe ? '' : 'hidden'; ponAbajo($('#b-brujula'), (px + 58) + 'px'); } else { $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = ''; }
     if (NAV.activo && !NAV.recalc) seguirNav();
   }
   function renderBase() {
@@ -1185,13 +1191,13 @@
     p.classList.toggle('menu-abierto', S.menu);
     // Encabezado
     $('#punto-estado').className = S.estado;
-    $('#estado-txt').textContent = NOMBRE_ESTADO[S.estado];
+    ponTxt($('#estado-txt'), NOMBRE_ESTADO[S.estado]);
     $('#campana-punto').hidden = !BANDEJA.length;
-    $('#nombre').textContent = S.nombre;
+    ponTxt($('#nombre'), S.nombre);
     // Tarjetas
-    $('#k-carreras').textContent = S.carrerasHoy;
-    $('#k-saldo').textContent = $('#v-saldo').textContent = dineroC(S.saldoC);
-    $('#k-consumido').textContent = $('#v-consumido').textContent = dineroC(S.consumidoC);
+    ponTxt($('#k-carreras'), S.carrerasHoy);
+    ponTxt($('#k-saldo'), dineroC(S.saldoC)); ponTxt($('#v-saldo'), dineroC(S.saldoC));
+    ponTxt($('#k-consumido'), dineroC(S.consumidoC)); ponTxt($('#v-consumido'), dineroC(S.consumidoC));
     // Círculo del mapa: verde activo, gris inactivo
     var claseYo = 'yo' + (S.estado === 'conectado' || S.carrera ? '' : ' gris') + (NAV.activo ? ' flecha' : '');
     if (yoEl.className !== claseYo) yoEl.className = claseYo;   // solo si cambió
@@ -1199,7 +1205,7 @@
     // Deslizar
     var con = S.estado === 'conectado';
     $('#deslizar').classList.toggle('off', !con); // gris desconectado, verde conectado
-    $('#desl-txt').textContent = con ? 'Desconectarme' : 'Conectarme';
+    ponTxt($('#desl-txt'), con ? 'Desconectarme' : 'Conectarme');
     $('#perilla-ic').setAttribute('fill', con ? '#12B76A' : '#98A2B3');
     // Barra y menú
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
@@ -1210,8 +1216,7 @@
     if (sec) { var hs = seccionHTML(S.pantalla); if (hs !== ultimaSec) { $('#seccion-cuerpo').innerHTML = hs; ultimaSec = hs; } } else ultimaSec = '';
     // Hoja de viaje
     $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
-    $('#b-centrar').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
-    $('#b-ruta').style.bottom = enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px';
+    if (!S.carrera) { ponAbajo($('#b-centrar'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); ponAbajo($('#b-ruta'), enViaje ? ($('#hoja').offsetHeight + 16) + 'px' : '16px'); }
     var html = S.oferta ? hojaOferta(S.oferta) : (S.carrera ? hojaCarrera(S.carrera) : '');
     if (html !== ultimaHoja) { ponerHTML($('#hoja'), html); ultimaHoja = html; ajustarFlecha(); }
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
@@ -1384,7 +1389,7 @@
       var resta = Math.ceil((S.oferta.vence - Date.now()) / 1000);
       if (resta <= 0) { cerrarOferta('Se acabó el tiempo. La carrera pasó a otro conductor.'); return; }
       var L = 2 * Math.PI * 18, r = $('#rueda');
-      if (r) { r.setAttribute('stroke-dashoffset', (L * (1 - resta / OFERTA_SEG)).toFixed(1)); $('#rueda-n').textContent = resta; }
+      if (r) { r.setAttribute('stroke-dashoffset', (L * (1 - resta / OFERTA_SEG)).toFixed(1)); ponTxt($('#rueda-n'), resta); }
       return;
     }
     var c = S.carrera;
@@ -1590,29 +1595,29 @@
       var c = S.carrera;
       if (c) {
         var meta = c.estado === 'ejecucion' ? c.d : c.o, km = distKm(S.yo, meta), mn = minutos(km), lg = new Date(Date.now() + mn * 60000);
-        $('#nav-min').textContent = mn + ' min';
-        $('#nav-info').textContent = km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (c.estado === 'ejecucion' ? 'al destino' : 'a la recogida');
-        $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+        ponTxt($('#nav-min'), mn + ' min');
+        ponTxt($('#nav-info'), km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (c.estado === 'ejecucion' ? 'al destino' : 'a la recogida'));
+        ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
       }
       return;
     }
     var top = $('#nav-top');
     top.classList.toggle('recalc', NAV.recalc); top.classList.toggle('llego', !NAV.recalc && NAV.llego);
-    if (NAV.recalc) { $('#nav-ic').innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'; $('#nav-dist').textContent = ''; $('#nav-txt').textContent = 'Recalculando ruta…'; $('#nav-calle').textContent = ''; }
-    else if (NAV.llego) { $('#nav-ic').innerHTML = iconoPaso({ tipo: 'arrive' }); $('#nav-dist').textContent = ''; $('#nav-txt').textContent = NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'; $('#nav-calle').textContent = (metaNav() || {}).dir || ''; }
+    if (NAV.recalc) { ponHTMLsi($('#nav-ic'), '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'); ponTxt($('#nav-dist'), ''); ponTxt($('#nav-txt'), 'Recalculando ruta…'); ponTxt($('#nav-calle'), ''); }
+    else if (NAV.llego) { ponHTMLsi($('#nav-ic'), iconoPaso({ tipo: 'arrive' })); ponTxt($('#nav-dist'), ''); ponTxt($('#nav-txt'), NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'); ponTxt($('#nav-calle'), (metaNav() || {}).dir || ''); }
     else {
       var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' };
       var dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : NAV.falta;
-      $('#nav-ic').innerHTML = iconoPaso(ps);
-      $('#nav-dist').textContent = distTxt(dm);
-      $('#nav-txt').textContent = textoPaso(ps);
-      $('#nav-calle').textContent = ps.tipo === 'arrive' ? ((metaNav() || {}).dir || '') : (ps.nombre ? 'por ' + ps.nombre : '');
+      ponHTMLsi($('#nav-ic'), iconoPaso(ps));
+      ponTxt($('#nav-dist'), distTxt(dm));
+      ponTxt($('#nav-txt'), textoPaso(ps));
+      ponTxt($('#nav-calle'), ps.tipo === 'arrive' ? ((metaNav() || {}).dir || '') : (ps.nombre ? 'por ' + ps.nombre : ''));
     }
     var falta = NAV.falta || 0, min = Math.max(1, Math.round(NAV.total ? NAV.dur * falta / NAV.total / 60 : falta / 7 / 60));
     var llegada = new Date(Date.now() + min * 60000);
-    $('#nav-min').textContent = min + ' min';
-    $('#nav-info').textContent = distTxt(falta) + ' · llegada ' + llegada.getHours() + ':' + String(llegada.getMinutes()).padStart(2, '0') + ' · ' + (NAV.obj === 'o' ? 'a la recogida' : 'al destino');
-    $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+    ponTxt($('#nav-min'), min + ' min');
+    ponTxt($('#nav-info'), distTxt(falta) + ' · llegada ' + llegada.getHours() + ':' + String(llegada.getMinutes()).padStart(2, '0') + ' · ' + (NAV.obj === 'o' ? 'a la recogida' : 'al destino'));
+    ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
     var bc = $('#nav-centrar'); bc.hidden = NAV.sigue;
     bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
   }
@@ -1665,7 +1670,7 @@
     avisoRed.style.display = 'none';
     document.body.classList.toggle('sin-red', RED.sin);
     if (RED.sin) avisoRed.textContent = (S.carrera ? 'Sin internet · la carrera sigue y se guarda' : 'Sin internet · no te llegarán carreras') + (RED.porSubir ? ' · ' + RED.porSubir + ' por enviar' : '');
-    $('#sim-red').textContent = RED.sin ? 'Volver a tener internet' : 'Quitar internet';
+    ponTxt($('#sim-red'), RED.sin ? 'Volver a tener internet' : 'Quitar internet');
     $('#sim-red').style.background = RED.sin ? '#12B76A' : ''; $('#sim-red').style.color = RED.sin ? '#fff' : '';
   }
   function ponerRed(sin) {
@@ -1767,7 +1772,7 @@
     if (S.menuPeriodo && !e.target.closest('.periodos')) { S.menuPeriodo = false; render(); }
     if (e.target.closest('#b-cancelar')) {
       if (RED.sin) { aviso('Sin internet no se puede cancelar la carrera. Llama a la central.'); return; }
-      $('#confirmar-txt').textContent = 'La carrera de ' + S.carrera.cliente + ' se le ofrecerá a otro conductor. Esta acción no se puede deshacer.';
+      ponTxt($('#confirmar-txt'), 'La carrera de ' + S.carrera.cliente + ' se le ofrecerá a otro conductor. Esta acción no se puede deshacer.');
       $('#confirmar').hidden = false; return;
     }
     if (e.target.closest('#c-no') || e.target.id === 'confirmar') { $('#confirmar').hidden = true; return; }
@@ -1793,9 +1798,9 @@
     var h = $('#hoja').offsetHeight || 0, pie = $('#nav-pie');
     pie.style.bottom = (h + 10) + 'px';
     var px = S.carrera ? h + (pie.offsetHeight || 0) + 22 : h + 16;
-    $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px';
-    $('#b-brujula').style.bottom = (px + 58) + 'px';
-    $('#nav-centrar').style.bottom = (h + (pie.offsetHeight || 0) + 22) + 'px';
+    ponAbajo($('#b-centrar'), px + 'px'); ponAbajo($('#b-ruta'), px + 'px');
+    ponAbajo($('#b-brujula'), (px + 58) + 'px');
+    ponAbajo($('#nav-centrar'), (h + (pie.offsetHeight || 0) + 22) + 'px');
   }
   (function () {
     var y0 = null, hoja = $('#hoja'), rafB = 0, finB = 0;
@@ -1811,6 +1816,7 @@
       els.forEach(function (el) { el.style.transition = 'none'; el.style.transform = ''; });
       hoja.style.height = ''; hoja.style.overflow = '';
       cambiar();
+      ANIM_HOJA_HASTA = Date.now() + 480;   // ya quedó todo en su lugar final: mientras se desliza, nadie lo mueve
       var despues = hoja.offsetHeight, d = despues - antes;
       if (d < 0) hoja.style.boxShadow = SOMBRA_HOJA + ', 0 ' + Math.round(despues / 2) + 'px 0 #fff, 0 ' + despues + 'px 0 #fff';   // al bajar, debajo sigue blanco
       els.forEach(function (el) { el.style.transform = 'translate3d(0,' + d + 'px,0)'; });

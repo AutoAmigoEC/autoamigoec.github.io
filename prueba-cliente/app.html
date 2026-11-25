@@ -872,6 +872,12 @@
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
+  // Sin trabones: solo se toca la pantalla cuando algo de verdad cambió (antes se reescribían textos y posiciones cada segundo,
+  // y los botones del mapa se movían a la mitad de la animación del cuadro)
+  var ANIM_HOJA_HASTA = 0;
+  function ponTxt(el, v) { if (el && el.textContent !== String(v)) el.textContent = v; }
+  function ponAbajo(el, v) { if (!el || Date.now() < ANIM_HOJA_HASTA) return; if (el.style.bottom !== v) el.style.bottom = v; }
+  function ponHTMLsi(el, h) { if (el && el.__h !== h) { el.innerHTML = h; el.__h = h; } }
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
   // Mismas tarifas del panel (Configuración) y la misma fórmula del taxímetro del conductor
   var CFG = { arranqueC: 50, kmC: 50, esperaC: 5, esperaCadaSeg: 30, gratisSeg: 30, minimaC: 250 };
@@ -941,8 +947,8 @@
   function saludo() {
     var h = new Date().getHours();
     var s = h >= 6 && h < 12 ? 'Buenos días' : (h >= 12 && h < 18 ? 'Buenas tardes' : 'Buenas noches');
-    $('#saludo-txt').textContent = '¡' + s + '! ¿A dónde te llevamos hoy?';
-    var d = new Date(); $('#hora-tel').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    ponTxt($('#saludo-txt'), '¡' + s + '! ¿A dónde te llevamos hoy?');
+    var d = new Date(); ponTxt($('#hora-tel'), d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'));
   }
 
   // ---------- Mapa ----------
@@ -1341,28 +1347,28 @@
       $('#nav-centrar').hidden = true;
       // Antes de iniciar: minutos, km y hora de llegada, con el botón Iniciar a la derecha
       var km = SEG.ruta && SEG.falta ? SEG.falta / 1000 : distKm(v.pos, metaViaje(v)), mn = v.llego && aRec ? 0 : minutos(km), lg = new Date(Date.now() + mn * 60000);
-      $('#nav-min').textContent = v.llego && aRec ? 'Llegó' : mn + ' min';
-      $('#nav-info').textContent = (v.llego && aRec ? 'Tu unidad te espera afuera' : km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino'));
-      $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+      ponTxt($('#nav-min'), v.llego && aRec ? 'Llegó' : mn + ' min');
+      ponTxt($('#nav-info'), (v.llego && aRec ? 'Tu unidad te espera afuera' : km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino')));
+      ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
       return;
     }
     var top = $('#nav-top');
     top.classList.toggle('recalc', SEG.recalc); top.classList.toggle('llego', !SEG.recalc && SEG.llego);
-    if (SEG.recalc) { $('#nav-ic').innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'; $('#nav-dist').textContent = ''; $('#nav-txt').textContent = SEG.desvio ? 'El conductor tomó otra ruta' : 'Calculando la ruta…'; $('#nav-calle').textContent = SEG.desvio ? 'Recalculando ruta…' : ''; }
-    else if (SEG.llego) { $('#nav-ic').innerHTML = iconoPaso({ tipo: 'arrive' }); $('#nav-dist').textContent = ''; $('#nav-txt').textContent = aRec ? 'Tu unidad llegó a la recogida' : 'Llegaste al destino'; $('#nav-calle').textContent = (metaViaje(v) || {}).nombre || ''; }
+    if (SEG.recalc) { ponHTMLsi($('#nav-ic'), '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'); ponTxt($('#nav-dist'), ''); ponTxt($('#nav-txt'), SEG.desvio ? 'El conductor tomó otra ruta' : 'Calculando la ruta…'); ponTxt($('#nav-calle'), SEG.desvio ? 'Recalculando ruta…' : ''); }
+    else if (SEG.llego) { ponHTMLsi($('#nav-ic'), iconoPaso({ tipo: 'arrive' })); ponTxt($('#nav-dist'), ''); ponTxt($('#nav-txt'), aRec ? 'Tu unidad llegó a la recogida' : 'Llegaste al destino'); ponTxt($('#nav-calle'), (metaViaje(v) || {}).nombre || ''); }
     else {
       var ps = SEG.pasos[SEG.paso] || { tipo: 'arrive' };
       var dm = ps.loc ? metrosEntre(v.pos, { lat: ps.loc[1], lng: ps.loc[0] }) : SEG.falta;
-      $('#nav-ic').innerHTML = iconoPaso(ps);
-      $('#nav-dist').textContent = distTxt(dm);
-      $('#nav-txt').textContent = textoPaso(ps);
-      $('#nav-calle').textContent = ps.tipo === 'arrive' ? ((metaViaje(v) || {}).nombre || '') : (ps.nombre ? 'por ' + ps.nombre : '');
+      ponHTMLsi($('#nav-ic'), iconoPaso(ps));
+      ponTxt($('#nav-dist'), distTxt(dm));
+      ponTxt($('#nav-txt'), textoPaso(ps));
+      ponTxt($('#nav-calle'), ps.tipo === 'arrive' ? ((metaViaje(v) || {}).nombre || '') : (ps.nombre ? 'por ' + ps.nombre : ''));
     }
     var falta = SEG.falta || 0, min = Math.max(1, Math.round(SEG.total ? SEG.dur * falta / SEG.total / 60 : falta / 7 / 60));
     var llegada = new Date(Date.now() + min * 60000);
-    $('#nav-min').textContent = min + ' min';
-    $('#nav-info').textContent = distTxt(falta) + ' · llegada ' + llegada.getHours() + ':' + String(llegada.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino');
-    $('#nav-pie').style.bottom = (($('#hoja').offsetHeight || 0) + 10) + 'px';
+    ponTxt($('#nav-min'), min + ' min');
+    ponTxt($('#nav-info'), distTxt(falta) + ' · llegada ' + llegada.getHours() + ':' + String(llegada.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino'));
+    ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
     var bc = $('#nav-centrar'); bc.hidden = SEG.sigue;
     bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
   }
@@ -1578,16 +1584,16 @@
     p.classList.toggle('viaje', enViaje);
     p.classList.toggle('menu-abierto', S.menu);
     var pf = S.perfil || { nombre: 'Cliente', tel: '' };
-    $('#nombre').textContent = pf.nombre.split(' ')[0];
-    $('#avatar').firstChild.nodeValue = iniciales(pf.nombre); $('#lat-av').textContent = iniciales(pf.nombre);
-    $('#lat-nombre').textContent = pf.nombre; $('#lat-tel').textContent = pf.tel;
-    $('#ubic-txt').textContent = S.yo.nombre;
+    ponTxt($('#nombre'), pf.nombre.split(' ')[0]);
+    $('#avatar').firstChild.nodeValue = iniciales(pf.nombre); ponTxt($('#lat-av'), iniciales(pf.nombre));
+    ponTxt($('#lat-nombre'), pf.nombre); ponTxt($('#lat-tel'), pf.tel);
+    ponTxt($('#ubic-txt'), S.yo.nombre);
     var mes = new Date(); mes.setDate(1); mes.setHours(0, 0, 0, 0);
     var delMes = S.viajes.filter(function (x) { return x.t >= mes.getTime(); });
-    $('#k-viajes').textContent = delMes.length;
-    $('#k-gastado').textContent = dineroC(delMes.reduce(function (t, x) { return t + x.totalC; }, 0));
-    $('#k-lugares').textContent = S.casa || S.trabajo ? [S.casa ? 'Casa' : '', S.trabajo ? 'Trabajo' : ''].filter(Boolean).join(' · ') : 'Casa y Trabajo';
-    $('#k-lugares-sub').textContent = S.casa || S.trabajo ? 'Toca para ver tus lugares guardados' : 'Guarda tus lugares para pedir más rápido';
+    ponTxt($('#k-viajes'), delMes.length);
+    ponTxt($('#k-gastado'), dineroC(delMes.reduce(function (t, x) { return t + x.totalC; }, 0)));
+    ponTxt($('#k-lugares'), S.casa || S.trabajo ? [S.casa ? 'Casa' : '', S.trabajo ? 'Trabajo' : ''].filter(Boolean).join(' · ') : 'Casa y Trabajo');
+    ponTxt($('#k-lugares-sub'), S.casa || S.trabajo ? 'Toca para ver tus lugares guardados' : 'Guarda tus lugares para pedir más rápido');
     yoMk.setLngLat([S.yo.lng, S.yo.lat]);
     yoEl.style.display = v && v.cond ? 'none' : '';   // con unidad asignada: se ven el carro y el punto de recogida, no el punto verde
     $$('.barra button, .lateral button[data-ir]').forEach(function (b) { b.classList.toggle('sel', b.getAttribute('data-ir') === S.pantalla); });
@@ -1600,10 +1606,10 @@
     // Pastillas de arriba
     $('#arriba-v').style.visibility = v && (v.fase === 'aceptada' || v.fase === 'ejecucion') ? '' : 'hidden';
     if (v && v.cond) {
-      $('#p1-t').textContent = 'Unidad ' + v.cond.u; $('#p1-v').textContent = v.cond.placa;
+      ponTxt($('#p1-t'), 'Unidad ' + v.cond.u); ponTxt($('#p1-v'), v.cond.placa);
       var mk = SEG.ruta && SEG.falta ? SEG.falta / 1000 : distKm(v.pos, v.fase === 'ejecucion' ? v.d : v.o);
-      $('#p2-t').textContent = v.fase === 'ejecucion' ? 'Llegas a las' : 'Llega en';
-      $('#p2-v').textContent = v.fase === 'ejecucion' ? horaTxt(Date.now() + minutos(mk) * 60000) : (v.llego ? 'Afuera' : minutos(mk) + ' min');
+      ponTxt($('#p2-t'), v.fase === 'ejecucion' ? 'Llegas a las' : 'Llega en');
+      ponTxt($('#p2-v'), v.fase === 'ejecucion' ? horaTxt(Date.now() + minutos(mk) * 60000) : (v.llego ? 'Afuera' : minutos(mk) + ' min'));
     }
     $('#b-ruta').style.display = enViaje ? 'flex' : 'none';
     var html = enViaje ? hojaHTML() : '';
@@ -1612,7 +1618,7 @@
     pintarNav();
     var conUnidad = v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion');
     if (conUnidad) px += ($('#nav-pie').offsetHeight || 0) + 10;
-    $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px';
+    ponAbajo($('#b-centrar'), px + 'px'); ponAbajo($('#b-ruta'), px + 'px');
     pintarBrujula();
     if (antes !== enViaje) setTimeout(function () { M.resize(); if (enViaje) verRuta(); else centrar(); }, 30);
   }
@@ -2219,7 +2225,7 @@
       return;
     }
     if (t.closest('#b-cancelar')) {
-      $('#confirmar-txt').textContent = S.v.fase === 'buscando' ? 'Todavía no hay una unidad asignada a tu viaje.' : 'La unidad ' + S.v.cond.u + ' ya va en camino hacia ti.';
+      ponTxt($('#confirmar-txt'), S.v.fase === 'buscando' ? 'Todavía no hay una unidad asignada a tu viaje.' : 'La unidad ' + S.v.cond.u + ' ya va en camino hacia ti.');
       $('#confirmar').hidden = false; return;
     }
     if (t.closest('#c-no') || t.id === 'confirmar') { $('#confirmar').hidden = true; return; }
@@ -2249,9 +2255,9 @@
     var conUnidad = !!(v && v.pos && (v.fase === 'aceptada' || v.fase === 'ejecucion'));
     pie.style.bottom = (h + 10) + 'px';
     var px = h + 16 + (conUnidad ? (pie.offsetHeight || 0) + 10 : 0);
-    $('#b-centrar').style.bottom = $('#b-ruta').style.bottom = px + 'px';
-    $('#b-brujula').style.bottom = (px + 58) + 'px';
-    $('#nav-centrar').style.bottom = (h + (pie.offsetHeight || 0) + 22) + 'px';
+    ponAbajo($('#b-centrar'), px + 'px'); ponAbajo($('#b-ruta'), px + 'px');
+    ponAbajo($('#b-brujula'), (px + 58) + 'px');
+    ponAbajo($('#nav-centrar'), (h + (pie.offsetHeight || 0) + 22) + 'px');
   }
   // Hoja: la rayita gris la achica o la agranda (tocar o deslizar)
   (function () {
@@ -2268,6 +2274,7 @@
       els.forEach(function (el) { el.style.transition = 'none'; el.style.transform = ''; });
       hoja.style.height = ''; hoja.style.overflow = '';
       cambiar();
+      ANIM_HOJA_HASTA = Date.now() + 480;   // ya quedó todo en su lugar final: mientras se desliza, nadie lo mueve
       var despues = hoja.offsetHeight, d = despues - antes;
       if (d < 0) hoja.style.boxShadow = SOMBRA_HOJA + ', 0 ' + Math.round(despues / 2) + 'px 0 #fff, 0 ' + despues + 'px 0 #fff';   // al bajar, debajo sigue blanco
       els.forEach(function (el) { el.style.transform = 'translate3d(0,' + d + 'px,0)'; });
