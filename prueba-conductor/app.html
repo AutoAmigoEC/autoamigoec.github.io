@@ -1176,7 +1176,7 @@
     if (!igualarNodos(el, t)) el.innerHTML = html;
   }
   // ---------- Render general ----------
-  var ultimaHoja = '', ultimaSec = '';
+  var ultimaHoja = '', ultimaSec = '', hojaAnimar = null;
   function render() {
     renderBase();
     pintarNav();
@@ -1404,7 +1404,7 @@
     if (c.estado === 'aceptada' && !c.llegue) {
       // el carro se acerca al cliente (con navegación: por las calles)
       if (NAV.activo) moverSim();
-      else if (!NAV.activo) { S.yo.lat += (c.o.lat - S.yo.lat) * 0.06; S.yo.lng += (c.o.lng - S.yo.lng) * 0.06; }
+      else if (!NAV.activo) irPorCalles(c.o);
       if (distKm(S.yo, c.o) < 0.05) { c.llegue = true; aviso('Llegaste donde el cliente.'); }
       render(); seguirFuera();
     } else if (c.estado === 'ejecucion') {
@@ -1498,7 +1498,7 @@
     for (var i = 0; i < NAV.ruta.length; i++) { var d = metrosEntre(pos, { lat: NAV.ruta[i][1], lng: NAV.ruta[i][0] }); if (d < mejor) { mejor = d; idx = i; } }
     return { d: mejor, i: idx };
   }
-  function ponerMargen() { NAV.margen = Math.min(100, Math.max(25, proyectar(S.yo, NAV.ruta).d + 20)); NAV.fueraDesde = 0; }
+  function ponerMargen() { NAV.margen = Math.max(25, proyectar(S.yo, NAV.ruta).d + 20); NAV.fueraDesde = 0; }   // sin tope: si estás lejos de la calle, no se queda recalculando sin fin
   // Punto de la ruta más cercano a tu posición (sobre los tramos, no solo las esquinas)
   function proyectar(pos, r) {
     var mejor = { d: 1e9, i: 0, pt: { lat: r[0][1], lng: r[0][0] } }, kx = Math.cos(pos.lat * Math.PI / 180) * 111320, ky = 110540;
@@ -1514,12 +1514,14 @@
   function iniciarNav() {
     var c = S.carrera; if (!c) return;
     NAV.activo = true; NAV.sigue = true; NAV.llego = false; NAV.obj = c.estado === 'ejecucion' ? 'd' : 'o'; NAV.ant = null;
-    $('#hoja').classList.add('mini');
+    var yaMini = $('#hoja').classList.contains('mini');
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
     render();
     if (!NAV.rumbo) NAV.rumbo = rumboEntre(S.yo, metaNav());
-    M.easeTo(vistaNav(900));   // de una sola vez: acerca, gira de frente y queda plano (mientras llega la ruta)
+    // Igual que al minimizar: el cuadro baja deslizándose y el mapa se acerca con calma, al mismo tiempo y suave
+    if (!yaMini && hojaAnimar) hojaAnimar(true);
+    M.easeTo(Object.assign(vistaNav(1000), { easing: suaveK }));
   }
   function salirNav() {
     if (!NAV.activo) return;
@@ -1528,8 +1530,8 @@
     // El cuadro de abajo se queda del tamaño en que lo dejaste; el mapa sigue al carro de frente
     var c = S.carrera; if (c) trazar(c.o, c.d); else ponerRuta(null);
     render();
-    if (c) { NAV.sigueFuera = true; NAV.girar = true; NAV.antF = null; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 600, padding: rellenoCarro() }); }
-    else M.easeTo({ pitch: 0, bearing: 0, duration: 600 });
+    if (c) { NAV.sigueFuera = true; NAV.girar = true; NAV.antF = null; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, easing: suaveK, padding: rellenoCarro() }); }
+    else M.easeTo({ pitch: 0, bearing: 0, duration: 1000, easing: suaveK });
   }
   // Cada vez que llega una ubicación nueva: avanza las instrucciones, recorta la ruta y recalcula si te sales
   function seguirNav() {
@@ -1654,6 +1656,18 @@
   }
   // En la prueba el carro va más rápido que en la calle para ver todo el recorrido; "me salgo de la ruta" lo desvía unos segundos por otra calle
   var VEL_PRUEBA = 45, desvio = 0, rumboDesvio = 0;
+  // Solo en la prueba: sin navegar, el carro también avanza por las calles hacia la recogida (antes iba en línea recta y cruzaba el río)
+  var CALLE = { meta: null, ruta: null, pidiendo: false };
+  function irPorCalles(meta) {
+    if (!CALLE.meta || CALLE.meta.lat !== meta.lat || CALLE.meta.lng !== meta.lng) { CALLE.meta = { lat: meta.lat, lng: meta.lng }; CALLE.ruta = null; CALLE.pidiendo = false; }
+    if (!CALLE.ruta) {
+      if (!CALLE.pidiendo) { CALLE.pidiendo = true; pedirRuta(S.yo, meta).then(function (j) { CALLE.ruta = j.routes[0].geometry.coordinates.slice(); }, function () { CALLE.ruta = [[S.yo.lng, S.yo.lat], [meta.lng, meta.lat]]; }); }
+      return;
+    }
+    var r = CALLE.ruta, m = VEL_PRUEBA, cur = { lat: S.yo.lat, lng: S.yo.lng };
+    while (m > 0 && r.length > 1) { var sig = { lat: r[1][1], lng: r[1][0] }, d = metrosEntre(cur, sig); if (d <= m) { cur = sig; m -= d; r.shift(); } else { var f = m / d; cur = { lat: cur.lat + (sig.lat - cur.lat) * f, lng: cur.lng + (sig.lng - cur.lng) * f }; m = 0; } }
+    S.yo = cur;
+  }
   function moverSim() {
     if (desvio > 0) {
       desvio--; var r = rumboDesvio * Math.PI / 180;
@@ -1845,6 +1859,7 @@
       else verRuta(1000);
     }
     // Sube o baja deslizándose (0,45 s)
+    hojaAnimar = function (m) { animar(m); };
     function animar(mini) {
       deslizarHoja(function () { hoja.classList.toggle('mini', mini); if (!mini) hoja.scrollTop = 0; hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });   // sin reconstruir el cuadro: no se traba
       moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
