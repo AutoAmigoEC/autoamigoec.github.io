@@ -297,9 +297,7 @@
   .nav-centrar[hidden]{display:none}
   .yo.flecha{width:46px;height:46px}
   .yo.flecha .halo,.yo.flecha .punto{display:none}
-  .haz{width:150px;height:150px;pointer-events:none;color:#12B76A}
-  .haz svg{opacity:0;transition:opacity .4s}
-  .haz.ver svg{opacity:1}
+  .haz{width:150px;height:150px;pointer-events:none;color:#12B76A;transition:opacity .4s;opacity:0}
   .haz.gris{color:#8A94A6}
   .haz svg{display:block}
   .redondo.centrado{color:#1570EF}
@@ -597,7 +595,6 @@
     <button id="sim-llegue">Simular: llegué donde el cliente</button>
     <button id="sim-desvio">Simular: me salgo de la ruta</button>
     <button id="sim-brujula">Simular: giro el celular 45°</button>
-    <button id="sim-paseo">Simular: voy manejando (sin carrera)</button>
     <p>Recargas de prueba: <b>2020202020</b> ($20) y <b>5050505050</b> ($50). <b>1111111111</b> ya está usada.</p>
     <label>Color del carro del conductor
       <select id="sim-color">
@@ -855,7 +852,7 @@
       var brVivo = BR.crudo != null && ahora - BR.t < 3000;
       if (brVivo) { if (BR.rumbo == null) BR.rumbo = BR.crudo; else { var dbr = ((BR.crudo - BR.rumbo + 540) % 360) - 180; BR.rumbo = (BR.rumbo + dbr * (1 - Math.exp(-dt / 160)) + 360) % 360; } }
       var verHaz = brVivo && !NAV.activo;
-      if (hazEl.__ver !== verHaz) { hazEl.__ver = verHaz; hazEl.classList.toggle('ver', verHaz); }
+      if (hazEl.__ver !== verHaz) { hazEl.__ver = verHaz; hazEl.style.opacity = verHaz ? '1' : '0'; }
       hazEl.classList.toggle('gris', yoEl.classList.contains('gris'));
       if (verHaz) { hazMk.setLngLat([p.lng, p.lat]); try { hazMk.setRotation(BR.rumbo); } catch (e) {} }
       // Modo brújula (2º toque de centrar): el mapa te sigue y gira con el celular
@@ -1446,19 +1443,17 @@
       NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; NAV.paso = 1; NAV.recalc = false; NAV.fuera = 0; ponerMargen();
       ponerRuta(NAV.ruta); seguirNav();
     };
-    var ctl = window.AbortController ? new AbortController() : null, reloj = setTimeout(function () { try { ctl && ctl.abort(); } catch (e) {} recta(); }, 8000);
-    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true', ctl ? { signal: ctl.signal } : {})
+    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true')
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        clearTimeout(reloj);
-        if (pedido !== NAV.pedido || !NAV.recalc) return;
+        if (pedido !== NAV.pedido) return;
         if (!j.routes || !j.routes[0]) { recta(); return; }
         var rt = j.routes[0];
         NAV.ruta = rt.geometry.coordinates; NAV.total = rt.distance; NAV.dur = rt.duration * 1.25;
         NAV.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
         NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; ponerMargen();
         ponerRuta(NAV.ruta); seguirNav();
-      }).catch(function () { clearTimeout(reloj); if (NAV.recalc) recta(); });
+      }).catch(recta);
   }
   // La ruta empieza en la calle más cercana: si estás lejos de ella al empezar, no se cuenta como desvío
   function cercaRuta(pos) {
@@ -1616,31 +1611,8 @@
       S.yo = { lat: S.yo.lat + Math.cos(r) * 0.00028, lng: S.yo.lng + Math.sin(r) * 0.00028 };
       return;
     }
-    if (!NAV.recalc) { moverPorRuta(VEL_PRUEBA); return; }
-    var rr = (NAV.rumbo || 0) * Math.PI / 180;   // recalculando: sigue derecho, despacio
-    S.yo = { lat: S.yo.lat + Math.cos(rr) * 0.0001, lng: S.yo.lng + Math.sin(rr) * 0.0001 };
+    if (!NAV.recalc) moverPorRuta(VEL_PRUEBA);
   }
-  // Prueba: "voy manejando" sin carrera: el carro recorre calles de verdad (a ~40 km/h), de un punto a otro
-  var PASEO = { on: false, ruta: null, pidiendo: false };
-  function paseoDestino() {
-    if (PASEO.pidiendo) return; PASEO.pidiendo = true;
-    var ang = Math.random() * 2 * Math.PI, b = { lat: S.yo.lat + Math.cos(ang) * 0.015, lng: S.yo.lng + Math.sin(ang) * 0.015 }, a = { lat: S.yo.lat, lng: S.yo.lng };
-    var listo = function (r) { PASEO.pidiendo = false; PASEO.ruta = r; };
-    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson')
-      .then(function (r) { return r.json(); }).then(function (j) { listo(j.routes && j.routes[0] ? j.routes[0].geometry.coordinates : [[a.lng, a.lat], [b.lng, b.lat]]); })
-      .catch(function () { listo([[a.lng, a.lat], [b.lng, b.lat]]); });
-  }
-  setInterval(function () {
-    if (!PASEO.on || S.carrera || S.oferta) return;
-    if (!PASEO.ruta) { paseoDestino(); return; }
-    var r = PASEO.ruta, m = 12, cur = { lat: S.yo.lat, lng: S.yo.lng };
-    while (m > 0 && r.length > 1) { var sig = { lat: r[1][1], lng: r[1][0] }, d = metrosEntre(cur, sig); if (d <= m) { cur = sig; m -= d; r.shift(); } else { var f = m / d; cur = { lat: cur.lat + (sig.lat - cur.lat) * f, lng: cur.lng + (sig.lng - cur.lng) * f }; m = 0; } }
-    S.yo = cur; if (r.length < 2) { PASEO.ruta = null; paseoDestino(); }
-  }, 1000);
-  $('#sim-paseo').addEventListener('click', function (e) {
-    PASEO.on = !PASEO.on; PASEO.ruta = null; e.currentTarget.textContent = PASEO.on ? 'Parar: voy manejando' : 'Simular: voy manejando (sin carrera)';
-    aviso(PASEO.on ? 'El carro va manejando por las calles. Toca centrar para seguirlo.' : 'El carro se detuvo.');
-  });
   $('#sim-brujula').addEventListener('click', function () {   // sin brújula de verdad (compu): finge que el celular gira
     var h = ((BR.simular || 0) + 45) % 360; BR.simular = h; BR.crudo = h; BR.t = Date.now();
     clearInterval(BR.reloj); BR.reloj = setInterval(function () { BR.t = Date.now(); }, 1000);
