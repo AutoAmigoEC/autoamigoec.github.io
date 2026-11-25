@@ -1805,16 +1805,16 @@
     // El mapa se mueve con calma (1 s) a la vez que el cuadro
     function moverMapa() {
       if (!S.carrera) return;
-      if (NAV.activo) { if (NAV.sigue && NAV.ruta) M.easeTo(vistaNav(450)); return; }
-      if (NAV.sigueFuera) M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), duration: 450, padding: rellenoCarro() });
-      else if (S.carrera.estado === 'aceptada') { NAV.autoFit = true; vistaRecogida(450); }
-      else verRuta(450);
+      if (NAV.activo) { if (NAV.sigue && NAV.ruta) M.easeTo(vistaNav(1000)); return; }
+      if (NAV.sigueFuera) M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
+      else if (S.carrera.estado === 'aceptada') { NAV.autoFit = true; vistaRecogida(1000); }
+      else verRuta(1000);
     }
     // Sube o baja deslizándose (0,45 s)
     function animar(mini) {
       // En el mismo cuadro solo se cambia la clase (el contenido grande y el de la barrita ya están): nada pesado que trabe la animación
       deslizarHoja(function () { hoja.classList.toggle('mini', mini); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
-      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada), al mismo ritmo que el cuadro
+      moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada), con calma, como antes
       clearTimeout(animar.t); animar.t = setTimeout(function () { render(); posBotones(); }, 500);
     }
     function poner(mini) {
