@@ -176,7 +176,28 @@
   .btn-final{margin-top:14px;width:100%;height:60px;border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:18px;box-shadow:0 8px 20px rgba(10,15,60,.25)}
   /* Como la app del cliente: con el cuadro grande arriba solo queda el mapa (se desvanece lo demás) */
   .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s ease,visibility 0s linear .25s}
-  .hoja-grande .hoja{max-height:66%}
+  .hoja-grande .hoja{max-height:58%}
+  /* Minimizado: solo la barrita, el mapa casi completo */
+  .viaje .hoja.mini{padding:0 14px calc(env(safe-area-inset-bottom,0px) + 10px);overflow:hidden}
+  .hoja.mini .tirador{margin:2px auto 2px;height:16px}
+  .hoja.mini .tirador::after{top:5px}
+  .barra{display:flex;align-items:center;gap:8px}
+  .bm-eta{flex:1;min-width:0;touch-action:none;cursor:pointer}
+  .bm-eta b{display:block;font-size:20px;font-weight:800;color:#079455;line-height:1.1}
+  .bm-eta small{display:block;font-size:13px;color:var(--gris);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm-nav{flex:none;height:46px;min-width:46px;border:0;border-radius:15px;font:inherit;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0 12px}
+  .bm-nav.ir{background:#12B76A}
+  .bm-nav.salir{background:#FDECEC;color:#B42318}
+  .bm-acc{flex:none;height:46px;border:0;border-radius:15px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:0 14px;max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 14px rgba(10,15,60,.22)}
+  /* Con el cuadro minimizado, la barra de minutos va dentro de la barrita (no flota aparte) */
+  .viaje.con-carrera:not(.hoja-grande) .nav-pie,.viaje.navegando:not(.hoja-grande) .nav-pie{display:none!important}
+  /* Con el cuadro abierto, la instrucción de arriba queda en una sola línea (más mapa para ver la flecha) */
+  .navegando.hoja-grande .nav-top{padding:8px 12px;gap:10px;border-radius:16px}
+  .navegando.hoja-grande .nav-top .ic{width:38px;height:38px;border-radius:11px}
+  .navegando.hoja-grande .nav-top .ic svg{width:22px;height:22px}
+  .navegando.hoja-grande .nav-top .dist{display:inline;font-size:18px}
+  .navegando.hoja-grande .nav-top .txt{display:inline;font-size:14px;margin:0 0 0 6px}
+  .navegando.hoja-grande .nav-top .calle{display:none}
   .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   .brujula{right:16px}
@@ -1067,21 +1088,31 @@
       '<button class="btn-acep" id="b-aceptar">Aceptar<span class="ruedita"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="18" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"/>' +
       '<circle id="rueda" cx="21" cy="21" r="18" fill="none" stroke="#F04438" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + L.toFixed(1) + '" stroke-dashoffset="' + (L * (1 - resta / OFERTA_SEG)).toFixed(1) + '"/></svg><span id="rueda-n">' + resta + '</span></span></button></div>';
   }
+  // Cuadro minimizado: una sola barrita (minutos, km y hora de llegada + navegar/Salir + el botón principal); el mapa ocupa casi todo
+  function barraMini(c, km, enCurso) {
+    var mn = minutos(km), lg = new Date(Date.now() + mn * 60000);
+    var nav = NAV.activo
+      ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
+      : '<button class="bm-nav ir" data-bm="nav" aria-label="Navegar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg></button>';
+    var acc = enCurso ? 'Finalizar · ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
+    return '<div class="barra solo-mini"><div class="bm-eta tirador-zona"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
+      nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '">' + acc + '</button></div>';
+  }
   function hojaCarrera(c) {
     var enCurso = c.estado === 'ejecucion';
     var meta = enCurso ? c.d : c.o;
     var km = distKm(S.yo, meta);
     var tel = c.tel.replace(/\D/g, '').replace(/^0/, '593');
     var h = '<button class="tirador" aria-label="Deslizar"></button>' +
-      '<div class="cliente"><div class="foto-c">' + iniciales(c.cliente) + '</div><div class="nom"><b>' + esc(c.cliente) + '</b>' +
+      barraMini(c, km, enCurso) +
+      '<div class="cliente solo-grande"><div class="foto-c">' + iniciales(c.cliente) + '</div><div class="nom"><b>' + esc(c.cliente) + '</b>' +
       '<small>' + c.calif.toFixed(1) + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="#101828"><path d="m12 2.5 2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.2l-5.9 3.3 1.3-6.6L2.5 9.3l6.6-.8z"/></svg><i></i>' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="#344054"><circle cx="12" cy="8" r="4.5"/><path d="M3.5 21c0-4.7 3.8-7.5 8.5-7.5s8.5 2.8 8.5 7.5z"/></svg> ' + c.viajes + ' viajes</small></div>' +
       '<a class="circ" id="b-wa" href="https://wa.me/' + tel + '" target="_blank" rel="noopener" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></a>' +
       '<a class="circ" href="tel:' + esc(c.tel) + '" aria-label="Llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></a></div>' +
-      '<div class="datos"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min ' + (enCurso ? 'para llegar al destino' : (c.llegue ? '· ya llegaste' : 'para recoger')) + '</div></div>' +
+      '<div class="datos solo-grande"><div><div class="km">' + km.toFixed(1) + ' km</div><div class="min">' + minutos(km) + ' min ' + (enCurso ? 'para llegar al destino' : (c.llegue ? '· ya llegaste' : 'para recoger')) + '</div></div>' +
       '<div class="valor"><b>' + dineroC(c.fijo || (enCurso ? Math.max(CFG.minimaC, c.mostradoC || CFG.arranqueC) : c.estC)) + '</b><small>' + (c.fijo ? 'Pactada' : 'Taxímetro') + '</small></div></div>';
     h += '<div class="solo-grande">' + puntosHTML(c) + '</div>';
-    h += '<div class="solo-mini">' + puntosHTML(c, (c.llegue || enCurso) ? 'd' : 'o') + '</div>';
     if (enCurso && !c.fijo) {
       h += '<div class="taxi solo-grande"><div><div class="t">TAXÍMETRO</div><div class="i">' + (c.metros / 1000).toFixed(2) + ' km · ' + Math.floor(c.espera / 60) + ':' + String(c.espera % 60).padStart(2, '0') + ' detenido' +
         (c.mostradoC < CFG.minimaC ? '<br>Mínimo a cobrar ' + dineroC(CFG.minimaC) : '') + '</div></div><div class="v">' + dineroC(c.mostradoC) + '</div></div>';
@@ -1090,8 +1121,8 @@
     if (!enCurso && c.exacta) h += '<div class="exacta solo-grande">Dirección exacta: ' + esc(c.exacta) + '</div>';
     if (!enCurso) h += '<button class="btn-cancelar solo-grande" id="b-cancelar">Cancelar carrera</button>';
     h += enCurso
-      ? '<button class="btn-final" id="b-finalizar">Finalizar · cobrar ' + dineroC(valorDe(c)) + '</button>'
-      : '<button class="btn-final" id="b-iniciar">' + (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
+      ? '<button class="btn-final solo-grande" id="b-finalizar">Finalizar · cobrar ' + dineroC(valorDe(c)) + '</button>'
+      : '<button class="btn-final solo-grande" id="b-iniciar">' + (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
     return h;
   }
 
@@ -1642,6 +1673,12 @@
     var t = e.target.closest('[data-tomar]'); if (t) { tomarDeBandeja(Number(t.getAttribute('data-tomar'))); return; }
     if (e.target.closest('#b-rechazar')) { cerrarOferta('Rechazaste la carrera.'); return; }
     if (e.target.closest('#b-aceptar')) { if (RED.sin) { aviso('Sin internet: no se puede aceptar la carrera. Otro conductor la tomará.'); return; } aceptar(S.oferta); return; }
+    var bm = e.target.closest('[data-bm]');
+    if (bm) {
+      var q = bm.getAttribute('data-bm');
+      if (q === 'nav') { if (NAV.activo) salirNav(); else iniciarNav(); ultimaHoja = ''; render(); return; }
+      var gr = $(q === 'finalizar' ? '#b-finalizar' : '#b-iniciar'); if (gr) gr.click(); return;
+    }
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
     if (e.target.closest('#b-finalizar')) { finalizar(); return; }
     if (e.target.closest('#b-recargar')) { recargar(); return; }
@@ -1750,9 +1787,9 @@
       if (S.carrera) { animar(mini); return; }
       hoja.classList.toggle('mini', mini); setTimeout(function () { render(); }, 20);
     }
-    hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador')); }, { passive: true });
+    hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador,.tirador-zona')); }, { passive: true });
     hoja.addEventListener('touchmove', function (e) { if (hoja.__tir) e.preventDefault(); }, { passive: false });   // arrastrar la rayita no mueve la página
-    hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
+    hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador,.tirador-zona')) return; y0 = e.clientY; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); });
     hoja.addEventListener('pointerup', function (e) {
       if (y0 == null) return; var dy = e.clientY - y0; y0 = null;
       if (dy > 25) poner(true); else if (dy < -25) poner(false); else poner(!hoja.classList.contains('mini'));
