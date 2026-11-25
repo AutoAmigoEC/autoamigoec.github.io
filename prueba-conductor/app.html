@@ -807,12 +807,24 @@
       if (SV.rumboFlecha != null) { try { yoMk.setRotation(SV.rumboFlecha); } catch (e) {} }
       if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
       var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
-      if (camT) M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding });
+      if (!siguiendo()) { SV.camB = null; SV.rLento = null; }   // al volver a seguir, el mapa parte de la dirección del momento
+      if (camT) { M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding }); SV.camB = camT.bearing; }
       else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
-        var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META(), dif = ((meta - cur + 540) % 360) - 180;
-        var paso = dif * (1 - Math.exp(-dt / 1300)), tope = 70 * dt / 1000;   // como Google Maps: en las curvas la flecha se ve de lado un momento paso = Math.max(-tope, Math.min(tope, paso));
-        M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso });
+        // Como Google Maps: el mapa se queda quieto y el que gira es la flecha (de lado, en diagonal, incluso hacia abajo).
+        // El mapa solo se acomoda cuando la flecha ya va estable en otra dirección (más de 35° y 1,2 s sin cambiar):
+        // entonces gira de una vez, rápido y suave, para dejarla de frente. En una vuelta en U, primero se voltea la flecha.
+        var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META();
+        if (SV.camB == null) SV.camB = meta;
+        if (SV.rLento == null) SV.rLento = meta;
+        var dl = ((meta - SV.rLento + 540) % 360) - 180; SV.rLento = (SV.rLento + dl * (1 - Math.exp(-dt / 1200)) + 360) % 360;
+        var estable = Math.abs(dl) < 12;
+        if (!estable) SV.estableDesde = 0; else if (!SV.estableDesde) SV.estableDesde = ahora;
+        var fuera = ((meta - SV.camB + 540) % 360) - 180;
+        if (Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
+        var dif = ((SV.camB - cur + 540) % 360) - 180;
+        var paso = dif * (1 - Math.exp(-dt / 350)), tope = 140 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
+        M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? SV.camB : cur + paso });
       }
     }
     requestAnimationFrame(cuadro);
