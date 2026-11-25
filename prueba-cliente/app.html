@@ -219,6 +219,10 @@
   .bm-dir span{flex:1;min-width:0}
   /* Con el taxímetro iniciado: al achicar el cuadro, lo de arriba aparece suave */
   .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
+  /* Al agrandar o minimizar: lo que aparece entra suave (sin cambio brusco) y el cuadro se desliza en la tarjeta gráfica */
+  .hoja{will-change:transform}
+  .hoja.fundiendo .solo-mini,.hoja.fundiendo .solo-grande{animation:hojaAparece .32s ease-out both}
+  @keyframes hojaAparece{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -2267,26 +2271,26 @@
     }
     // Con el taxímetro iniciado: achicar también es suave (el cuadro baja deslizándose y el mapa se mueve con calma)
     function achicarSuave() {
-      deslizarHoja(function () { hoja.classList.add('mini'); ultimaHoja = ''; render(); posBotones(); });
-      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
-      if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
+      deslizarHoja(function () { hoja.classList.add('mini'); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada), al mismo ritmo que el cuadro
+      if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(450)); }
       else if (S.v && S.v.pos) {
-        if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
-        else verRuta(1000);
+        if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 450, padding: rellenoCarro() });
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(450); }
+        else verRuta(450);
       }
-      clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { ultimaHoja = ''; render(); posBotones(); }, 500);
+      clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { render(); posBotones(); }, 500);
     }
     function agrandar() {
-      deslizarHoja(function () { hoja.classList.remove('mini'); ultimaHoja = ''; render(); posBotones(); });
-      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada)
+      deslizarHoja(function () { hoja.classList.remove('mini'); hoja.classList.add('fundiendo'); clearTimeout(hoja.__f); hoja.__f = setTimeout(function () { hoja.classList.remove('fundiendo'); }, 340); pintarNav(); posBotones(); });
+      // El mapa se acomoda con el tamaño final del cuadro (así la flecha no queda tapada), al mismo ritmo que el cuadro
       if (S.v && S.v.pos) {
-        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
-        else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000); }
-        else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
+        if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(450)); }
+        else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 450, padding: rellenoCarro() });
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(450); }
+        else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 450 }); }
       }
-      clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { ultimaHoja = ''; render(); posBotones(); }, 500);
+      clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { render(); posBotones(); }, 500);
     }
     hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador,.tirador-zona')); }, { passive: true });
     hoja.addEventListener('touchmove', function (e) { if (hoja.__tir) e.preventDefault(); }, { passive: false });   // arrastrar la rayita no mueve la página
