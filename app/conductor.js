@@ -210,12 +210,23 @@
       if (SV.rumboFlecha != null) { try { yoMk.setRotation(SV.rumboFlecha); } catch (e) {} }
         if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
         var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
-        if (camT) M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding });
+        if (!siguiendo()) { SV.camB = null; SV.rLento = null; }   // al volver a seguir, el mapa parte de la dirección del momento
+        if (camT) { M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding }); SV.camB = camT.bearing; }
         else if (siguiendo() && ahora >= SV.trans && !SV.dedo && (!SV.pCam || SV.pCam.lat !== p.lat || SV.pCam.lng !== p.lng || Math.abs((((NAV_META() - (M.getBearing ? M.getBearing() : 0)) + 540) % 360) - 180) > 0.3)) {
         SV.pCam = p;
-          var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META(), dif = ((meta - cur + 540) % 360) - 180;
-          var paso = dif * (1 - Math.exp(-dt / 650)), tope = 110 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
-          M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? meta : cur + paso });
+          // Como Google Maps: el mapa se queda quieto y el que gira es la flecha (de lado, en diagonal, incluso hacia abajo).
+          // El mapa solo se acomoda cuando la flecha ya va estable en otra dirección (más de 35° y 1,2 s sin cambiar):
+          // entonces gira de una vez, rápido y suave, para dejarla de frente. En una vuelta en U, primero se voltea la flecha.
+          var cur = M.getBearing ? M.getBearing() : 0, meta = NAV_META();
+          if (SV.camB == null) SV.camB = meta;
+          if (SV.rLento == null) SV.rLento = meta;
+          var dl = ((meta - SV.rLento + 540) % 360) - 180; SV.rLento = (SV.rLento + dl * (1 - Math.exp(-dt / 1200)) + 360) % 360;
+          if (Math.abs(dl) >= 12) SV.estableDesde = 0; else if (!SV.estableDesde) SV.estableDesde = ahora;
+          var fuera = ((meta - SV.camB + 540) % 360) - 180;
+          if (Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
+          var dif = ((SV.camB - cur + 540) % 360) - 180;
+          var paso = dif * (1 - Math.exp(-dt / 350)), tope = 140 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
+          M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? SV.camB : cur + paso });
         }
       }
     } catch (e) {}
@@ -345,15 +356,14 @@
     if (!tieneCoord(a) || !tieneCoord(b)) { NAV.recalc = false; NAV.ruta = null; pintarNav(); return; }
     var pedido = ++NAV.pedido;
     NAV.recalc = true; pintarNav();
-    var listoRuta = function () { NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; NAV.fueraDesde = 0; NAV.margen = Math.min(100, Math.max(40, proyectar(D.yo, NAV.ruta).d + 25)); ponerRuta(NAV.ruta); seguirNav(); };
+    var listoRuta = function () { NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; NAV.fueraDesde = 0; NAV.margen = Math.min(100, Math.max(25, proyectar(D.yo, NAV.ruta).d + 20)); ponerRuta(NAV.ruta); seguirNav(); };
     var recta = function () {
       if (pedido !== NAV.pedido) return;
       NAV.ruta = [[a.lng, a.lat], [b.lng, b.lat]]; NAV.total = metrosEntre(a, b); NAV.dur = NAV.total / 7;
       NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }];
       listoRuta();
     };
-    fetch('https://router.project-osrm.org/route/v1/driving/' + a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true')
-      .then(function (r) { return r.json(); })
+    pedirRuta(a, b)
       .then(function (j) {
         if (pedido !== NAV.pedido) return;
         if (!j.routes || !j.routes[0]) { recta(); return; }
@@ -362,6 +372,23 @@
         NAV.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
         listoRuta();
       }).catch(recta);
+  }
+  // Dos servidores de rutas gratuitos a la vez: gana el primero que responde. Si ninguno responde en 3 s, se pide otra vez (2 intentos).
+  var SERVIDORES_RUTA = ['https://router.project-osrm.org/route/v1/driving/', 'https://routing.openstreetmap.de/routed-car/route/v1/driving/'];
+  function pedirRuta(a, b, intento) {
+    intento = intento || 1;
+    var q = a.lng + ',' + a.lat + ';' + b.lng + ',' + b.lat + '?overview=full&geometries=geojson&steps=true';
+    return new Promise(function (ok, mal) {
+      var listo = false, fallos = 0, ctls = [];
+      var reloj = setTimeout(function () { if (listo) return; listo = true; ctls.forEach(function (c) { try { c.abort(); } catch (e) {} }); if (intento < 2) pedirRuta(a, b, intento + 1).then(ok, mal); else mal(new Error('tiempo')); }, 3000);
+      SERVIDORES_RUTA.forEach(function (s) {
+        var c = window.AbortController ? new AbortController() : null; if (c) ctls.push(c);
+        fetch(s + q, c ? { signal: c.signal } : {}).then(function (r) { return r.json(); }).then(function (j) {
+          if (listo) return; if (!j || !j.routes || !j.routes[0]) throw new Error('sin ruta');
+          listo = true; clearTimeout(reloj); ctls.forEach(function (x) { try { x.abort(); } catch (e) {} }); ok(j);
+        }).catch(function () { if (listo) return; if (++fallos === SERVIDORES_RUTA.length) { listo = true; clearTimeout(reloj); mal(new Error('fallo')); } });
+      });
+    });
   }
   function iniciarNav() {
     var c = D && D.carrera; if (!c) return;
@@ -394,8 +421,8 @@
     var pr = proyectar(pos, NAV.ruta);
     if (!NAV.recalc && movio) {
       // Te saliste de la ruta: recalcula rápido (1,5 s fuera, o enseguida si ya vas lejos), como Google Maps
-      if (pr.d > NAV.margen) { if (!NAV.fueraDesde) NAV.fueraDesde = Date.now(); if (Date.now() - NAV.fueraDesde >= 1500 || pr.d > NAV.margen + 60) { NAV.fueraDesde = 0; rutaNav(pos, metaNav()); return; } }
-      else { NAV.fueraDesde = 0; NAV.fuera = 0; if (pr.d < 40) NAV.margen = 40; }
+      if (pr.d > NAV.margen) { if (!NAV.fueraDesde) NAV.fueraDesde = Date.now(); if (Date.now() - NAV.fueraDesde >= 800 || pr.d > NAV.margen + 40) { NAV.fueraDesde = 0; rutaNav(pos, metaNav()); return; } }
+      else { NAV.fueraDesde = 0; NAV.fuera = 0; if (pr.d < 25) NAV.margen = 25; }
     }
     if (NAV.rumbo === 0 && pr.i < NAV.ruta.length - 1) NAV.rumbo = rumboEntre(pos, { lat: NAV.ruta[pr.i + 1][1], lng: NAV.ruta[pr.i + 1][0] });
     // Hacia dónde va: la dirección de la calle unos 25 m más adelante en la ruta (no salta de lado en las esquinas ni con el GPS)
@@ -427,7 +454,20 @@
   function vistaNav(dur) {
     var gr = $('#pantalla').classList.contains('hoja-grande');
     return { center: [D.yo.lng, D.yo.lat], bearing: NAV.rumbo, pitch: 0, zoom: gr ? 15.5 : 17, duration: dur,
-      padding: { top: gr ? libreArriba() : 200, bottom: gr ? ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26 : ($('#hoja').offsetHeight || 200) + 90, left: 20, right: 20 } };
+      padding: gr ? { top: libreArriba(), bottom: ($('#hoja').offsetHeight || 200) + ($('#nav-pie').offsetHeight || 0) + 26, left: 20, right: 20 } : abajoFlecha() };
+  }
+  // Si la barrita cambia de alto en pleno viaje (p. ej. aparece la línea del taxímetro), la flecha se recoloca sola
+  var altoBarra = 0;
+  function ajustarFlecha() {
+    var h = $('#hoja'); if (!h || !h.classList.contains('mini') || !(D && D.carrera)) { altoBarra = 0; return; }
+    var a = h.offsetHeight; if (!altoBarra) { altoBarra = a; return; }
+    if (Math.abs(a - altoBarra) < 6) return; altoBarra = a;
+    if (NAV.activo && NAV.sigue && !NAV.recalc) { try { M.easeTo({ padding: abajoFlecha(), duration: 500 }); } catch (e) {} }
+  }
+  // Cuadro minimizado: la flecha queda en el tercio de abajo del espacio libre y se ve más calle por delante
+  function abajoFlecha() {
+    var alto = M.getContainer().clientHeight, abajo = ($('#hoja').offsetHeight || 150) + 30;
+    return { top: Math.max(200, Math.round(alto * 0.4 + abajo * 0.2)), bottom: abajo, left: 20, right: 20 };
   }
   function pintarNav() {
     var p = $('#pantalla'), c = D && D.carrera;
@@ -556,22 +596,42 @@
   }
 
   // ---------- Hoja: carrera aceptada / en ejecución ----------
+  // Cuadro minimizado: una barrita con lo importante (minutos, taxímetro marcando, a dónde vas, Ir/Salir y el botón principal)
+  function barraMini(c, km, enCurso) {
+    var meta = (enCurso ? c.d : c.o) || {}, lg = km ? new Date(Date.now() + km.min * 60000) : null;
+    var t = c.taxi, taxi = enCurso && !c.fijoC && !!t, marca = taxi ? (t.mostradoC || 0) : 0;
+    if (taxi && barraMini.ult != null && marca > barraMini.ult) barraMini.tSube = Date.now();
+    barraMini.ult = taxi ? marca : null;
+    var sube = taxi && Date.now() - (barraMini.tSube || 0) < 650;
+    var valor = taxi ? dineroC(marca) : valorTxt(c);
+    var etq = c.fijoC ? 'Pactada' : (taxi ? (marca < D.cfg.minimaC ? 'Mínimo ' + dineroC(D.cfg.minimaC) : 'Taxímetro') : (enCurso ? 'Taxímetro' : 'Estimado'));
+    var nav = NAV.activo
+      ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
+      : '<button class="bm-nav ir" data-bm="nav" aria-label="Ir"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg>Ir</button>';
+    var acc = enCurso ? 'Finalizar · cobrar ' + dineroC(c.cobrarC) : (c.fijoC ? 'Iniciar carrera' : 'Iniciar taxímetro');
+    return '<div class="bm solo-mini">' +
+      '<div class="bm-fila tirador-zona"><div class="bm-eta"><b>' + (km ? km.min + ' min' : '—') + '</b><small>' +
+      (km ? km.km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') : (enCurso ? 'Destino: pregunta al pasajero' : 'Sin GPS')) + '</small></div>' +
+      '<div class="bm-valor"><b' + (sube ? ' class="sube"' : '') + '>' + valor + '</b><small>' + etq + '</small></div></div>' +
+      (taxi ? '<div class="bm-taxi tirador-zona"><i class="bm-vivo"></i>Taxímetro · ' + ((t.metros || 0) / 1000).toFixed(2) + ' km · ' + Math.floor((t.esperaSeg || 0) / 60) + ':' + String((t.esperaSeg || 0) % 60).padStart(2, '0') + ' detenido</div>' : '') +
+      '<div class="bm-dir tirador-zona">' + ICONO_PIN(enCurso ? '#1570EF' : '#E5252A') + '<span>' + esc(meta.dir || (enCurso ? 'Se indica al subir' : 'Recogida')) + '</span></div>' +
+      '<div class="bm-botones">' + nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '"' + (c.ocupado ? ' disabled' : '') + '>' + acc + '</button></div></div>';
+  }
   function hojaCarrera(c) {
     var enCurso = c.estado === 'ejecucion';
     var meta = enCurso ? c.d : c.o;
     var km = kmMin(D.yo, meta);
     var llegue = enCurso || (tieneCoord(D.yo) && tieneCoord(c.o) && distKm(D.yo, c.o) / 1.3 < 0.08);
-    var h = '<button class="tirador" aria-label="Deslizar"></button>' +
-      '<div class="cliente"><div class="foto-c">' + esc(iniciales(c.cliente) || '?') + '</div><div class="nom"><b>' + esc(c.cliente || 'Cliente') + '</b>' +
+    var h = '<button class="tirador" aria-label="Deslizar"></button>' + barraMini(c, km, enCurso) +
+      '<div class="cliente solo-grande"><div class="foto-c">' + esc(iniciales(c.cliente) || '?') + '</div><div class="nom"><b>' + esc(c.cliente || 'Cliente') + '</b>' +
       '<small>' + califTxt(c) + ' ' + ESTRELLA_P + '<i></i>' + PERSONA_P + ' ' + viajesTxt(c) + ' viajes</small></div>' +
       '<button class="circ" id="b-whatsapp" aria-label="Mensaje por WhatsApp"><svg width="23" height="23" viewBox="0 0 24 24"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="var(--navy)"/><path d="M9 7.3c.3 0 .6.1.8.5l.9 2.1c.1.3 0 .5-.1.7l-.6.7c-.1.2-.1.4 0 .6.7 1.2 1.7 2.1 2.9 2.8.2.1.4.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l2 .9c.4.2.5.4.5.7 0 .9-.6 2-1.8 2.2-1 .2-2.3 0-4.5-1.3-2.4-1.5-3.8-3.7-4.1-4.6-.4-1.1-.2-2.2.4-2.9.4-.6.9-.8 1.5-.8z" fill="#fff"/></svg></button>' +
       '<button class="circ" id="b-llamar" aria-label="Llamar"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--navy)"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button></div>' +
-      '<div class="datos"><div><div class="km">' + (km ? km.km.toFixed(1) + ' km' : '—') + '</div><div class="min">' +
+      '<div class="datos solo-grande"><div><div class="km">' + (km ? km.km.toFixed(1) + ' km' : '—') + '</div><div class="min">' +
       (enCurso ? (km ? km.min + ' min para llegar al destino' : 'Destino: pregunta al pasajero') : (llegue ? 'Ya llegaste donde el cliente' : (km ? km.min + ' min para recoger' : 'Sin GPS'))) + '</div></div>' +
       '<div class="valor"><b>' + valorTxt(c) + '</b><small>' + (c.fijoC ? 'Pactada' : 'Taxímetro') + '</small></div></div>';
     if (c.manual && !enCurso) h += '<div class="aprob solo-grande" style="background:#E6EEFF;color:#090145">La central te asignó esta carrera.</div>';
     h += '<div class="solo-grande">' + puntosHTML(c) + '</div>';
-    h += '<div class="solo-mini">' + puntosHTML(c, llegue ? 'd' : 'o') + '</div>';
     if (enCurso && c.taxi) {
       var t = c.taxi;
       h += '<div class="taxi solo-grande"><div><div class="t">TAXÍMETRO</div><div class="i">' + (t.metros / 1000).toFixed(2) + ' km · ' + Math.floor(t.esperaSeg / 60) + ':' + String(t.esperaSeg % 60).padStart(2, '0') + ' detenido' +
@@ -581,8 +641,8 @@
     if (c.notas) h += '<div class="exacta solo-grande" style="background:#F2F4F7">Nota: ' + esc(c.notas) + '</div>';
     if (!enCurso) h += '<button class="btn-cancelar solo-grande" id="b-cancelar"' + (c.ocupado ? ' disabled' : '') + '>Cancelar carrera</button>';
     h += enCurso
-      ? '<button class="btn-final" id="b-finalizar"' + (c.ocupado ? ' disabled' : '') + '>Finalizar · cobrar ' + dineroC(c.cobrarC) + '</button>'
-      : '<button class="btn-final" id="b-iniciar"' + (c.ocupado ? ' disabled' : '') + '>' + (c.fijoC ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
+      ? '<button class="btn-final solo-grande" id="b-finalizar"' + (c.ocupado ? ' disabled' : '') + '>Finalizar · cobrar ' + dineroC(c.cobrarC) + '</button>'
+      : '<button class="btn-final solo-grande" id="b-iniciar"' + (c.ocupado ? ' disabled' : '') + '>' + (c.fijoC ? 'Iniciar carrera' : 'Iniciar taxímetro') + '</button>';
     return h;
   }
 
@@ -594,6 +654,7 @@
     // No se cambia la hoja mientras el dedo está encima (así no se pierde el toque en un botón)
     if ((forzar || html !== ultimaHoja) && (!tocando || !html)) { $('#hoja').innerHTML = html; ultimaHoja = html; }
     if (!ANIM_HOJA.activa) $('#hoja').classList.toggle('mini', !!U.mini && !D.oferta);
+    ajustarFlecha();
     pintarRueda();
   }
   function pintarRueda() {
@@ -943,6 +1004,13 @@
     }
     if (e.target.closest('#b-rechazar')) { if (D.oferta) accion('rechazar', { id: D.oferta.id }); return; }
     if (e.target.closest('#b-aceptar')) { if (D.oferta) accion('aceptar', { id: D.oferta.id }); return; }
+    var bm = e.target.closest('[data-bm]');
+    if (bm) {
+      var q = bm.getAttribute('data-bm');
+      if (q === 'nav') { if (NAV.activo) salirNav(); else iniciarNav(); pintarHoja(true); return; }
+      if (bm.disabled) return;
+      accion(q === 'finalizar' ? 'finalizar' : 'iniciar'); return;
+    }
     if (e.target.closest('#b-iniciar')) { accion('iniciar'); return; }
     if (e.target.closest('#b-finalizar')) { accion('finalizar'); return; }
     if (e.target.closest('#b-whatsapp')) { accion('whatsapp'); return; }
@@ -1053,9 +1121,9 @@
       moverMapa();   // con el tamaño final del cuadro (así la flecha no queda tapada)
       clearTimeout(animar.t); animar.t = setTimeout(function () { ANIM_HOJA.activa = false; render(); posBotones(); }, 500);
     }
-    hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador')); }, { passive: true });
+    hoja.addEventListener('touchstart', function (e) { hoja.__tir = !!(e.target.closest && e.target.closest('.tirador,.tirador-zona')); }, { passive: true });
     hoja.addEventListener('touchmove', function (e) { if (hoja.__tir) e.preventDefault(); }, { passive: false });   // arrastrar la rayita no mueve la página
-    hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador')) return; y0 = e.clientY; });
+    hoja.addEventListener('pointerdown', function (e) { if (!e.target.closest('.tirador,.tirador-zona')) return; y0 = e.clientY; });
     hoja.addEventListener('pointerup', function (e) {
       if (y0 == null) return; var dy = e.clientY - y0; y0 = null;
       if (D && D.oferta) return;

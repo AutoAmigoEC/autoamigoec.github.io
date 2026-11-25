@@ -192,10 +192,35 @@
   .btn-final{margin-top:14px;width:100%;height:60px;border:0;border-radius:20px;background:var(--navy);color:#fff;font-weight:700;font-size:18px;box-shadow:0 8px 20px rgba(10,15,60,.25)}
   /* Como la app del cliente: con el cuadro grande arriba solo queda el mapa (se desvanece lo demás) */
   .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s ease,visibility 0s linear .25s}
-  .hoja-grande .hoja{max-height:66%}
+  .hoja-grande .hoja{max-height:58%}
+  /* Minimizado: solo la barrita, el mapa casi completo */
+  .viaje .hoja.mini{padding:0 18px calc(env(safe-area-inset-bottom,0px) + 14px);overflow:hidden}
+  .hoja.mini .tirador{margin:2px auto 4px;height:16px}
+  .hoja.mini .tirador::after{top:5px}
+  .bm-fila{display:flex;align-items:center;gap:10px;touch-action:none;cursor:pointer}
+  .bm-eta{flex:1;min-width:0}
+  .bm-eta b{display:block;font-size:28px;font-weight:800;color:#079455;line-height:1.1}
+  .bm-eta small{display:block;font-size:15px;color:var(--gris);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm-valor{text-align:right;flex:none}
+  .bm-valor b{display:block;font-size:32px;font-weight:800;color:#000;line-height:1.1;font-variant-numeric:tabular-nums}
+  .bm-valor small{display:inline-flex;align-items:center;gap:5px;font-size:14px;color:var(--gris);font-weight:700}
+  .bm-taxi{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:15px;font-weight:700;color:#079455;font-variant-numeric:tabular-nums;touch-action:none;cursor:pointer}
+  .bm-valor b.sube{animation:bmSube .6s ease-out}
+  @keyframes bmSube{0%{transform:translateY(60%);opacity:0}60%{transform:none;opacity:1}}   /* sube suave, sin rebote ni cambio de color */
+  .bm-vivo{width:8px;height:8px;border-radius:50%;background:#12B76A;animation:bmVivo 1.2s ease-in-out infinite}
+  @keyframes bmVivo{0%,100%{opacity:1}50%{opacity:.25}}
+  .bm-dir{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:16px;font-weight:600;color:#344054;touch-action:none;cursor:pointer}
+  .bm-dir svg{flex:none;width:18px;height:22px}
+  .bm-dir span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bm-botones{display:flex;gap:10px;margin-top:14px}
+  .bm-nav{flex:none;height:56px;min-width:58px;border:0;border-radius:18px;font:inherit;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center;padding:0 14px}
+  .bm-nav.ir{background:#12B76A;color:#fff;gap:6px}
+  .bm-nav.salir{background:#FDECEC;color:#B42318}
+  .bm-acc{flex:1;min-width:0;height:56px;border:0;border-radius:18px;background:var(--navy);color:#fff;font:inherit;font-weight:800;font-size:17px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 14px rgba(10,15,60,.22)}
+  /* Con el cuadro minimizado, la barra de minutos va dentro de la barrita (no flota aparte) */
+  .viaje.con-carrera:not(.hoja-grande) .nav-pie,.viaje.navegando:not(.hoja-grande) .nav-pie{display:none!important}
   .viaje:not(.hoja-grande) .arriba-v,.viaje:not(.hoja-grande) .ham-v,.viaje:not(.hoja-grande) #b-ruta,.viaje:not(.hoja-grande) #b-centrar{transition:opacity .35s ease}
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
-  .taxi-on.navegando.hoja-grande .nav-top{display:none!important}
   .brujula{right:16px}
   .brujula[hidden]{display:none}
   .hoja.mini .solo-grande{display:none!important}
@@ -620,6 +645,6 @@
 <script src="turno.js?v=5"></script>
 <script src="encuadre.js?v=5"></script>
 <script src="perfil.js?v=6"></script>
-<script src="conductor.js?v=18"></script>
+<script src="conductor.js?v=19"></script>
 </body>
 </html>
