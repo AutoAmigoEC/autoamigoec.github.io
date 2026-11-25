@@ -181,7 +181,7 @@
   .viaje .hoja.mini{padding:0 14px calc(env(safe-area-inset-bottom,0px) + 10px);overflow:hidden}
   .hoja.mini .tirador{margin:2px auto 2px;height:16px}
   .hoja.mini .tirador::after{top:5px}
-  .barra{display:flex;align-items:center;gap:8px}
+  .bm-barra{display:flex;align-items:center;gap:8px}
   .bm-eta{flex:1;min-width:0;touch-action:none;cursor:pointer}
   .bm-eta b{display:block;font-size:20px;font-weight:800;color:#079455;line-height:1.1}
   .bm-eta small{display:block;font-size:13px;color:var(--gris);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1095,7 +1095,7 @@
       ? '<button class="bm-nav salir" data-bm="nav" aria-label="Salir de la navegación">Salir</button>'
       : '<button class="bm-nav ir" data-bm="nav" aria-label="Navegar"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4.5 20.3a.6.6 0 0 0 .9.7L12 17l6.6 4a.6.6 0 0 0 .9-.7z"/></svg></button>';
     var acc = enCurso ? 'Finalizar · ' + dineroC(valorDe(c)) : (c.fijo ? 'Iniciar carrera' : 'Iniciar taxímetro');
-    return '<div class="barra solo-mini"><div class="bm-eta tirador-zona"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
+    return '<div class="bm-barra solo-mini"><div class="bm-eta tirador-zona"><b>' + mn + ' min</b><small>' + km.toFixed(1) + ' km · ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + '</small></div>' +
       nav + '<button class="bm-acc" data-bm="' + (enCurso ? 'finalizar' : 'iniciar') + '">' + acc + '</button></div>';
   }
   function hojaCarrera(c) {
