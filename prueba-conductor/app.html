@@ -1714,9 +1714,13 @@
     try { var vs = speechSynthesis.getVoices() || [];
       return vs.filter(function (v) { return /^es[-_](US|MX|419|EC|CO|PE|CL|AR)/i.test(v.lang); })[0] || vs.filter(function (v) { return /^es/i.test(v.lang); })[0] || null; } catch (e) { return null; }
   }
+  // Se lleva la cuenta propia de cuándo está hablando (el iPhone a veces dice que sigue hablando aunque ya terminó,
+  // o no avisa cuando termina): cada frase se da por terminada al avisar el teléfono o, si no avisa, por su largo.
   function emitir(u) {
     var s = window.speechSynthesis; if (!s) return;
-    u.onend = u.onerror = function () { var c = HABLA.cola; HABLA.cola = null; if (c) setTimeout(function () { emitir(c); }, 350); };
+    var fin = function () { if (u.__fin) return; u.__fin = true; clearTimeout(u.__t); HABLA.hablando = false; var c = HABLA.cola; HABLA.cola = null; if (c) setTimeout(function () { emitir(c); }, 350); };
+    u.onend = u.onerror = fin;
+    HABLA.hablando = true; u.__t = setTimeout(fin, 1500 + String(u.text || '').length * 90);
     s.speak(u);
   }
   function hablar(t, urgente, clave) {
@@ -1726,15 +1730,15 @@
     try {
       var s = window.speechSynthesis; if (!s) return;
       var u = new SpeechSynthesisUtterance(t), v = vozEs(); u.lang = v ? v.lang : 'es-ES'; if (v) u.voice = v;
-      if (s.speaking || s.pending) {
-        if (urgente) { HABLA.cola = null; s.cancel(); setTimeout(function () { emitir(u); }, 150); }   // Safari pierde la frase si se cancela y habla al mismo instante
+      if (HABLA.hablando) {
+        if (urgente) { HABLA.cola = null; try { s.cancel(); } catch (e) {} HABLA.hablando = false; setTimeout(function () { emitir(u); }, 150); }   // Safari pierde la frase si se cancela y habla al mismo instante
         else HABLA.cola = u;   // espera a que termine la que está diciendo
       } else emitir(u);
     } catch (e) {}
   }
   // Al tocar Salir o al terminar: no corta lo que está diciendo; solo ya no dice nada más
   function callarVoz() { clearTimeout(HABLA.timer); HABLA.cola = null; }
-  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); if (!speechSynthesis.speaking) { var u = new SpeechSynthesisUtterance('.'); u.volume = 0; speechSynthesis.speak(u); } } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
+  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); if (!speechSynthesis.speaking) { var u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.rate = 2; speechSynthesis.speak(u); } } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
   function distVoz(m) {
     if (m >= 1000) { var k = Math.round(m / 100) / 10; return (k === 1 ? '1 kilómetro' : String(k).replace('.', ',') + ' kilómetros'); }
     m = m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10); return m + ' metros';
