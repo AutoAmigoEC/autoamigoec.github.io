@@ -1072,6 +1072,7 @@
       padding: { top: pd ? pd.top : 0, bottom: pd ? pd.bottom : 0, left: pd ? pd.left : 0, right: pd ? pd.right : 0 } };
   }
   function camIr(o, dur) {
+    if (typeof CAMV !== 'undefined') { cancelAnimationFrame(CAMV.raf); CAMV.raf = 0; }   // una sola animación a la vez
     var de = camActual(), pd = o.padding || de.padding;
     CAM.anim = { de: de, a: { zoom: o.zoom != null ? o.zoom : de.zoom, bearing: o.bearing != null ? o.bearing : null, pitch: o.pitch != null ? o.pitch : de.pitch,
       padding: { top: pd.top || 0, bottom: pd.bottom || 0, left: pd.left || 0, right: pd.right || 0 } }, t0: Date.now(), dur: Math.max(1, dur) };
@@ -1182,6 +1183,24 @@
     }
     camVista(b, op, dur || 1200);   // mismo motor de cámara que el conductor (cuadro por cuadro, misma curva)
   }
+  // De la vista general a seguir al taxi en un solo movimiento suave (1,2 s, misma curva): el mapa viaja desde donde está
+  // hasta el taxi mientras acerca, gira y acomoda el espacio; al terminar sigue al taxi sin corte
+  function pasarASeguir(dur) {
+    if (!S.v || !S.v.pos) return;
+    cancelAnimationFrame(CAMV.raf); CAM.anim = null;
+    var pd = M.getPadding ? M.getPadding() : {}, p0 = { top: pd.top || 0, bottom: pd.bottom || 0, left: pd.left || 0, right: pd.right || 0 }, p1 = rellenoCarro();
+    var c0 = M.getCenter(), z0 = M.getZoom(), b0 = M.getBearing ? M.getBearing() : 0, b1 = rumboSeguir(), db = ((b1 - b0 + 540) % 360) - 180, t0 = Date.now();
+    try { M.stop && M.stop(); } catch (e) {}
+    SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
+    (function paso() {
+      if (SV.dedo || !S.v || !S.v.pos || SEG.activo) { CAMV.raf = 0; return; }
+      var car = SV.vista || S.v.pos, k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k;
+      M.jumpTo({ center: [c0.lng + (car.lng - c0.lng) * k, c0.lat + (car.lat - c0.lat) * k], zoom: z0 + (14.8 - z0) * k, bearing: b0 + db * k, pitch: 0,
+        padding: { top: p0.top * q + p1.top * k, bottom: p0.bottom * q + p1.bottom * k, left: p0.left * q + p1.left * k, right: p0.right * q + p1.right * k } });
+      if (k < 1) { CAMV.raf = requestAnimationFrame(paso); return; }
+      CAMV.raf = 0; SEG.sigueFuera = true; SV.camB = b1; SV.rLento = b1; SV.estableDesde = 0; SV.pCam = null;   // desde aquí lo acompaña cuadro por cuadro
+    })();
+  }
   // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
   // Va de la vista actual a la vista donde entran tu taxi y tu recogida (sin girar); si tocas el mapa, se detiene.
   var CAMV = { raf: 0 };
@@ -1207,7 +1226,7 @@
     try { M.stop && M.stop(); } catch (e) {}
     cancelAnimationFrame(CAMV.raf); CAM.anim = null; SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
     (function paso() {
-      if (SV.dedo) { CAMV.raf = 0; return; }
+      if (SV.dedo || siguiendo()) { CAMV.raf = 0; return; }   // si el mapa pasó a seguir al taxi, esta animación se retira
       var k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k;
       M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: b0 + db * k, pitch: 0,
         padding: { top: pd0.top * q, bottom: pd0.bottom * q, left: pd0.left * q, right: pd0.right * q } });
@@ -2230,8 +2249,8 @@
     clearTimeout(S.tSeguir);
     S.tSeguir = setTimeout(function () {
       var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || w.llego || SEG.activo || SEG.sigueFuera || SEG.autoFit === false || SV.dedo) return;
-      SEG.sigueFuera = true; SEG.girar = true; SEG.autoFit = false;
-      M.easeTo({ center: [w.pos.lng, w.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() });
+      SEG.girar = true; SEG.autoFit = false;
+      pasarASeguir(1200);
     }, 4300);
   }
   function llego() {
