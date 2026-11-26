@@ -1355,6 +1355,7 @@
   // Apenas hay unidad asignada se sigue al carro por la ruta (la vista de navegación se abre con "Iniciar")
   // Cada viaje empieza desde cero, como el primero (nada de giros, instrucciones ni márgenes del viaje anterior)
   function reiniciarViaje() {
+    clearTimeout(S.tSeguir);
     var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
     try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
     var pedido = (SEG.pedido || 0) + 1;
@@ -2224,6 +2225,14 @@
     SEG.autoFit = true; SEG.girar = true;
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
     setTimeout(function () { vistaRecogida(1200, true); }, 80);   // al aceptar: tu taxi y tu recogida juntos, una vez y suave
+    // Como Uber y Google Maps: después de mostrar los dos un momento (~3 s), el mapa pasa solo y suave a seguir al taxi de frente,
+    // y así se ve igual todo el viaje (si ya tocaste el cuadro o moviste el mapa, no hace nada)
+    clearTimeout(S.tSeguir);
+    S.tSeguir = setTimeout(function () {
+      var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || w.llego || SEG.activo || SEG.sigueFuera || SEG.autoFit === false || SV.dedo) return;
+      SEG.sigueFuera = true; SEG.girar = true; SEG.autoFit = false;
+      M.easeTo({ center: [w.pos.lng, w.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() });
+    }, 4300);
   }
   function llego() {
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
