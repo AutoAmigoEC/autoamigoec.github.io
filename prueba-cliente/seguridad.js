@@ -32,6 +32,16 @@
     }).catch(function (e) { cargaFA = null; throw e; });
     return cargaFA;
   }
+  // Calienta el reconocimiento (la 1ª revisión es la más lenta): se hace una vez, en silencio
+  var calentado = null;
+  function precargar() {
+    if (calentado) return calentado;
+    calentado = cargarFA().then(function () {
+      var c = document.createElement('canvas'); c.width = c.height = 150; c.getContext('2d').fillRect(0, 0, 150, 150);
+      return Promise.all([faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })), faceapi.nets.faceLandmark68Net.detectLandmarks(c), faceapi.computeFaceDescriptor(c)]);
+    }).catch(function () { calentado = null; });
+    return calentado;
+  }
   function leerCara(c) { return faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.35 })).withFaceLandmarks().withFaceDescriptor(); }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
 
@@ -197,6 +207,10 @@
       el.className = 'seg negro';
       h = camaraHTML({ titulo: '✓ Eres cliente', ayuda: 'Tu cara coincide con la de tu cédula.', foto: G.vista,
         abajo: '<button class="sbtn verde" data-s="seguirPedido">Pedir AutoAmigo</button>', cerrar: 'cancelarPedido' });
+    } else if (p === 'selfieRev') {
+      // Primera vez, después de tocar el botón: no se muestra la foto; la cámara se cierra y sale el cuadro del Face ID revisando
+      el.className = 'seg fidvelo';
+      h = '<div class="fid"><div class="fid-icono revisando">' + ICONO_FID + '</div><b class="fid-txt">Revisando…</b></div>';
     } else if (p === 'selfie') {
       // Un cuadro pequeño encima de la app (el mapa se ve borroso detrás), como Apple Pay
       el.className = 'seg fidvelo';
@@ -220,8 +234,9 @@
 
   // ---------- Verificación tipo Face ID (antes de pedir) ----------
   var ICONO_FID = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M8 30V18a10 10 0 0 1 10-10h12M70 8h12a10 10 0 0 1 10 10v12M92 70v12a10 10 0 0 1-10 10H70M30 92H18A10 10 0 0 1 8 82V70"/>' +
-    '<path d="M34 36v8M66 36v8M50 36v20h-5M37 68q13 10 26 0"/></svg>';
+    '<g class="fc"><path d="M8 30V18a10 10 0 0 1 10-10h12"/><path d="M70 8h12a10 10 0 0 1 10 10v12"/><path d="M92 70v12a10 10 0 0 1-10 10H70"/><path d="M30 92H18A10 10 0 0 1 8 82V70"/></g>' +
+    '<g class="fcara"><g class="fojos"><path d="M34 36v8"/><path d="M66 36v8"/></g><path class="fnariz" d="M50 36v20h-5"/><path class="fboca" d="M37 68q13 10 26 0"/></g>' +
+    '<line class="fscan" x1="16" y1="18" x2="84" y2="18" stroke-width="3"/></svg>';
   var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="5"/><path d="M30 52l13 13 27-29"/></svg>';
   G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false };
   function fidPoner(estado, txt) {
@@ -384,21 +399,25 @@
     }
     if (a === 'fotoSelfie') {
       if (!C.video || !C.video.videoWidth || G.analizando) return;
-      var f = cuadro(960, 0.85); G.prev = f.url(); G.analizando = 'Revisando…'; pintar();
+      var f = cuadro(960, 0.85);
+      ir('selfieRev');   // la cámara se cierra y sale el cuadro del Face ID con "Revisando…" (no se muestra la foto)
+      var otraVez = function (txt) { if (G.paso !== 'selfieRev') return; ir('selfie'); G.error = txt; pintar(); };
       cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
-        G.analizando = '';
-        if (!r) { G.prev = null; G.error = 'No se ve bien tu cara. Ponte de frente a una luz y toma otra.'; pintar(); return; }
+        if (G.paso !== 'selfieRev') return;
+        if (!r) { otraVez('No se ve bien tu cara. Ponte de frente a una luz y toma otra.'); return; }
         var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
         if (!pf.descriptor) { pf.descriptor = desc; guardar('aac_cuenta', pf); }   // cuenta de prueba aprobada sin cara: esta foto queda como su cara
         var ok = distancia(desc, pf.descriptor) <= UMBRAL && (!pf.descCedula || distancia(desc, pf.descCedula) <= UMBRAL_CEDULA);
         if (!ok) {
           if (pf.srv) llamar('cliente/intento', { id: pf.srv.id, token: pf.srv.token, foto: cuadro(640, 0.8, f.c).url() }).catch(function () { });
+          try { navigator.vibrate && navigator.vibrate([60, 80, 60]); } catch (e) { }
           ir('selfieMal'); return;
         }
-        if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
-        G.vista = cuadro(720, 0.8, f.c).url(); pf.fidListo = true; guardar('aac_cuenta', pf);
-        ir('selfieOk');
-      }).catch(function () { G.analizando = ''; G.prev = null; G.error = 'No se pudo revisar la foto. Revisa tu internet.'; pintar(); });
+        if (pf.celular !== idCelular()) { pf.celular = idCelular(); }   // celular nuevo: ya quedó verificado
+        pf.fidListo = true; guardar('aac_cuenta', pf);
+        try { navigator.vibrate && navigator.vibrate(40); } catch (e) { }
+        G.primera = false; ir('selfieOk');   // el mismo cuadro del Face ID: ✓ Eres cliente + Pedir AutoAmigo
+      }).catch(function () { otraVez('No se pudo revisar la foto. Revisa tu internet.'); });
       return;
     }
     if (a === 'seguirPedido') { var ok2 = G.al; cerrar(); if (ok2) ok2(G.perfil); return; }
@@ -450,7 +469,7 @@
       G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null;
       // Siempre se verifica antes de pedir (pedido del dueño, 26-nov-2026): la 1ª vez la foto normal, después el Face ID.
       // Los motivos (noche, zona, cuenta nueva, celular nuevo) solo se muestran como etiquetas en la 1ª vez.
-      cargarFA().catch(function () { });
+      precargar();
       ir(perfil && perfil.fidListo ? 'selfie' : 'selfieIntro');
       }
     },
@@ -476,7 +495,7 @@
     aprobarPrueba: function () {
       if (!G.paso) return false;
       var al = G.al;
-      if (['selfieIntro', 'selfie', 'selfieOk', 'selfieMal'].indexOf(G.paso) >= 0) { cerrar(); if (al) al(G.perfil); return true; }
+      if (['selfieIntro', 'selfie', 'selfieRev', 'selfieOk', 'selfieMal'].indexOf(G.paso) >= 0) { cerrar(); if (al) al(G.perfil); return true; }
       if (G.paso === 'revision' || G.paso === 'suspendido') {   // solo la prueba: la deja aprobada en este teléfono
         var pr = leer('aac_cuenta', null) || G.perfil; if (pr) { pr.estado = 'aprobado'; pr.forzado = true; guardar('aac_cuenta', pr); }
         clearInterval(espera); cerrar(); if (al) al(pr); return true;
@@ -485,6 +504,9 @@
         tel: /^09\d{8}$/.test(G.d.tel || '') ? G.d.tel : '0991234567', descriptor: G.fotos.descriptor || null, descCedula: G.fotos.descCedula || null,
         fotoCedula: G.fotos.cedula || null, foto: G.fotos.cara || null, celular: idCelular(), creado: Date.now(), acepto: Date.now(), prueba: true };
       guardar('aac_cuenta', perfil); cerrar(); if (al) al(perfil); return true;
-    }
+    },
+    precargar: precargar
   };
+  // Si ya tiene cuenta, el reconocimiento se carga solo poco después de abrir la app (así al pedir revisa rápido)
+  if (leer('aac_cuenta', null)) setTimeout(precargar, 2500);
 })();
