@@ -1532,6 +1532,24 @@
     var rumbo = rumboEntre(a, b);
     NAV.rumbo = rumbo; SV.camB = rumbo; SV.rLento = rumbo; SV.tan = rumbo; SV.estableDesde = 0;
   }
+  // Dónde cae cada esquina de las instrucciones a lo largo de la ruta (en metros desde el inicio)
+  function marcarPasos() {
+    var r = NAV.ruta, ps = NAV.pasos; if (!r || r.length < 2 || !ps) return;
+    var cm = rutaCum(r), desde = 0;
+    ps.forEach(function (p) {
+      if (!p.loc) { p.s = null; return; }
+      var pt = { lat: p.loc[1], lng: p.loc[0] }, mejor = -1, dMin = 1e9;
+      for (var k = desde; k < r.length; k++) { var d = metrosEntre(pt, { lat: r[k][1], lng: r[k][0] }); if (d < dMin) { dMin = d; mejor = k; } if (d < 2) break; }
+      if (mejor < 0 || dMin > 30) { p.s = null; return; }
+      p.s = cm[mejor]; desde = mejor;
+    });
+    ps.__s = true;
+  }
+  // Cuánto falta hasta la próxima esquina, por la ruta (si no se puede, en línea recta)
+  function distPaso(ps) {
+    if (ps && ps.s != null && NAV.sCar != null) return Math.max(0, ps.s - NAV.sCar);
+    return ps && ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : (NAV.falta || 0);
+  }
   function rutaNav(a, b) {
     if (RED.sin && NAV.ruta) { NAV.recalc = false; NAV.fuera = 0; NAV.margen = 1e9; if (!rutaNav.avisado) { rutaNav.avisado = true; aviso('Sin internet: no se puede recalcular la ruta. Sigue la que tienes o guíate por la dirección.'); } pintarNav(); return; }
     var pedido = ++NAV.pedido;
@@ -1644,7 +1662,14 @@
     var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
     NAV.falta = falta;
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
-    while (NAV.paso < NAV.pasos.length - 1 && metrosEntre(pos, { lat: NAV.pasos[NAV.paso].loc[1], lng: NAV.pasos[NAV.paso].loc[0] }) < 20) NAV.paso++;
+    // Por dónde vas EN la ruta (metros recorridos). La instrucción pasa a la siguiente cuando ya pasaste la esquina por la ruta,
+    // aunque el GPS no haya caído justo a menos de 20 m de ella (antes se quedaba pegada y la distancia subía).
+    if (mejor < 30) { var cmr = rutaCum(NAV.ruta); NAV.sCar = cmr[pr.i] + metrosEntre({ lat: NAV.ruta[pr.i][1], lng: NAV.ruta[pr.i][0] }, pr.pt); } else NAV.sCar = null;
+    if (!NAV.pasos.__s) marcarPasos();
+    while (NAV.paso < NAV.pasos.length - 1) {
+      var pp = NAV.pasos[NAV.paso];
+      if ((pp.s != null && NAV.sCar != null && NAV.sCar >= pp.s - 15) || metrosEntre(pos, { lat: pp.loc[1], lng: pp.loc[0] }) < 20) NAV.paso++; else break;
+    }
     NAV.llego = falta < 50;   // por la ruta que falta (en línea recta puede estar cerca pero al otro lado de la avenida)
     // Siguiendo: el mapa gira para que la flecha vaya siempre hacia adelante, plano (sin inclinarse)
     if (NAV.sigue && Date.now() >= SV.trans && !CAM.anim && Math.abs(M.getZoom() - vistaNav(0).zoom) > 0.05) M.easeTo(vistaNav(900));   // nunca corta un movimiento que ya está en camino   // al entrar: acerca y acomoda una vez
@@ -1687,11 +1712,12 @@
     try { if (window.AndroidAA && window.AndroidAA.accion) { window.AndroidAA.accion('voz', JSON.stringify({ t: t })); return; } } catch (e) {}
     try {
       var s = window.speechSynthesis; if (!s) return;
-      s.cancel(); var u = new SpeechSynthesisUtterance(t), v = vozEs(); u.lang = v ? v.lang : 'es-ES'; if (v) u.voice = v; s.speak(u);
+      var u = new SpeechSynthesisUtterance(t), v = vozEs(); u.lang = v ? v.lang : 'es-ES'; if (v) u.voice = v;
+      if (s.speaking || s.pending) { s.cancel(); setTimeout(function () { s.speak(u); }, 120); } else s.speak(u);   // Safari pierde la frase si se cancela y habla al mismo instante
     } catch (e) {}
   }
   function callarVoz() { try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} }
-  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
+  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); var u = new SpeechSynthesisUtterance('.'); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
   function distVoz(m) {
     if (m >= 1000) { var k = Math.round(m / 100) / 10; return (k === 1 ? '1 kilómetro' : String(k).replace('.', ',') + ' kilómetros'); }
     m = m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10); return m + ' metros';
@@ -1704,13 +1730,13 @@
     if (NAV.llego) { if (!VOZ.llego) { VOZ.llego = true; hablar(NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'); } return; }
     VOZ.llego = false;
     var ps = NAV.pasos[NAV.paso]; if (!ps || !NAV.ruta) return;
-    var dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : (NAV.falta || 0), txt = textoPaso(ps);
+    var dm = distPaso(ps), txt = textoPaso(ps);
     var rutaNueva = VOZ.ruta !== NAV.ruta;
     if (rutaNueva || VOZ.paso !== NAV.paso) { VOZ.paso = NAV.paso; VOZ.lejos = false; VOZ.cerca = false; }
-    if (rutaNueva) { VOZ.ruta = NAV.ruta; if (dm > 50) { hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); VOZ.lejos = dm <= 650; return; } }
+    if (rutaNueva) { VOZ.ruta = NAV.ruta; if (dm > 70) { hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); VOZ.lejos = dm <= 650; return; } }
     if (ps.tipo === 'arrive') { if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); } return; }
-    if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); return; }
-    if (!VOZ.cerca && dm <= 50) { VOZ.cerca = VOZ.lejos = true; hablar(txt); }
+    if (!VOZ.lejos && dm <= 500 && dm > 70) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); return; }
+    if (!VOZ.cerca && dm <= 70) { VOZ.cerca = VOZ.lejos = true; hablar(txt); }   // unos segundos antes de doblar
   }
   // A la APK: la próxima vuelta para la notificación fija (como Google Maps fuera de la app). Solo se envía si cambió.
   function avisarNav() {
@@ -1719,7 +1745,7 @@
       if (NAV.recalc) d = { on: true, ic: 'recalc', dist: '', txt: 'Recalculando ruta…', via: '' };
       else if (NAV.llego) d = { on: true, ic: 'arrive', dist: '', txt: NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino', via: (metaNav() || {}).dir || '' };
       else {
-        var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' }, dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : (NAV.falta || 0);
+        var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' }, dm = distPaso(ps);
         var falta = NAV.falta || 0, min = Math.max(1, Math.round(NAV.total ? NAV.dur * falta / NAV.total / 60 : falta / 7 / 60)), lg = new Date(Date.now() + min * 60000);
         var calle = ps.tipo === 'arrive' ? ((metaNav() || {}).dir || '') : (ps.nombre ? 'por ' + ps.nombre : '');
         d = { on: true, ic: ps.tipo === 'arrive' ? 'arrive' : (/roundabout|rotary/.test(ps.tipo) ? 'round' : (ps.mod || 'straight')), dist: distTxt(dm), txt: textoPaso(ps),
@@ -1755,7 +1781,7 @@
     else if (NAV.llego) { ponHTMLsi($('#nav-ic'), iconoPaso({ tipo: 'arrive' })); ponTxt($('#nav-dist'), ''); ponTxt($('#nav-txt'), NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'); ponTxt($('#nav-calle'), (metaNav() || {}).dir || ''); }
     else {
       var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' };
-      var dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : NAV.falta;
+      var dm = distPaso(ps);
       ponHTMLsi($('#nav-ic'), iconoPaso(ps));
       ponTxt($('#nav-dist'), distTxt(dm));
       ponTxt($('#nav-txt'), textoPaso(ps));
