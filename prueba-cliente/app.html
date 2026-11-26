@@ -1237,17 +1237,18 @@
     var pd = M.getPadding ? M.getPadding() : {}, p0 = { top: pd.top || 0, bottom: pd.bottom || 0, left: pd.left || 0, right: pd.right || 0 }, p1 = rellenoCarro();
     var m0 = merc(M.getCenter()), z0 = M.getZoom(), z1 = 14.8, s0 = Math.pow(2, z0), s1 = Math.pow(2, z1);
     var b0 = M.getBearing ? M.getBearing() : 0, b1 = rumboSeguir(), db = ((b1 - b0 + 540) % 360) - 180, t0 = Date.now();
-    SV.trans = Math.max(SV.trans, t0 + dur + 50); SV.pCam = null;
+    SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
     (function paso() {
       if (SV.dedo || !S.v || !S.v.pos || SEG.activo) { CAMV.raf = 0; return; }
-      var k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k, z = z0 + (z1 - z0) * k;
+      var ahora = Date.now(), k = suaveK(Math.min(1, (ahora - t0) / dur)), q = 1 - k, z = z0 + (z1 - z0) * k;
       // cuánto se avanza hacia el taxi según cuánto ya se acercó (así el acercamiento es hacia el taxi y no "de lado")
       var u = Math.abs(z1 - z0) > 0.05 ? (1 - s0 / Math.pow(2, z)) / (1 - s0 / s1) : k;
-      var mc = merc(SV.vista || S.v.pos), c = demerc({ x: m0.x + (mc.x - m0.x) * u, y: m0.y + (mc.y - m0.y) * u });
+      // el carro donde se dibuja en ESTE cuadro (antes se usaba el del cuadro anterior y el carrito temblaba un poco)
+      var mc = merc(posSuave(ahora) || SV.vista || S.v.pos), c = demerc({ x: m0.x + (mc.x - m0.x) * u, y: m0.y + (mc.y - m0.y) * u });
       M.jumpTo({ center: [c.lng, c.lat], zoom: z, bearing: b0 + db * k, pitch: 0,
         padding: { top: p0.top * q + p1.top * k, bottom: p0.bottom * q + p1.bottom * k, left: p0.left * q + p1.left * k, right: p0.right * q + p1.right * k } });
       if (k < 1) { CAMV.raf = requestAnimationFrame(paso); return; }
-      CAMV.raf = 0; SEG.sigueFuera = true; SV.camB = b1; SV.rLento = b1; SV.estableDesde = 0; SV.pCam = null;   // desde aquí lo acompaña cuadro por cuadro
+      CAMV.raf = 0; SEG.sigueFuera = true; SV.camB = b1; SV.rLento = b1; SV.estableDesde = 0; SV.pCam = null; SV.trans = 0;   // desde aquí lo acompaña cuadro por cuadro, sin pausa
     })();
   }
   // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
