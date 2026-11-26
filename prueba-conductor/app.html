@@ -1311,6 +1311,7 @@
   // Vista del inicio (como al abrir la app): mapa derecho, zoom normal, centrado en el carro; flecha normal
   function vistaInicio() {
     if (NAV.activo) { NAV.activo = false; NAV.esperaRuta = false; NAV.pedido++; }
+    callarVoz();
     SV.tan = null; SV.rumboFlecha = null; SV.camB = null; SV.rLento = null; SV.dedo = false; SV.resto = null; CAM.anim = null; SV.trans = 0;
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('auto'); yoMk.setRotation(0); } catch (e) {}
     try { M.stop && M.stop(); M.easeTo({ center: [S.yo.lng, S.yo.lat], zoom: 14.5, bearing: 0, pitch: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 1000, easing: suaveK }); } catch (e) {}
@@ -1351,7 +1352,7 @@
   function iniciar() {
     var c = S.carrera; c.estado = 'ejecucion'; c.llegue = true; c.seg = 0; c.metros = 0; c.espera = 0; c.mostradoC = 0; c.ultMostrar = 0;
     S.yo = { lat: c.o.lat, lng: c.o.lng };
-    if (NAV.activo) { NAV.obj = 'd'; NAV.llego = false; render(); rutaNav(S.yo, c.d); return; }
+    if (NAV.activo) { NAV.obj = 'd'; NAV.llego = false; VOZ.ruta = null; render(); rutaNav(S.yo, c.d); return; }   // al destino: dice la primera instrucción, no "recalculando"
     trazar(S.yo, c.d, true); render();
     if (distKm(S.yo, c.d) > 0.003) NAV.rumbo = rumboEntre(S.yo, c.d);
     NAV.sigueFuera = true; NAV.girar = true; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() });
@@ -1592,6 +1593,7 @@
     var c = S.carrera; if (!c) return;
     NAV.activo = true; NAV.sigue = true; NAV.llego = false; NAV.obj = c.estado === 'ejecucion' ? 'd' : 'o'; NAV.ant = null;
     BASE = null; trazar.n = (trazar.n || 0) + 1;   // una ruta sin Ir que llegue tarde ya no se dibuja
+    VOZ = { ruta: null, paso: -1, lejos: false, cerca: false, recalc: false, llego: false };
     var yaMini = $('#hoja').classList.contains('mini');
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
@@ -1605,7 +1607,7 @@
   }
   function salirNav() {
     if (!NAV.activo) return;
-    NAV.activo = false; NAV.esperaRuta = false; NAV.pedido++; SV.resto = null;
+    NAV.activo = false; NAV.esperaRuta = false; NAV.pedido++; SV.resto = null; callarVoz();
     try { yoMk.setRotation && yoMk.setRotation(0); } catch (e) {}
     // El cuadro de abajo se queda del tamaño en que lo dejaste; el mapa sigue al carro de frente
     var c = S.carrera, rutaIr = NAV.ruta && NAV.ruta.length > 1 && !NAV.recalc ? NAV.ruta.slice() : null;
@@ -1673,6 +1675,43 @@
     var alto = M.getContainer().clientHeight, abajo = ($('#hoja').offsetHeight || 150) + 30;
     return { top: Math.max(200, Math.round(alto * 0.4 + abajo * 0.2)), bottom: abajo, left: 20, right: 20 };
   }
+  // ---------- Voz de la navegación (como Google Maps): la voz del celular, gratis y sin internet ----------
+  // Habla poco: la instrucción al llegar la ruta, unos 500 m antes de cada vuelta y al momento de doblar; "Recalculando ruta"
+  // y "Llegaste…". Nunca dice el valor del taxímetro. En la APK la dice el teléfono (también fuera de la app).
+  var VOZ = { ruta: null, paso: -1, lejos: false, cerca: false, recalc: false, llego: false };
+  function vozEs() {
+    try { var vs = speechSynthesis.getVoices() || [];
+      return vs.filter(function (v) { return /^es[-_](US|MX|419|EC|CO|PE|CL|AR)/i.test(v.lang); })[0] || vs.filter(function (v) { return /^es/i.test(v.lang); })[0] || null; } catch (e) { return null; }
+  }
+  function hablar(t) {
+    try { if (window.AndroidAA && window.AndroidAA.accion) { window.AndroidAA.accion('voz', JSON.stringify({ t: t })); return; } } catch (e) {}
+    try {
+      var s = window.speechSynthesis; if (!s) return;
+      s.cancel(); var u = new SpeechSynthesisUtterance(t), v = vozEs(); u.lang = v ? v.lang : 'es-ES'; if (v) u.voice = v; s.speak(u);
+    } catch (e) {}
+  }
+  function callarVoz() { try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} }
+  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
+  function distVoz(m) {
+    if (m >= 1000) { var k = Math.round(m / 100) / 10; return (k === 1 ? '1 kilómetro' : String(k).replace('.', ',') + ' kilómetros'); }
+    m = m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10); return m + ' metros';
+  }
+  function minuscula(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
+  function vozNav() {
+    if (!NAV.activo) return;
+    if (NAV.recalc) { if (!VOZ.recalc && VOZ.ruta) { VOZ.recalc = true; hablar('Recalculando ruta'); } return; }   // la primera ruta al tocar Ir no dice "recalculando"
+    VOZ.recalc = false;
+    if (NAV.llego) { if (!VOZ.llego) { VOZ.llego = true; hablar(NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'); } return; }
+    VOZ.llego = false;
+    var ps = NAV.pasos[NAV.paso]; if (!ps || !NAV.ruta) return;
+    var dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : (NAV.falta || 0), txt = textoPaso(ps);
+    var rutaNueva = VOZ.ruta !== NAV.ruta;
+    if (rutaNueva || VOZ.paso !== NAV.paso) { VOZ.paso = NAV.paso; VOZ.lejos = false; VOZ.cerca = false; }
+    if (rutaNueva) { VOZ.ruta = NAV.ruta; if (dm > 50) { hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); VOZ.lejos = dm <= 650; return; } }
+    if (ps.tipo === 'arrive') { if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); } return; }
+    if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); return; }
+    if (!VOZ.cerca && dm <= 50) { VOZ.cerca = VOZ.lejos = true; hablar(txt); }
+  }
   function pintarNav() {
     var p = $('#pantalla');
     p.classList.toggle('navegando', NAV.activo);
@@ -1711,6 +1750,7 @@
     ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
     var bc = $('#nav-centrar'); bc.hidden = NAV.sigue;
     bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
+    vozNav();
   }
   // Si mueves o acercas el mapa con los dedos, deja de seguirte hasta que toques "Centrar"
   function dejarDeSeguir(e) {
@@ -1852,7 +1892,7 @@
     var bm = e.target.closest('[data-bm]');
     if (bm) {
       var q = bm.getAttribute('data-bm');
-      if (q === 'nav') { if (NAV.activo) salirNav(); else iniciarNav(); ultimaHoja = ''; render(); return; }
+      if (q === 'nav') { if (NAV.activo) salirNav(); else { desbloquearVoz(); iniciarNav(); } ultimaHoja = ''; render(); return; }
       var gr = $(q === 'finalizar' ? '#b-finalizar' : '#b-iniciar'); if (gr) gr.click(); return;
     }
     if (e.target.closest('#b-iniciar')) { iniciar(); return; }
