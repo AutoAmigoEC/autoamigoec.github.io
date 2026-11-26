@@ -1181,7 +1181,17 @@
   // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
   // Va de la vista actual a la vista donde entran tu taxi y tu recogida (sin girar); si tocas el mapa, se detiene.
   var CAMV = { raf: 0 };
+  // Si el cuadro de abajo es muy alto, el margen pedido no cabía en la pantalla y el mapa no se movía (quedaba vacío):
+  // se achica el margen de arriba (y si hace falta el de abajo) para que siempre quede un espacio de mapa donde encuadrar
+  function margenQueCabe(pad) {
+    var H = M.getContainer().clientHeight, W = M.getContainer().clientWidth, p = { top: pad.top, bottom: pad.bottom, left: pad.left, right: pad.right }, min = 110;
+    if (H - p.top - p.bottom < min) p.top = Math.max(60, H - p.bottom - min);
+    if (H - p.top - p.bottom < min) p.bottom = Math.max(0, H - p.top - min);
+    if (W - p.left - p.right < min) { p.left = p.right = Math.max(10, (W - min) / 2); }
+    return p;
+  }
   function camVista(b, op, dur) {
+    if (op && op.padding) op = Object.assign({}, op, { padding: margenQueCabe(op.padding) });
     var cero = { top: 0, bottom: 0, left: 0, right: 0 }, pd0 = M.getPadding ? M.getPadding() : cero;
     pd0 = { top: pd0.top || 0, bottom: pd0.bottom || 0, left: pd0.left || 0, right: pd0.right || 0 };
     var b0 = M.getBearing ? M.getBearing() : 0, b1 = op.bearing != null ? op.bearing : b0, db = ((b1 - b0 + 540) % 360) - 180;
