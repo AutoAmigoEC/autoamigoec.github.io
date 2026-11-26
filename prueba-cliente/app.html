@@ -1292,7 +1292,7 @@
     [v.o, v.d, v.pos].filter(Boolean).forEach(function (p) { b.extend([p.lng, p.lat]); });
     if (v.ruta && v.ruta.length > 1 && v.fase !== 'ejecucion') v.ruta.forEach(function (c) { b.extend(c); });
     var pad = relleno(); pad = { top: pad.top + 56, bottom: pad.bottom + 10, left: pad.left, right: pad.right };   // el pin entero arriba
-    camVista(b, { padding: pad, maxZoom: 16, bearing: derecho ? 0 : null }, dur || 1000);
+    camVista(b, { padding: pad, maxZoom: 16, bearing: derecho ? 0 : null }, dur || 600);
   }
   function centrar() {
     if (S.v && S.v.pos) {   // en el viaje: va al carro y lo sigue (hasta que muevas el mapa)
@@ -2270,9 +2270,9 @@
     puntos(o, d); ponerRuta(null); render();   // sin recta provisional; el mapa se mueve una sola vez, cuando llega la ruta (antes: 2-3 movimientos seguidos)
     calcularRuta(o, d).then(function (r) {
       if (!S.v || S.v.d !== d) return;
-      S.v.ruta = r.coords; S.v.km = r.km; S.v.min = r.min; S.v.estC = estimadoC(r.km); ponerRuta(r.coords); render(); verRuta(1000, true);
+      S.v.ruta = r.coords; S.v.km = r.km; S.v.min = r.min; S.v.estC = estimadoC(r.km); ponerRuta(r.coords); render(); verRuta(600, true);
     }).catch(function () {
-      if (!S.v || S.v.d !== d) return; if (S.v.fase === 'cotizar') { ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]); verRuta(1000, true); }   // sin ruta: recién ahí la recta
+      if (!S.v || S.v.d !== d) return; if (S.v.fase === 'cotizar') { ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]); verRuta(600, true); }   // sin ruta: recién ahí la recta
       var km = distKm(o, d); S.v.km = km; S.v.min = minutos(km); S.v.estC = estimadoC(km); render();
     });
   }
@@ -2285,7 +2285,7 @@
       S.progT = null; S.v = null; puntos(null); ultimoInicio = ''; render(); return;
     } v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
     // Mientras busca unidad: el viaje completo a la vista (recogida, ruta y destino) en el espacio libre, suave y quieto
-    setTimeout(function () { var w = S.v; if (!w || w.fase !== 'buscando') return; verRuta(1000, true); }, 80);
+    setTimeout(function () { var w = S.v; if (!w || w.fase !== 'buscando') return; verRuta(600, true); }, 80);
     clearTimeout(S.tAcepta); S.tAcepta = setTimeout(aceptar, 6000);
   }
   function aceptar() {
@@ -2302,7 +2302,7 @@
     S.tSeguir = setTimeout(function () {
       var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || SEG.activo || SV.dedo) return;
       SEG.girar = true; SEG.autoFit = false;
-      requestAnimationFrame(function () { pasarASeguir(1600); });
+      requestAnimationFrame(function () { pasarASeguir(1200); });
     }, 160);
   }
   function llego() {
