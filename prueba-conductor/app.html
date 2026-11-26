@@ -1271,15 +1271,28 @@
     } catch (e) {}
   }
   function cerrarOferta(msg) { if (S.oferta && S.oferta.deBandeja) S.oferta.deBandeja.rechazada = true; programarProxima(deBandeja() ? 2 : 25); S.oferta = null; puntosViaje(null); if (msg) aviso(msg); render(); }
+  // Cada carrera empieza desde cero, como la primera: nada de la navegación, la ruta, el giro del mapa ni el cuadro
+  // de la carrera anterior (antes quedaban instrucciones, giros y respuestas de rutas viejas que llegaban tarde)
+  function reiniciarCarrera() {
+    var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
+    try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
+    var pedido = (NAV.pedido || 0) + 1;   // una ruta de la carrera anterior que llegue tarde ya no se usa
+    NAV = { sigue: true, margen: 45, activo: false, obj: '', ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, rumbo: 0, ant: null, pedido: pedido, llego: false,
+      falta: 0, sigueFuera: false, autoFit: true, girar: true, antF: null, fueraDesde: 0 };
+    SV.r = null; SV.sDe = null; SV.sA = null; SV.sAhora = null; SV.sVista = null; SV.rVista = null; SV.resto = null; SV.tRuta = 0; SV.pRuta = null;
+    SV.camB = null; SV.rLento = null; SV.estableDesde = 0; SV.pCam = null; SV.trans = 0;
+    CAM.anim = null; CALLE.meta = null; CALLE.ruta = null; CALLE.pidiendo = false; trazar.n = (trazar.n || 0) + 1;
+    altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
+    try { yoMk.setRotation(0); } catch (e) {}
+    ['#nav-dist', '#nav-txt', '#nav-calle'].forEach(function (s) { ponTxt($(s), ''); }); ponHTMLsi($('#nav-ic'), '');   // sin instrucciones de la carrera anterior
+    pintarNav();
+  }
   function aceptar(o) {
     if (RED.cortarAlAceptar) { RED.cortarAlAceptar = false; setTimeout(function () { ponerRed(true); }, 3000); }
     S.oferta = null;
     if (o.deBandeja) { var i = BANDEJA.indexOf(o.deBandeja); if (i >= 0) BANDEJA.splice(i, 1); delete o.deBandeja; }
     S.carrera = o; o.estado = 'aceptada'; o.numero = 1000 + S.carrerasHoy + 1; o.llegue = false;
-    // Cada carrera empieza desde cero: el cuadro abierto y arriba, y el mapa sin nada de la carrera anterior
-    var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
-    try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
-    NAV.sigue = true; NAV.ruta = null; SV.camB = null; SV.rLento = null; SV.resto = null; CAM.anim = null; altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
+    reiniciarCarrera();
     puntosViaje(o); NAV.autoFit = true; NAV.girar = true; NAV.sigueFuera = false; NAV.antF = null;
     if (distKm(S.yo, o.o) > 0.003) NAV.rumbo = rumboEntre(S.yo, o.o);
     render(); setTimeout(function () { vistaRecogida(1200, true); }, 60);
