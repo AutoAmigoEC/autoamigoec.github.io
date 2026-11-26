@@ -1,6 +1,6 @@
 # Reglas del dueño de AutoAmigo (leer antes de tocar cualquier cosa)
 
-## 1. El mapa del conductor está CERRADO con candado
+## 1. El mapa del conductor está protegido (el dueño lo llama "el revisador")
 El 25-nov-2026 el dueño aprobó el mapa del conductor tal como está en la prueba
 `prueba-conductor/app.html` (versión a2f74ed). Eso incluye:
 el zoom y des-zoom, los efectos, cómo sigue al carro, cómo gira la flecha y el mapa,
@@ -9,7 +9,7 @@ lo que pasa al volver de otra app y cómo empieza cada carrera.
 
 - **Nunca se edita ese código** por iniciativa propia, ni para "mejorarlo", ni de paso al hacer otro cambio.
 - Solo se cambia **exactamente** lo que el dueño pida, y nada más alrededor.
-- Antes de cada commit que toque `prueba-conductor/app.html` o `app/conductor.js`:
+- Antes de cada commit que toque `prueba-conductor/app.html`, `app/conductor.js` o `app/conductor.html` se corre el revisador:
   `python3 herramientas/mapa_protegido.py`
   - Si dice `CAMBIÓ` en algo que el dueño no pidió: se deshace con git y no se publica.
   - Si el dueño pidió ese cambio exacto: se guarda la nueva huella con `--guardar` en el mismo commit
