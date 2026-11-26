@@ -18,6 +18,13 @@ lo que pasa al volver de otra app y cómo empieza cada carrera.
   para volver exactamente a ella si algo se daña.
 - Al publicar a la app real (`app/conductor.js`), se copia el comportamiento aprobado tal cual.
 
+## 1b. El mapa del cliente también está protegido por el revisador
+El 26-nov-2026 el dueño pidió que el mapa del cliente (`prueba-cliente/app.html`) quede protegido igual que el del conductor:
+desde "Tu viaje" (antes de pedir) hasta finalizar — encuadres, motor de cámara, Iniciar/Salir, agrandar/minimizar,
+seguir al taxi, línea azul, volver de otra app y cómo empieza cada viaje.
+- Mismas reglas: no se toca por iniciativa propia; solo exactamente lo que el dueño pida; se corre el revisador antes de cada commit.
+- Al cambiar algo del cliente, revisar que no afecte otras pantallas del cliente (ya pasó: un margen puesto en la regla general cambió todas las vistas).
+
 ## 2. Otras reglas que siguen vigentes
 - Los cambios van primero a la prueba; a la app real solo cuando el dueño dice "publica".
 - "Déjalo como antes" = volver exactamente con git.

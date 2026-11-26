@@ -1168,8 +1168,10 @@
     var v = S.v; if (!v || !v.pos || !v.o) return;
     var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
     // Al agrandar o minimizar: sin vueltas y sin acercarse de golpe; solo se aleja lo justo si hace falta (luego se acerca despacito)
-    // Se deja lugar para el dibujo completo: el pin de la recogida sube ~52 px desde su punto y el carro mide ~38 px
-    var pad = relleno(); pad = { top: pad.top + 56, bottom: pad.bottom + 26, left: pad.left, right: pad.right };
+    // Igual que el conductor. El lugar extra para el dibujo completo (pin ~52 px, carro ~38 px) solo se agrega si queda
+    // una franja de mapa amplia; si no, el mapa se alejaba demasiado y la vista quedaba pobre
+    var pad = relleno(), H = M.getContainer().clientHeight;
+    if (H - pad.top - pad.bottom - 82 >= 180) pad = { top: pad.top + 56, bottom: pad.bottom + 26, left: pad.left, right: pad.right };
     var op = { padding: pad, maxZoom: mantenerGiro ? Math.min(16.5, M.getZoom ? M.getZoom() : 16.5) : 16.5, bearing: forzar && !mantenerGiro ? rumboSeguir() : (M.getBearing ? M.getBearing() : 0) };
     if (!forzar) {
       var cam = null; try { cam = M.cameraForBounds(b, op); } catch (e) {}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Candado del mapa del conductor (aprobado por el dueño el 25-nov-2026, prueba a2f74ed).
+"""El revisador del mapa del conductor y del cliente (aprobado por el dueño el 25-nov-2026, prueba a2f74ed).
 
 Guarda una huella de cada parte del mapa: movimiento del carro, cámara, zoom, efectos, Ir/Salir,
 línea azul, cuadro de abajo y sus animaciones. Antes de cada commit se corre:
@@ -36,6 +36,16 @@ ARCHIVOS = {
         '@M.easeTo = function (o)', '@(function cuadro()', 'abajo', 'mueve', 'arriba',
     ],
     'app/conductor.html': ['@css'],
+    # La app del cliente (aprobada por el dueño el 26-nov-2026: mapa igual al del conductor, de "Tu viaje" a finalizar)
+    'prueba-cliente/app.html': [
+        'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
+        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'margenQueCabe', 'camVista', 'ponerRuta', 'puntos', 'carro', 'retomar',
+        'reiniciarViaje', 'vistaInicio', 'empezarSeguimiento', 'pararSeguimiento', 'orientarConRuta', 'marcarPasos', 'distPaso',
+        'rutaSeg', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguir', 'libreArriba', 'vistaNav',
+        'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'calcularRuta', 'cotizar', 'pedir',
+        'aceptar', 'llego', 'iniciar', 'finalizar', 'cancelar', 'pintarNav', 'deslizarHoja', 'agrandar', 'achicarSuave', 'poner',
+        'abajo', 'mueve', 'arriba', '@M.easeTo = function (o)', '@(function cuadro()', '@css',
+    ],
 }
 
 def bloque(txt, inicio):
