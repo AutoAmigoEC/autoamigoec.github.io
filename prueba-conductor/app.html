@@ -907,15 +907,29 @@
       M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
     });
   }
-  // Ruta por las calles (servicio gratuito OSRM); si falla, línea recta
-  function trazar(o, d) {
-    ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]);
+  // Ruta por las calles (servicio gratuito OSRM). Mientras llega se queda la línea que ya estaba (sin dibujar una recta provisional);
+  // la recta solo se usa si no hay ruta. Con 'recortar', la línea empieza en el carro y se borra lo ya recorrido (como con Ir).
+  var BASE = null;
+  function trazar(o, d, recortar) {
     var url = 'https://router.project-osrm.org/route/v1/driving/' + o.lng + ',' + o.lat + ';' + d.lng + ',' + d.lat + '?overview=full&geometries=geojson';
     var pedido = trazar.n = (trazar.n || 0) + 1;
+    if (!recortar) BASE = null;
+    var poner = function (coords) {
+      if (pedido !== trazar.n) return;
+      if (recortar) { if (NAV.activo) return; BASE = coords; recortarBase(); } else ponerRuta(coords);
+    };
     fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-      if (pedido !== trazar.n || !j.routes || !j.routes[0]) return;
-      ponerRuta(j.routes[0].geometry.coordinates);
-    }).catch(function () {});
+      if (!j.routes || !j.routes[0]) { poner([[o.lng, o.lat], [d.lng, d.lat]]); return; }
+      poner(j.routes[0].geometry.coordinates);
+    }).catch(function () { poner([[o.lng, o.lat], [d.lng, d.lat]]); });
+  }
+  // Sin Ir: la línea parte del carro y se va borrando lo que ya pasaste (si te alejas de la ruta, se ve completa)
+  function recortarBase() {
+    if (NAV.activo || !BASE || !S.yo) return;
+    var pr = proyectar(S.yo, BASE);
+    if (pr.d > 40) { SV.resto = null; ponerRuta(BASE); return; }
+    SV.resto = [[S.yo.lng, S.yo.lat]].concat(BASE.slice(pr.i + 1));
+    ponerRuta(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
   }
   function puntosViaje(c) {
     if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; ponerRuta(null); return; }
@@ -1193,7 +1207,7 @@
     pintarNav();
     // Los botones del mapa van encima de la barra de minutos
     if (S.carrera) { var px = ($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22, cabe = $('#pantalla').clientHeight - px > 120; ponAbajo($('#b-centrar'), px + 'px'); ponAbajo($('#b-ruta'), px + 'px'); $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = cabe ? '' : 'hidden'; ponAbajo($('#b-brujula'), (px + 58) + 'px'); } else { $('#b-centrar').style.visibility = $('#b-ruta').style.visibility = ''; }
-    if (NAV.activo && !NAV.recalc) seguirNav();
+    if (NAV.activo && !NAV.recalc) seguirNav(); else if (!NAV.activo) recortarBase();
   }
   function renderBase() {
     var p = $('#pantalla');
@@ -1279,7 +1293,7 @@
     var pedido = (NAV.pedido || 0) + 1;   // una ruta de la carrera anterior que llegue tarde ya no se usa
     NAV = { sigue: true, margen: 45, activo: false, obj: '', ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, rumbo: 0, ant: null, pedido: pedido, llego: false,
       falta: 0, sigueFuera: false, autoFit: true, girar: true, antF: null, fueraDesde: 0 };
-    SV.r = null; SV.sDe = null; SV.sA = null; SV.sAhora = null; SV.sVista = null; SV.rVista = null; SV.resto = null; SV.tRuta = 0; SV.pRuta = null;
+    SV.r = null; SV.sDe = null; SV.sA = null; SV.sAhora = null; SV.sVista = null; SV.rVista = null; SV.resto = null; SV.tRuta = 0; SV.pRuta = null; BASE = null;
     SV.camB = null; SV.rLento = null; SV.estableDesde = 0; SV.pCam = null; SV.trans = 0;
     CAM.anim = null; CALLE.meta = null; CALLE.ruta = null; CALLE.pidiendo = false; trazar.n = (trazar.n || 0) + 1;
     altoBarra = 0; barraMini.ult = null; barraMini.tSube = 0; ultimaHoja = '';
@@ -1310,7 +1324,7 @@
     var c = S.carrera; c.estado = 'ejecucion'; c.llegue = true; c.seg = 0; c.metros = 0; c.espera = 0; c.mostradoC = 0; c.ultMostrar = 0;
     S.yo = { lat: c.o.lat, lng: c.o.lng };
     if (NAV.activo) { NAV.obj = 'd'; NAV.llego = false; render(); rutaNav(S.yo, c.d); return; }
-    render();
+    trazar(S.yo, c.d, true); render();
     if (distKm(S.yo, c.d) > 0.003) NAV.rumbo = rumboEntre(S.yo, c.d);
     NAV.sigueFuera = true; NAV.girar = true; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() });
   }
@@ -1548,6 +1562,7 @@
   function iniciarNav() {
     var c = S.carrera; if (!c) return;
     NAV.activo = true; NAV.sigue = true; NAV.llego = false; NAV.obj = c.estado === 'ejecucion' ? 'd' : 'o'; NAV.ant = null;
+    BASE = null; trazar.n = (trazar.n || 0) + 1;   // una ruta sin Ir que llegue tarde ya no se dibuja
     var yaMini = $('#hoja').classList.contains('mini');
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
@@ -1564,7 +1579,7 @@
     NAV.activo = false; NAV.esperaRuta = false; NAV.pedido++; SV.resto = null;
     try { yoMk.setRotation && yoMk.setRotation(0); } catch (e) {}
     // El cuadro de abajo se queda del tamaño en que lo dejaste; el mapa sigue al carro de frente
-    var c = S.carrera; if (c) { if (c.estado === 'aceptada') trazar(S.yo, c.o); else trazar(c.o, c.d); } else ponerRuta(null);
+    var c = S.carrera; if (c) trazar(S.yo, c.estado === 'aceptada' ? c.o : c.d, true); else ponerRuta(null);
     render();
     if (c) { NAV.sigueFuera = true; NAV.girar = true; NAV.antF = null; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, easing: suaveK, padding: rellenoCarro() }); }
     else M.easeTo({ pitch: 0, bearing: 0, duration: 1000, easing: suaveK });
