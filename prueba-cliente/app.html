@@ -507,11 +507,17 @@
   /* Ícono tipo Face ID / banco: la carita queda quieta; solo laten las esquinas. Al revisar, las esquinas se vuelven un círculo que gira; al aprobar, ✓ */
   .seg .fid-icono svg g,.seg .fid-icono svg path,.seg .fid-icono svg circle{transform-box:view-box;transform-origin:50px 50px}
   .seg .fid-icono .fc,.seg .fid-icono .fcara{transition:opacity .25s,transform .3s ease}
-  .seg .fid-icono .fcirc{opacity:0;stroke-dasharray:170 82;transform:scale(1.15);transition:opacity .25s .1s,transform .3s ease}
-  .seg .fid-icono.buscar .fc{animation:fidEsquinas 1.6s ease-in-out infinite}
-  .seg .fid-icono.revisando .fc{opacity:0;transform:scale(.85) rotate(45deg)}
+  /* Revisando (como Face ID de Apple): las esquinas se cierran en un círculo verde que brilla y gira como en 3D */
+  .seg .fid-icono .fanillo{opacity:0;transform:scale(1.2);transition:opacity .25s .1s,transform .35s ease}
+  .seg .fid-icono.revisando{color:#32D74B}
+  .seg .fid-icono.revisando svg{filter:drop-shadow(0 0 3px rgba(50,215,75,.9)) drop-shadow(0 0 8px rgba(50,215,75,.45))}
+  .seg .fid-icono.revisando .fc{opacity:0;transform:scale(.8)}
   .seg .fid-icono.revisando .fcara{opacity:0;transform:scale(.7)}
-  .seg .fid-icono.revisando .fcirc{opacity:1;transform:scale(1);animation:fidGira .9s linear infinite}
+  .seg .fid-icono.revisando .fanillo{opacity:1;transform:scale(1);animation:fidGira 1.6s linear infinite}
+  .seg .fid-icono.revisando .fr1{animation:fidAnilloX 1.1s ease-in-out infinite}
+  .seg .fid-icono.revisando .fr2{animation:fidAnilloY 1.1s ease-in-out infinite;animation-delay:-.55s}
+  @keyframes fidAnilloX{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.18)}}
+  @keyframes fidAnilloY{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.18)}}
   .seg .fid-icono.ok .fcheck{stroke-dasharray:62;stroke-dashoffset:62;animation:fidCheck .35s .12s ease-out forwards}
   @keyframes fidEsquinas{0%,100%{transform:scale(1)}50%{transform:scale(.92)}}
   @keyframes fidGira{to{transform:rotate(360deg)}}
@@ -890,7 +896,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=19"></script>
+<script src="seguridad.js?v=20"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
