@@ -18,7 +18,7 @@ HUELLAS = os.path.join(AQUI, 'mapa_protegido.json')
 ARCHIVOS = {
     'prueba-conductor/app.html': [
         'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
-        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'ponerRuta', 'trazar', 'recortarBase', 'puntosViaje', 'seguirFuera',
+        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'ponerRuta', 'pintarFuentes', 'ponerResto', 'pintarBrujula', 'trazar', 'recortarBase', 'puntosViaje', 'seguirFuera',
         'retomar', 'vistaInicio', 'reiniciarCarrera', 'aceptar', 'iniciar', 'finalizar', 'orientarConRuta', 'marcarPasos', 'distPaso',
         'rutaNav', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguirNav', 'libreArriba', 'vistaNav',
         'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'posBotones', 'deslizarHoja',
@@ -39,7 +39,7 @@ ARCHIVOS = {
     # La app del cliente (aprobada por el dueño el 26-nov-2026: mapa igual al del conductor, de "Tu viaje" a finalizar)
     'prueba-cliente/app.html': [
         'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
-        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'margenQueCabe', 'camVista', 'ponerRuta', 'puntos', 'carro', 'retomar',
+        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'margenQueCabe', 'camVista', 'ponerRuta', 'pintarFuentes', 'ponerResto', 'pintarBrujula', 'puntos', 'carro', 'retomar',
         'reiniciarViaje', 'vistaInicio', 'empezarSeguimiento', 'pararSeguimiento', 'orientarConRuta', 'marcarPasos', 'distPaso',
         'rutaSeg', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguir', 'libreArriba', 'vistaNav',
         'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'calcularRuta', 'cotizar', 'pedir',

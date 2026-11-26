@@ -867,7 +867,7 @@
       // La flecha gira con la calle donde está (se ve doblar); el mapa la sigue con calma (~1 s) y vuelve a quedar derecha
       if (SV.tan != null) { if (SV.rumboFlecha == null) SV.rumboFlecha = SV.tan; else { var dfl = ((SV.tan - SV.rumboFlecha + 540) % 360) - 180; SV.rumboFlecha = (SV.rumboFlecha + dfl * (1 - Math.exp(-dt / 300)) + 360) % 360; } }
       if (SV.rumboFlecha != null) { try { yoMk.setRotation(SV.rumboFlecha); } catch (e) {} }
-      if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerRuta(SV.resto); }
+      if (SV.resto && SV.resto.length > 1 && ahora - (SV.tRuta || 0) > 160 && (!SV.pRuta || metrosEntre(SV.pRuta, p) > 1.5)) { SV.tRuta = ahora; SV.pRuta = p; SV.resto[0] = [p.lng, p.lat]; ponerResto(SV.resto); }
       var camT = siguiendo() && !SV.dedo ? camAhora(ahora) : null;
       if (!siguiendo()) { SV.camB = null; SV.rLento = null; }   // al volver a seguir, el mapa parte de la dirección del momento
       if (camT) { M.jumpTo({ center: [p.lng, p.lat], zoom: camT.zoom, bearing: camT.bearing, pitch: camT.pitch, padding: camT.padding }); SV.camB = camT.bearing; }
@@ -923,14 +923,45 @@
     }
     M.fitBounds(b, Object.assign(op, { duration: dur || 1200, easing: suaveK }));
   }
-  function ponerRuta(coords) {
+  // La línea azul en dos partes que se ven como una sola: el tramo cercano al carro (pocos puntos, se actualiza seguido para que
+  // se borre pegada al carro) y el resto de la ruta (pesado, se actualiza solo cada ~300 m). Antes se mandaba la ruta entera
+  // unas 6 veces por segundo y en celulares lentos producía trabones chicos mientras el carro avanzaba.
+  var RUTA2 = { corte: null };
+  function fcLinea(c) { return { type: 'FeatureCollection', features: c && c.length > 1 ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: c } }] : [] }; }
+  function pintarFuentes(cola, cabeza) {
     listo(function () {
-      var datos = { type: 'FeatureCollection', features: coords ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords } }] : [] };
-      if (M.getSource('v-ruta')) { M.getSource('v-ruta').setData(datos); return; }
-      M.addSource('v-ruta', { type: 'geojson', data: datos });
-      M.addLayer({ id: 'v-ruta-brillo', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 12, 'line-blur': 7, 'line-opacity': .55 } });
-      M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
+      if (!M.getSource('v-ruta')) {
+        M.addSource('v-ruta', { type: 'geojson', data: fcLinea(null) });
+        M.addSource('v-ruta-c', { type: 'geojson', data: fcLinea(null) });
+        // el brillo con puntas planas: así las dos partes se juntan sin un punto más brillante en la unión
+        M.addLayer({ id: 'v-ruta-brillo', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'butt', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 12, 'line-blur': 7, 'line-opacity': .55 } });
+        M.addLayer({ id: 'v-ruta-c-brillo', type: 'line', source: 'v-ruta-c', layout: { 'line-cap': 'butt', 'line-join': 'round' }, paint: { 'line-color': '#3B82F6', 'line-width': 12, 'line-blur': 7, 'line-opacity': .55 } });
+        M.addLayer({ id: 'v-ruta', type: 'line', source: 'v-ruta', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
+        M.addLayer({ id: 'v-ruta-c', type: 'line', source: 'v-ruta-c', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#4C8DFF', 'line-width': 4.5 } });
+      }
+      if (cola !== undefined) M.getSource('v-ruta').setData(fcLinea(cola));
+      if (cabeza !== undefined) M.getSource('v-ruta-c').setData(fcLinea(cabeza));
     });
+  }
+  // Ruta completa (sin carro al inicio): todo en una sola parte
+  function ponerRuta(coords) { RUTA2.corte = null; pintarFuentes(coords, null); }
+  // Ruta que se va borrando detrás del carro (r[0] es el carro): solo se manda seguido el tramo cercano
+  function ponerResto(r) {
+    if (!r || r.length < 2) { ponerRuta(r); return; }
+    var k = -1, acc = 0, i, j;
+    if (RUTA2.corte) for (i = 1; i < r.length; i++) {
+      acc += metrosEntre({ lat: r[i - 1][1], lng: r[i - 1][0] }, { lat: r[i][1], lng: r[i][0] });
+      if (r[i][0] === RUTA2.corte[0] && r[i][1] === RUTA2.corte[1]) { k = i; break; }
+      if (acc > 1500) break;
+    }
+    if (k < 0 || acc < 200) {   // nuevo corte unos 500 m adelante (el resto pesado se manda solo aquí)
+      acc = 0; k = r.length - 1;
+      for (j = 1; j < r.length; j++) { acc += metrosEntre({ lat: r[j - 1][1], lng: r[j - 1][0] }, { lat: r[j][1], lng: r[j][0] }); if (acc >= 500) { k = j; break; } }
+      RUTA2.corte = r[k].slice();
+      pintarFuentes(k < r.length - 1 ? r.slice(k) : null, r.slice(0, k + 1));
+      return;
+    }
+    pintarFuentes(undefined, r.slice(0, k + 1));
   }
   // Ruta por las calles (servicio gratuito OSRM). Mientras llega se queda la línea que ya estaba (sin dibujar una recta provisional);
   // la recta solo se usa si no hay ruta. Con 'recortar', la línea empieza en el carro y se borra lo ya recorrido (como con Ir).
@@ -953,7 +984,7 @@
     var pr = proyectar(S.yo, BASE);
     if (pr.d > 40) { SV.resto = null; ponerRuta(BASE); return; }
     SV.resto = [[S.yo.lng, S.yo.lat]].concat(BASE.slice(pr.i + 1));
-    ponerRuta(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
+    ponerResto(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
   }
   function puntosViaje(c) {
     if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; BASE = null; trazar.n = (trazar.n || 0) + 1; ponerRuta(null); return; }   // sin carrera nunca queda línea azul
@@ -1661,7 +1692,7 @@
       if (metrosEntre(pos, ad) > 3) NAV.rumbo = rumboEntre(pr.pt, ad);
     }
     var resto = [[pos.lng, pos.lat]].concat(NAV.ruta.slice(pr.i + 1));
-    SV.resto = resto.slice(); ponerRuta(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
+    SV.resto = resto.slice(); ponerResto(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
     var falta = 0; for (var k = 0; k < resto.length - 1; k++) falta += metrosEntre({ lat: resto[k][1], lng: resto[k][0] }, { lat: resto[k + 1][1], lng: resto[k + 1][0] });
     NAV.falta = falta;
     // Instrucción siguiente: se pasa a la otra al llegar a la esquina
@@ -2021,9 +2052,10 @@
   function pintarBrujula() {
     var b = $('#b-brujula'); if (!b) return;
     var br = M.getBearing ? M.getBearing() : 0, pt = M.getPitch ? M.getPitch() : 0;
-    b.hidden = Math.abs(br) < 1 && pt < 1;
-    $('#brujula-aguja').style.transform = 'rotate(' + (-br) + 'deg)';
-    b.style.bottom = (parseFloat($('#b-centrar').style.bottom || '16') + 58) + 'px';
+    // solo se escribe lo que cambió (antes se escribía todo en cada cuadro mientras el mapa giraba)
+    var oc = Math.abs(br) < 1 && pt < 1; if (b.hidden !== oc) b.hidden = oc;
+    var ag = $('#brujula-aguja'), tr = 'rotate(' + (-br).toFixed(1) + 'deg)'; if (ag.__tr !== tr) { ag.style.transform = tr; ag.__tr = tr; }
+    var bo = (parseFloat($('#b-centrar').style.bottom || '16') + 58) + 'px'; if (b.style.bottom !== bo) b.style.bottom = bo;
   }
   try { M.on('rotate', pintarBrujula); M.on('pitch', pintarBrujula); M.on('moveend', pintarBrujula); } catch (e) {}
   $('#b-brujula').addEventListener('click', function () { NAV.girar = false; M.easeTo({ bearing: 0, pitch: 0, duration: 500 }); });
