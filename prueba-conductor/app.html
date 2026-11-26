@@ -1712,6 +1712,23 @@
     if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); return; }
     if (!VOZ.cerca && dm <= 50) { VOZ.cerca = VOZ.lejos = true; hablar(txt); }
   }
+  // A la APK: la próxima vuelta para la notificación fija (como Google Maps fuera de la app). Solo se envía si cambió.
+  function avisarNav() {
+    var d = { on: false };
+    if (NAV.activo && S.carrera) {
+      if (NAV.recalc) d = { on: true, ic: 'recalc', dist: '', txt: 'Recalculando ruta…', via: '' };
+      else if (NAV.llego) d = { on: true, ic: 'arrive', dist: '', txt: NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino', via: (metaNav() || {}).dir || '' };
+      else {
+        var ps = NAV.pasos[NAV.paso] || { tipo: 'arrive' }, dm = ps.loc ? metrosEntre(S.yo, { lat: ps.loc[1], lng: ps.loc[0] }) : (NAV.falta || 0);
+        var falta = NAV.falta || 0, min = Math.max(1, Math.round(NAV.total ? NAV.dur * falta / NAV.total / 60 : falta / 7 / 60)), lg = new Date(Date.now() + min * 60000);
+        var calle = ps.tipo === 'arrive' ? ((metaNav() || {}).dir || '') : (ps.nombre ? 'por ' + ps.nombre : '');
+        d = { on: true, ic: ps.tipo === 'arrive' ? 'arrive' : (/roundabout|rotary/.test(ps.tipo) ? 'round' : (ps.mod || 'straight')), dist: distTxt(dm), txt: textoPaso(ps),
+          via: (calle ? calle + ' · ' : '') + 'llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') };
+      }
+    }
+    var j = JSON.stringify(d); if (j === avisarNav.ult) return; avisarNav.ult = j;
+    try { if (window.AndroidAA && window.AndroidAA.accion) window.AndroidAA.accion('navInfo', j); } catch (e) {}
+  }
   function pintarNav() {
     var p = $('#pantalla');
     p.classList.toggle('navegando', NAV.activo);
@@ -1720,6 +1737,7 @@
     p.classList.toggle('taxi-on', !!(S.carrera && S.carrera.estado === 'ejecucion'));
     yoEl.classList.toggle('flecha', NAV.activo);
     if (!NAV.activo) {
+      avisarNav();
       $('#nav-centrar').hidden = true;
       // Antes de iniciar: minutos, km y hora de llegada, con el botón Iniciar a la derecha
       var c = S.carrera;
@@ -1750,7 +1768,7 @@
     ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
     var bc = $('#nav-centrar'); bc.hidden = NAV.sigue;
     bc.style.bottom = (($('#hoja').offsetHeight || 0) + ($('#nav-pie').offsetHeight || 0) + 22) + 'px';
-    vozNav();
+    vozNav(); avisarNav();
   }
   // Si mueves o acercas el mapa con los dedos, deja de seguirte hasta que toques "Centrar"
   function dejarDeSeguir(e) {
