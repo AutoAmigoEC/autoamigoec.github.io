@@ -25,6 +25,17 @@ ARCHIVOS = {
         'moverMapa', 'animar', 'ponerHTML', 'igualarNodos', 'render', 'renderBase', 'pintarNav', 'barraMini', 'hojaCarrera',
         '@M.easeTo = function (o)', '@(function cuadro()', '@css',
     ],
+    # La app real (publicada el 26-nov-2026 con el mismo comportamiento aprobado)
+    'app/conductor.js': [
+        'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
+        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'ponerRuta', 'trazar', 'recortarBase', 'seguirFuera', 'pintarMapa',
+        'retomar', 'vistaInicio', 'reiniciarCarrera', 'orientarConRuta', 'marcarPasos', 'distPaso', 'rutaNav', 'pedirRuta',
+        'proyectar', 'iniciarNav', 'salirNav', 'seguirNav', 'libreArriba', 'vistaNav', 'ajustarFlecha', 'abajoFlecha',
+        'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'posBotones', 'deslizarHoja', 'moverMapa', 'animar', 'ponerHTML',
+        'igualarNodos', 'render', 'pintarHoja', 'pintarNav', 'alEstadoNav', 'barraMini', 'hojaCarrera',
+        '@M.easeTo = function (o)', '@(function cuadro()',
+    ],
+    'app/conductor.html': ['@css'],
 }
 
 def bloque(txt, inicio):
