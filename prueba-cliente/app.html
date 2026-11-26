@@ -1176,7 +1176,25 @@
       var cz = cam && typeof cam.zoom === 'number' ? cam.zoom : null;
       if (aLaVista([v.pos, v.o], pad) && (cz == null || cz - M.getZoom() < 0.8)) return;   // se ven los dos: el mapa se queda quieto
     }
+    if (mantenerGiro) { camVista(b, op, dur || 1000); return; }
     M.fitBounds(b, Object.assign(op, { duration: dur || 1200, easing: suaveK }));
+  }
+  // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
+  // Va de la vista actual a la vista donde entran tu taxi y tu recogida (sin girar); si tocas el mapa, se detiene.
+  var CAMV = { raf: 0 };
+  function camVista(b, op, dur) {
+    var meta = null; try { meta = M.cameraForBounds(b, op); } catch (e) {}
+    if (!meta || !meta.center || typeof meta.zoom !== 'number') { M.fitBounds(b, Object.assign(op, { duration: dur, easing: suaveK })); return; }
+    var c0 = M.getCenter(), c1 = meta.center.lng != null ? meta.center : { lng: meta.center[0], lat: meta.center[1] };
+    var z0 = M.getZoom(), z1 = meta.zoom, br = M.getBearing ? M.getBearing() : 0, t0 = Date.now();
+    try { M.stop && M.stop(); } catch (e) {}
+    cancelAnimationFrame(CAMV.raf); SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
+    (function paso() {
+      if (SV.dedo) { CAMV.raf = 0; return; }
+      var k = suaveK(Math.min(1, (Date.now() - t0) / dur));
+      M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: br });
+      CAMV.raf = k < 1 ? requestAnimationFrame(paso) : 0;
+    })();
   }
   // Con el taxímetro iniciado, al seguir al carro el mapa gira para que el carro vaya siempre de frente (hacia arriba)
   function rumboSeguir() { return S.v && SEG.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (SEG.rumbo || 0)) : 0; }
@@ -2382,7 +2400,7 @@
       setTimeout(function () {
         ultimaHoja = ''; render();
         // El mapa se acomoda al espacio libre: el carro y el punto de recogida quedan a la vista
-        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1200, true, true); } else verRuta(); }
+        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); } else verRuta(); }
       }, 20);
     }
     // Con el taxímetro iniciado: achicar también es suave (el cuadro baja deslizándose y el mapa se mueve con calma)
@@ -2392,7 +2410,7 @@
       if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
       else if (S.v && S.v.pos) {
         if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1200, true, true); }
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); }
         else verRuta(1000);
       }
       clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { render(); posBotones(); }, 500);
@@ -2404,7 +2422,7 @@
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1200, true, true); }
+        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); }
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
       clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { render(); posBotones(); }, 500);
