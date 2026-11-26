@@ -858,7 +858,7 @@
         var estable = Math.abs(dl) < 12;
         if (!estable) SV.estableDesde = 0; else if (!SV.estableDesde) SV.estableDesde = ahora;
         var fuera = ((meta - SV.camB + 540) % 360) - 180;
-        if (Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
+        if (!NAV.esperaRuta && Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
         var dif = ((SV.camB - cur + 540) % 360) - 180;
         var paso = dif * (1 - Math.exp(-dt / 350)), tope = 140 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
         M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? SV.camB : cur + paso });
@@ -1478,6 +1478,16 @@
   }
   function distTxt(m) { return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : (m < 50 ? Math.max(10, Math.round(m / 10) * 10) : Math.round(m / 50) * 50) + ' m'; }
   // Pide la ruta con las instrucciones paso a paso
+  // Llegó la ruta después de tocar Ir: el mapa y la flecha giran juntos una sola vez, suave, hacia la calle por donde sigue la ruta
+  function orientarConRuta() {
+    if (!NAV.esperaRuta || !NAV.ruta || NAV.ruta.length < 2) return;
+    NAV.esperaRuta = false;
+    var r = NAV.ruta, pr = proyectar(S.yo, r), i = Math.min(pr.i, r.length - 2), a = pr.pt || { lat: r[i][1], lng: r[i][0] }, b = { lat: r[i + 1][1], lng: r[i + 1][0] };
+    for (var k = i + 2, m = metrosEntre(a, b); k < r.length && m < 25; k++) { var q = { lat: r[k][1], lng: r[k][0] }; m += metrosEntre(b, q); b = q; }   // unos 25 m por delante
+    if (metrosEntre(a, b) < 2) return;
+    var rumbo = rumboEntre(a, b);
+    NAV.rumbo = rumbo; SV.camB = rumbo; SV.rLento = rumbo; SV.tan = rumbo; SV.estableDesde = 0;
+  }
   function rutaNav(a, b) {
     if (RED.sin && NAV.ruta) { NAV.recalc = false; NAV.fuera = 0; NAV.margen = 1e9; if (!rutaNav.avisado) { rutaNav.avisado = true; aviso('Sin internet: no se puede recalcular la ruta. Sigue la que tienes o guíate por la dirección.'); } pintarNav(); return; }
     var pedido = ++NAV.pedido;
@@ -1486,7 +1496,7 @@
       if (pedido !== NAV.pedido) return;
       NAV.ruta = [[a.lng, a.lat], [b.lng, b.lat]]; NAV.total = metrosEntre(a, b); NAV.dur = NAV.total / 7;
       NAV.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; NAV.paso = 1; NAV.recalc = false; NAV.fuera = 0; ponerMargen();
-      ponerRuta(NAV.ruta); seguirNav();
+      ponerRuta(NAV.ruta); orientarConRuta(); seguirNav();
     };
     pedirRuta(a, b)
       .then(function (j) {
@@ -1496,7 +1506,7 @@
         NAV.ruta = rt.geometry.coordinates; NAV.total = rt.distance; NAV.dur = rt.duration * 1.25;
         NAV.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
         NAV.paso = Math.min(1, NAV.pasos.length - 1); NAV.recalc = false; NAV.fuera = 0; ponerMargen();
-        ponerRuta(NAV.ruta); seguirNav();
+        ponerRuta(NAV.ruta); orientarConRuta(); seguirNav();
       }).catch(recta);
   }
   // Dos servidores de rutas gratuitos a la vez: gana el primero que responde. Si ninguno responde en 3 s, se pide otra vez (2 intentos).
@@ -1542,8 +1552,8 @@
     try { yoMk.setRotationAlignment && yoMk.setRotationAlignment('map'); } catch (e) {}
     rutaNav(S.yo, metaNav());
     render();
-    // Arranca mirando hacia donde de verdad vas manejando; si todavía no te mueves, hacia la recogida o el destino
-    NAV.rumbo = SV.rumboFlecha != null ? SV.rumboFlecha : rumboEntre(S.yo, metaNav());
+    // El mapa se queda con la orientación que tiene hasta que llega la ruta (menos de 1 s); ahí gira una sola vez, suave
+    NAV.esperaRuta = true; NAV.rumbo = M.getBearing ? M.getBearing() : 0;
     SV.camB = NAV.rumbo; SV.rLento = NAV.rumbo; SV.estableDesde = 0;
     // Igual que al minimizar: el cuadro baja deslizándose y el mapa se acerca con calma, al mismo tiempo y suave
     if (!yaMini && hojaAnimar) hojaAnimar(true);
@@ -1551,10 +1561,10 @@
   }
   function salirNav() {
     if (!NAV.activo) return;
-    NAV.activo = false; NAV.pedido++; SV.resto = null;
+    NAV.activo = false; NAV.esperaRuta = false; NAV.pedido++; SV.resto = null;
     try { yoMk.setRotation && yoMk.setRotation(0); } catch (e) {}
     // El cuadro de abajo se queda del tamaño en que lo dejaste; el mapa sigue al carro de frente
-    var c = S.carrera; if (c) trazar(c.o, c.d); else ponerRuta(null);
+    var c = S.carrera; if (c) { if (c.estado === 'aceptada') trazar(S.yo, c.o); else trazar(c.o, c.d); } else ponerRuta(null);
     render();
     if (c) { NAV.sigueFuera = true; NAV.girar = true; NAV.antF = null; M.easeTo({ center: [S.yo.lng, S.yo.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, easing: suaveK, padding: rellenoCarro() }); }
     else M.easeTo({ pitch: 0, bearing: 0, duration: 1000, easing: suaveK });
