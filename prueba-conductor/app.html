@@ -759,6 +759,19 @@
     if (metrosEntre(SV.de, SV.a) > 1) SV.tan = rumboEntre(SV.de, SV.a);
     return { lat: SV.de.lat + (SV.a.lat - SV.de.lat) * k, lng: SV.de.lng + (SV.a.lng - SV.de.lng) * k };
   }
+  // Al volver a la app (por ejemplo desde WhatsApp) el teléfono tuvo la página dormida: se retoma desde donde está el carro ahora,
+  // sin terminar animaciones viejas ni arrastrar la flecha desde donde quedó
+  function retomar() {
+    var ahora = Date.now();
+    try { M.stop && M.stop(); M.resize && M.resize(); } catch (e) {}
+    CAM.anim = null; SV.trans = 0; SV.dedo = false; SV.tPrev = 0; SV.ult = 0; SV.pCam = null; SV.estableDesde = 0;
+    if (S.yo) { SV.de = null; SV.a = { lat: S.yo.lat, lng: S.yo.lng }; SV.dur = 0; SV.vista = SV.a; SV.r = null; SV.fuente = null; SV.raw = { lat: S.yo.lat, lng: S.yo.lng }; SV.t0 = ahora; }
+    if (SV.tan != null) SV.rumboFlecha = SV.tan;
+    if (NAV.activo) { SV.camB = NAV.rumbo; SV.rLento = NAV.rumbo; }
+    render();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) retomar(); });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) retomar(); });
   function nuevaPosSuave(p) {
     var ahora = Date.now(), visto = SV.vista || posSuave(ahora), r = rutaSuave();
     if (!visto || metrosEntre(visto, p) > 400) { SV.de = null; SV.a = p; SV.dur = 0; SV.vista = p; SV.r = null; }   // primera vez o salto grande: va directo
@@ -925,14 +938,14 @@
   }
   // Sin Ir: la línea parte del carro y se va borrando lo que ya pasaste (si te alejas de la ruta, se ve completa)
   function recortarBase() {
-    if (NAV.activo || !BASE || !S.yo) return;
+    if (NAV.activo || !BASE || !S.yo || !S.carrera) return;
     var pr = proyectar(S.yo, BASE);
     if (pr.d > 40) { SV.resto = null; ponerRuta(BASE); return; }
     SV.resto = [[S.yo.lng, S.yo.lat]].concat(BASE.slice(pr.i + 1));
     ponerRuta(SV.resto.map(function (c, i) { return i === 0 && SV.vista ? [SV.vista.lng, SV.vista.lat] : c; }));
   }
   function puntosViaje(c) {
-    if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; ponerRuta(null); return; }
+    if (!c) { if (mkO) mkO.remove(); if (mkD) mkD.remove(); mkO = mkD = null; SV.resto = null; BASE = null; trazar.n = (trazar.n || 0) + 1; ponerRuta(null); return; }   // sin carrera nunca queda línea azul
     if (!mkO) mkO = new maplibregl.Marker({ element: pinV('#E5252A'), anchor: 'bottom', subpixelPositioning: true }).setLngLat([c.o.lng, c.o.lat]).addTo(M);
     if (!mkD) mkD = new maplibregl.Marker({ element: pinV('#1570EF'), anchor: 'bottom', subpixelPositioning: true }).setLngLat([c.d.lng, c.d.lat]).addTo(M);
     mkO.setLngLat([c.o.lng, c.o.lat]); mkD.setLngLat([c.d.lng, c.d.lat]);
