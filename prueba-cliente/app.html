@@ -504,23 +504,18 @@
   .seg .fid-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .seg .fid-icono{width:92px;height:92px;color:#fff;transition:color .25s}
   .seg .fid-icono svg{width:100%;height:100%;display:block}
-  /* Ícono que se mueve (como Face ID): buscando = la cara mira a los lados y parpadea; revisando = una línea escanea y las esquinas laten */
-  .seg .fid-icono svg g,.seg .fid-icono svg path,.seg .fid-icono svg line{transform-box:view-box;transform-origin:50px 50px}
-  .seg .fid-icono .fscan{opacity:0}
-  .seg .fid-icono .fojos{transform-origin:50px 40px}
-  .seg .fid-icono.buscar .fcara{animation:fidMira 3.2s ease-in-out infinite}
-  .seg .fid-icono.buscar .fojos{animation:fidParpadeo 3.2s ease-in-out infinite}
+  /* Ícono tipo Face ID / banco: la carita queda quieta; solo laten las esquinas. Al revisar, las esquinas se vuelven un círculo que gira; al aprobar, ✓ */
+  .seg .fid-icono svg g,.seg .fid-icono svg path,.seg .fid-icono svg circle{transform-box:view-box;transform-origin:50px 50px}
+  .seg .fid-icono .fc,.seg .fid-icono .fcara{transition:opacity .25s,transform .3s ease}
+  .seg .fid-icono .fcirc{opacity:0;stroke-dasharray:170 82;transform:scale(1.15);transition:opacity .25s .1s,transform .3s ease}
   .seg .fid-icono.buscar .fc{animation:fidEsquinas 1.6s ease-in-out infinite}
-  .seg .fid-icono.revisando .fc{animation:fidEsquinasR .8s ease-in-out infinite}
-  .seg .fid-icono.revisando .fcara{animation:fidAsiente .8s ease-in-out infinite}
-  .seg .fid-icono.revisando .fscan{animation:fidEscanea 1.1s ease-in-out infinite}
-  .seg .fid-icono.revisando .fojos{animation:fidParpadeo 1.6s ease-in-out infinite}
-  @keyframes fidMira{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,0)}45%{transform:translate(0,-2px)}70%{transform:translate(6px,0)}}
-  @keyframes fidParpadeo{0%,42%,50%,100%{transform:scaleY(1)}46%{transform:scaleY(.1)}}
-  @keyframes fidEsquinas{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(.95)}}
-  @keyframes fidEsquinasR{0%,100%{transform:scale(1)}50%{transform:scale(.9)}}
-  @keyframes fidAsiente{0%,100%{transform:translate(0,0)}50%{transform:translate(0,2px)}}
-  @keyframes fidEscanea{0%{opacity:0;transform:translateY(0)}15%{opacity:.9}85%{opacity:.9}100%{opacity:0;transform:translateY(64px)}}
+  .seg .fid-icono.revisando .fc{opacity:0;transform:scale(.85) rotate(45deg)}
+  .seg .fid-icono.revisando .fcara{opacity:0;transform:scale(.7)}
+  .seg .fid-icono.revisando .fcirc{opacity:1;transform:scale(1);animation:fidGira .9s linear infinite}
+  .seg .fid-icono.ok .fcheck{stroke-dasharray:62;stroke-dashoffset:62;animation:fidCheck .35s .12s ease-out forwards}
+  @keyframes fidEsquinas{0%,100%{transform:scale(1)}50%{transform:scale(.92)}}
+  @keyframes fidGira{to{transform:rotate(360deg)}}
+  @keyframes fidCheck{to{stroke-dashoffset:0}}
   @media (prefers-reduced-motion:reduce){.seg .fid-icono *{animation:none!important}}
   .seg .fid-icono.ok{color:#32D74B;animation:fidOk .35s ease-out}
   .seg .fid-txt{font-size:17px;font-weight:700;letter-spacing:-.01em;min-height:22px}
