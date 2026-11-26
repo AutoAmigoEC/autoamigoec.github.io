@@ -14,8 +14,8 @@ lo que pasa al volver de otra app y cómo empieza cada carrera.
   - Si dice `CAMBIÓ` en algo que el dueño no pidió: se deshace con git y no se publica.
   - Si el dueño pidió ese cambio exacto: se guarda la nueva huella con `--guardar` en el mismo commit
     y se le dice qué parte protegida cambió.
-- La versión aprobada queda marcada en git con la etiqueta `mapa-aprobado-2026-11-25`
-  (para volver exactamente a ella si algo se daña).
+- La versión aprobada queda guardada en GitHub en la rama `mapa-aprobado-2026-11-25` (commit a2f74ed),
+  para volver exactamente a ella si algo se daña.
 - Al publicar a la app real (`app/conductor.js`), se copia el comportamiento aprobado tal cual.
 
 ## 2. Otras reglas que siguen vigentes
