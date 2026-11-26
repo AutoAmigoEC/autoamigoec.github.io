@@ -237,7 +237,7 @@
     '<g class="fc"><path d="M8 30V18a10 10 0 0 1 10-10h12"/><path d="M70 8h12a10 10 0 0 1 10 10v12"/><path d="M92 70v12a10 10 0 0 1-10 10H70"/><path d="M30 92H18A10 10 0 0 1 8 82V70"/></g>' +
     '<g class="fcara"><g class="fojos"><path d="M34 36v8"/><path d="M66 36v8"/></g><path class="fnariz" d="M50 36v20h-5"/><path class="fboca" d="M37 68q13 10 26 0"/></g>' +
     '<g class="fanillo"><circle class="fr1" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/><circle class="fr2" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/></g></svg>';
-  var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="40" stroke-width="5"/><path class="fcheck" d="M31 52l13 13 26-28"/></svg>';
+  var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="38" stroke-width="4.5"/><path class="fcheck" stroke-width="5" d="M33 51l12 12 23-25"/></svg>';
   G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false };
   function fidPoner(estado, txt) {
     G.fid.estado = estado; G.fid.txt = txt;
