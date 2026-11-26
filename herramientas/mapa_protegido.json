@@ -54,7 +54,10 @@
   "hojaCarrera": "a60e33df2029e752",
   "@M.easeTo = function (o)": "b2846fc39f928d96",
   "@(function cuadro()": "30872e07563bf4be",
-  "@css": "d6abcc90c8c65778"
+  "@css": "d6abcc90c8c65778",
+  "abajo": "fd045af1bfacc178",
+  "mueve": "e3672e801b7dd427",
+  "arriba": "eb5d16c116036b86"
  },
  "app/conductor.js": {
   "posSuave": "30141bda7f344e64",
@@ -107,7 +110,10 @@
   "barraMini": "c90a9fcf9dff7a09",
   "hojaCarrera": "87d64092caabcf9d",
   "@M.easeTo = function (o)": "b2846fc39f928d96",
-  "@(function cuadro()": "2ef6a862171200d7"
+  "@(function cuadro()": "2ef6a862171200d7",
+  "abajo": "a8b5f4e375846203",
+  "mueve": "341e3c38cf8ca3cb",
+  "arriba": "f3deeb3b22b09d9e"
  },
  "app/conductor.html": {
   "@css": "d6abcc90c8c65778"
