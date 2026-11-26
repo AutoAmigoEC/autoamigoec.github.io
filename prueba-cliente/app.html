@@ -978,7 +978,9 @@
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
     var gr = $('#pantalla').classList.contains('hoja-grande');
-    return viaje ? { top: gr ? 40 : 130, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30 + (gr ? ($('#nav-pie').offsetHeight || 0) + 10 : 0)), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
+    // En el viaje se deja lugar para el dibujo completo: el pin de la recogida sube ~52 px desde su punto y el carro mide ~38 px
+    // (antes se encuadraba solo el punto y el carro quedaba medio tapado abajo y el pin cortado arriba)
+    return viaje ? { top: (gr ? 40 : 130) + 56, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30 + 26 + (gr ? ($('#nav-pie').offsetHeight || 0) + 10 : 0)), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
   }
   function ponerRuta(coords) {
     listo(function () {
