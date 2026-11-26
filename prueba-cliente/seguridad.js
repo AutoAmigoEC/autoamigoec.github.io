@@ -32,16 +32,6 @@
     }).catch(function (e) { cargaFA = null; throw e; });
     return cargaFA;
   }
-  // Calienta el reconocimiento (la 1ª revisión es la más lenta): se hace una vez, en silencio
-  var calentado = null;
-  function precargar() {
-    if (calentado) return calentado;
-    calentado = cargarFA().then(function () {
-      var c = document.createElement('canvas'); c.width = c.height = 150; c.getContext('2d').fillRect(0, 0, 150, 150);
-      return Promise.all([faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })), faceapi.nets.faceLandmark68Net.detectLandmarks(c), faceapi.computeFaceDescriptor(c)]);
-    }).catch(function () { calentado = null; });
-    return calentado;
-  }
   function leerCara(c) { return faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.35 })).withFaceLandmarks().withFaceDescriptor(); }
   function distancia(a, b) { var s = 0; for (var i = 0; i < 128; i++) s += (a[i] - b[i]) * (a[i] - b[i]); return Math.sqrt(s); }
 
@@ -124,8 +114,8 @@
   var G = { paso: null, d: {}, fotos: {}, prev: null, analizando: '', error: '', fallos: 0, al: null, viaje: null, motivos: [] };
   function ir(p) {
     G.paso = p; G.prev = null; G.error = ''; G.analizando = '';
-    if (p === 'selfie') { G.primera = !(G.perfil && G.perfil.fidListo); }
-    if (p === 'selfie' && !G.primera) { G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false }; cargarFA().catch(function () { }); }
+    if (p === 'selfie') { G.primera = !!G.camNormal || !(G.perfil && G.perfil.fidListo); }
+    if (p === 'selfie' && !G.primera) { G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false, t0: Date.now() }; cargarFA().catch(function () { }); }
     pintar();
     if (p === 'selfie' && !G.primera) vigilar();
   }
@@ -236,8 +226,8 @@
   var ICONO_FID = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
     '<g class="fc"><path d="M8 30V18a10 10 0 0 1 10-10h12"/><path d="M70 8h12a10 10 0 0 1 10 10v12"/><path d="M92 70v12a10 10 0 0 1-10 10H70"/><path d="M30 92H18A10 10 0 0 1 8 82V70"/></g>' +
     '<g class="fcara"><g class="fojos"><path d="M34 36v8"/><path d="M66 36v8"/></g><path class="fnariz" d="M50 36v20h-5"/><path class="fboca" d="M37 68q13 10 26 0"/></g>' +
-    '<g class="fanillo"><circle class="fr1" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/><circle class="fr2" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/></g></svg>';
-  var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="38" stroke-width="4.5"/><path class="fcheck" stroke-width="5" d="M33 51l12 12 23-25"/></svg>';
+    '<g class="fanillo"><circle class="fr1 fh" cx="50" cy="50" r="38" stroke-width="11" vector-effect="non-scaling-stroke"/><circle class="fr2 fh" cx="50" cy="50" r="38" stroke-width="11" vector-effect="non-scaling-stroke"/><circle class="fr1" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/><circle class="fr2" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/></g></svg>';
+  var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="38" stroke-width="11" opacity=".22"/><circle cx="50" cy="50" r="38" stroke-width="4.5"/><path class="fcheck" stroke-width="5" d="M33 51l12 12 23-25"/></svg>';
   G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false };
   function fidPoner(estado, txt) {
     G.fid.estado = estado; G.fid.txt = txt;
@@ -249,7 +239,8 @@
   }
   // Mira la cámara (sin mostrarla) varias veces por segundo; cuando la cara está bien, toma la foto sola
   function vigilar() {
-    if (G.paso !== 'selfie') return;
+    if (G.paso !== 'selfie' || G.primera) return;
+    if (Date.now() - G.fid.t0 > 12000 && G.fid.estado !== 'revisando') { G.camNormal = true; ir('selfie'); G.error = 'Toma tu foto con el botón.'; pintar(); return; }   // no se pudo solo: cámara normal
     var v = C.video;
     if (G.fid.ocupado || !window.faceapi || !faceapi.nets.tinyFaceDetector.isLoaded || !v || !v.videoWidth) { setTimeout(vigilar, 250); return; }
     G.fid.ocupado = true;
@@ -270,8 +261,10 @@
       revisarFid(cuadro(960, 0.85));
     }, function () { G.fid.ocupado = false; setTimeout(vigilar, 400); });
   }
+  // Los anillos se ven girando al menos 1,3 s (como Apple), aunque la revisión sea más rápida
+  function aprobado(t0, paso) { setTimeout(function () { if (G.paso !== paso) return; G.primera = false; ir('selfieOk'); }, Math.max(0, 1300 - (Date.now() - t0))); }
   function revisarFid(f) {
-    fidPoner('revisando', 'Revisando…');
+    fidPoner('revisando', 'Revisando…'); var t0 = Date.now();
     leerCara(f.c).then(function (r) {
       if (G.paso !== 'selfie') return;
       if (!r) { G.fid.buenos = 0; fidPoner('buscar', 'Mira a la pantalla'); setTimeout(vigilar, 200); return; }
@@ -285,7 +278,7 @@
       }
       if (pf.celular !== idCelular()) { pf.celular = idCelular(); guardar('aac_cuenta', pf); }   // celular nuevo: ya quedó verificado
       try { navigator.vibrate && navigator.vibrate(40); } catch (e) { }
-      G.primera = false; ir('selfieOk');
+      aprobado(t0, 'selfie');
     }, function () { G.fid.buenos = 0; fidPoner('buscar', 'Revisa tu internet'); setTimeout(vigilar, 1500); });
   }
 
@@ -400,7 +393,7 @@
     if (a === 'fotoSelfie') {
       if (!C.video || !C.video.videoWidth || G.analizando) return;
       var f = cuadro(960, 0.85);
-      ir('selfieRev'); setTimeout(function () { var i = $('#fidico'); if (i && G.paso === 'selfieRev') i.className = 'fid-icono revisando'; }, 60);   // la cámara se cierra y sale el cuadro del Face ID con "Revisando…" (no se muestra la foto)
+      ir('selfieRev'); var t0 = Date.now(); setTimeout(function () { var i = $('#fidico'); if (i && G.paso === 'selfieRev') i.className = 'fid-icono revisando'; }, 60);   // la cámara se cierra y sale el cuadro del Face ID con "Revisando…" (no se muestra la foto)
       var otraVez = function (txt) { if (G.paso !== 'selfieRev') return; ir('selfie'); G.error = txt; pintar(); };
       cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
         if (G.paso !== 'selfieRev') return;
@@ -416,7 +409,7 @@
         if (pf.celular !== idCelular()) { pf.celular = idCelular(); }   // celular nuevo: ya quedó verificado
         pf.fidListo = true; guardar('aac_cuenta', pf);
         try { navigator.vibrate && navigator.vibrate(40); } catch (e) { }
-        G.primera = false; ir('selfieOk');   // el mismo cuadro del Face ID: ✓ Eres cliente + Pedir AutoAmigo
+        aprobado(t0, 'selfieRev');   // el mismo cuadro del Face ID: ✓ Eres cliente + Pedir AutoAmigo
       }).catch(function () { otraVez('No se pudo revisar la foto. Revisa tu internet.'); });
       return;
     }
@@ -466,10 +459,10 @@
       seguir();
       function seguir() {
       var m = motivos(v, perfil, nViajes);
-      G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null;
+      G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null; G.camNormal = false;
       // Siempre se verifica antes de pedir (pedido del dueño, 26-nov-2026): la 1ª vez la foto normal, después el Face ID.
       // Los motivos (noche, zona, cuenta nueva, celular nuevo) solo se muestran como etiquetas en la 1ª vez.
-      precargar();
+      cargarFA().catch(function () { });
       ir(perfil && perfil.fidListo ? 'selfie' : 'selfieIntro');
       }
     },
@@ -504,9 +497,6 @@
         tel: /^09\d{8}$/.test(G.d.tel || '') ? G.d.tel : '0991234567', descriptor: G.fotos.descriptor || null, descCedula: G.fotos.descCedula || null,
         fotoCedula: G.fotos.cedula || null, foto: G.fotos.cara || null, celular: idCelular(), creado: Date.now(), acepto: Date.now(), prueba: true };
       guardar('aac_cuenta', perfil); cerrar(); if (al) al(perfil); return true;
-    },
-    precargar: precargar
+    }
   };
-  // Si ya tiene cuenta, el reconocimiento se carga solo poco después de abrir la app (así al pedir revisa rápido)
-  if (leer('aac_cuenta', null)) setTimeout(precargar, 2500);
 })();

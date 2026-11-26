@@ -510,7 +510,7 @@
   /* Revisando (como Face ID de Apple): las esquinas se cierran en un círculo verde que brilla y gira como en 3D */
   .seg .fid-icono .fanillo{opacity:0;transform:scale(1.2);transition:opacity .25s .1s,transform .35s ease}
   .seg .fid-icono.revisando{color:#32D74B}
-  .seg .fid-icono.revisando svg{filter:drop-shadow(0 0 3px rgba(50,215,75,.9)) drop-shadow(0 0 8px rgba(50,215,75,.45))}
+  .seg .fid-icono .fh{opacity:.22}
   .seg .fid-icono.revisando .fc{opacity:0;transform:scale(.8)}
   .seg .fid-icono.revisando .fcara{opacity:0;transform:scale(.7)}
   .seg .fid-icono.revisando .fanillo{opacity:1;transform:scale(1);animation:fidGira 1.6s linear infinite}
@@ -520,13 +520,11 @@
   @keyframes fidAnilloY{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.18)}}
   /* Aprobado (como Apple): el anillo queda quieto, sale un puntito y de ahí se dibuja el ✓ */
   .seg .fid-icono.ok .fcheck{stroke-dasharray:.01 200;animation:fidCheck .55s .15s ease-out forwards}
-  @keyframes fidBrillo{to{filter:drop-shadow(0 0 2px rgba(50,215,75,.5))}}
   @keyframes fidEsquinas{0%,100%{transform:scale(1)}50%{transform:scale(.92)}}
   @keyframes fidGira{to{transform:rotate(360deg)}}
   @keyframes fidCheck{0%,35%{stroke-dasharray:.01 200}100%{stroke-dasharray:52 200}}
   @media (prefers-reduced-motion:reduce){.seg .fid-icono *{animation:none!important}}
   .seg .fid-icono.ok{color:#32D74B}
-  .seg .fid-icono.ok svg{filter:drop-shadow(0 0 3px rgba(50,215,75,.9)) drop-shadow(0 0 8px rgba(50,215,75,.45));animation:fidBrillo .9s ease-out .5s forwards}
   .seg .fid-txt{font-size:17px;font-weight:700;letter-spacing:-.01em;min-height:22px}
   .seg .fid-error{margin:-8px 0 0;font-size:13px;color:#FDA29B}
   .seg .fid .sbtn{width:100%;margin:4px 0 0}
@@ -899,7 +897,7 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="../mapas.js?v=202610301400"></script>
 <script src="../app/encuadre.js?v=5"></script>
-<script src="seguridad.js?v=21"></script>
+<script src="seguridad.js?v=22"></script>
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); };
