@@ -768,6 +768,11 @@
     if (S.yo) { SV.de = null; SV.a = { lat: S.yo.lat, lng: S.yo.lng }; SV.dur = 0; SV.vista = SV.a; SV.r = null; SV.fuente = null; SV.raw = { lat: S.yo.lat, lng: S.yo.lng }; SV.t0 = ahora; }
     if (SV.tan != null) SV.rumboFlecha = SV.tan;
     if (NAV.activo) { SV.camB = NAV.rumbo; SV.rLento = NAV.rumbo; }
+    // Lo primero que se ve al volver ya es la posición real (sin foto vieja ni deslizarse desde atrás)
+    if (S.yo) {
+      try { yoMk.setLngLat([S.yo.lng, S.yo.lat]); if (SV.rumboFlecha != null) yoMk.setRotation(SV.rumboFlecha); } catch (e) {}
+      if (siguiendo()) { try { M.jumpTo({ center: [S.yo.lng, S.yo.lat], bearing: NAV.activo ? NAV.rumbo : (M.getBearing ? M.getBearing() : 0) }); } catch (e) {} SV.pCam = SV.vista; }
+    }
     var c = S.carrera;
     if (c && NAV.activo && (NAV.recalc || !NAV.ruta)) rutaNav(S.yo, metaNav());
     else if (c && !NAV.activo && !BASE && (c.estado !== 'aceptada' || NAV.sigueFuera)) trazar(S.yo, c.estado === 'aceptada' ? c.o : c.d, true);
