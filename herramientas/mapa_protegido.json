@@ -132,7 +132,7 @@
   "aLaVista": "fc5bc14bfbe1fb2d",
   "vistaRecogida": "b80f12c64772fc3f",
   "margenQueCabe": "458df0a2dca86284",
-  "camVista": "d8dbf009057338fc",
+  "camVista": "6eebb039682e495e",
   "ponerRuta": "ec343097e008c073",
   "puntos": "df198b53b6edc7c4",
   "carro": "b14415194ef8dc60",
@@ -148,8 +148,8 @@
   "pedirRuta": "36c7633825df4e17",
   "ponerMargen": "b3663cf3d2f810b8",
   "proyectar": "0036adef15722e23",
-  "iniciarNav": "53226f52927772fd",
-  "salirNav": "89030f7cadcd90cb",
+  "iniciarNav": "335e7a9036c710d4",
+  "salirNav": "98ad9c8a35da9b5d",
   "seguir": "b818c725bcd5f241",
   "libreArriba": "e3912f0ae7999cbd",
   "vistaNav": "a6d8bca923e89bc6",
@@ -178,6 +178,6 @@
   "arriba": "eb5d16c116036b86",
   "@M.easeTo = function (o)": "b2846fc39f928d96",
   "@(function cuadro()": "a43308aa75863a16",
-  "@css": "f05b42cfc8a26e96"
+  "@css": "9ffee3be3f037d8e"
  }
 }

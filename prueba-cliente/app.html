@@ -700,9 +700,19 @@
   #pantalla input,#pantalla textarea{-webkit-user-select:text;user-select:text}
   /* Al tocar Iniciar o Salir, lo que aparece entra suave (no de golpe) */
   @keyframes suaveEntra{from{opacity:0}to{opacity:1}}
-  .navegando .nav-top{animation:suaveEntra .25s ease}
   .viaje:not(.navegando) .arriba-v{animation:suaveEntra .25s ease}
-  .yo.flecha .nav-ic,.yo:not(.flecha) .punto,.carro-mapa.flecha .nav-ic,.carro-mapa:not(.flecha)>svg:first-child{animation:suaveEntra .25s ease}
+  .yo.flecha .nav-ic,.yo:not(.flecha) .punto{animation:suaveEntra .25s ease}
+  /* Al tocar Salir: la tarjeta de la instrucción se desvanece (antes desaparecía de golpe) */
+  .nav-top{display:flex!important;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility 0s linear .25s,top .3s ease}
+  .navegando .nav-top{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .25s ease,top .3s ease}
+  /* La flecha y el carrito se cruzan suave (antes cambiaban de golpe) */
+  .carro-mapa{position:relative;width:46px;height:46px}
+  .carro-mapa>svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transition:opacity .25s ease}
+  .carro-mapa .nav-ic,.carro-mapa.flecha>svg:first-child{display:block!important;opacity:0}
+  .carro-mapa.flecha .nav-ic{opacity:1}
+  /* Los botones Iniciar / Salir entran suave */
+  .con-carrera .nav-pie .iniciar,.navegando .nav-pie #nav-salir{animation:suaveEntra .25s ease}
+  .bm-nav{transition:background-color .25s ease,color .25s ease}
 </style>
 </head>
 <body>
@@ -1225,8 +1235,10 @@
     var cero = { top: 0, bottom: 0, left: 0, right: 0 }, pd0 = M.getPadding ? M.getPadding() : cero;
     pd0 = { top: pd0.top || 0, bottom: pd0.bottom || 0, left: pd0.left || 0, right: pd0.right || 0 };
     var b0 = M.getBearing ? M.getBearing() : 0, b1 = op.bearing != null ? op.bearing : b0, db = ((b1 - b0 + 540) % 360) - 180;
-    // la vista final se calcula sin el espacio que dejó otra vista (si no, no entraban los puntos)
-    var meta = null; try { M.setPadding(cero); meta = M.cameraForBounds(b, Object.assign({}, op, { bearing: b1 })); M.setPadding(pd0); } catch (e) {}
+    // la vista final se calcula SIN tocar el espacio que ya tiene el mapa (antes se quitaba y devolvía y el mapa saltaba un cuadro):
+    // el mapa suma su espacio al que se pide, así que se pide solo la diferencia
+    var P = op.padding || cero, pide = { top: Math.max(0, P.top - pd0.top), bottom: Math.max(0, P.bottom - pd0.bottom), left: Math.max(0, P.left - pd0.left), right: Math.max(0, P.right - pd0.right) };
+    var meta = null; try { meta = M.cameraForBounds(b, Object.assign({}, op, { bearing: b1, padding: pide })); } catch (e) {}
     if (!meta || !meta.center || typeof meta.zoom !== 'number') { M.fitBounds(b, Object.assign(op, { duration: dur, easing: suaveK })); return; }
     var c0 = M.getCenter(), c1 = meta.center.lng != null ? meta.center : { lng: meta.center[0], lat: meta.center[1] };
     var z0 = M.getZoom(), z1 = meta.zoom, t0 = Date.now();
@@ -1235,8 +1247,7 @@
     (function paso() {
       if (SV.dedo || siguiendo()) { CAMV.raf = 0; return; }   // si el mapa pasó a seguir al taxi, esta animación se retira
       var k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k;
-      M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: b0 + db * k, pitch: 0,
-        padding: { top: pd0.top * q, bottom: pd0.bottom * q, left: pd0.left * q, right: pd0.right * q } });
+      M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: b0 + db * k, pitch: 0 });
       CAMV.raf = k < 1 ? requestAnimationFrame(paso) : 0;
     })();
   }
@@ -1415,16 +1426,20 @@
     // Como el conductor: si la ruta todavía se está calculando, el mapa se queda con su giro hasta que llegue y ahí gira una sola vez
     if (SEG.recalc || !SEG.ruta) { SEG.esperaRuta = true; SEG.rumbo = M.getBearing ? M.getBearing() : 0; SV.camB = SEG.rumbo; SV.rLento = SEG.rumbo; SV.estableDesde = 0; }
     // Igual que al minimizar: el cuadro baja deslizándose y el mapa se acerca con calma, al mismo tiempo y suave
-    if (!$('#hoja').classList.contains('mini') && hojaAnimar) hojaAnimar(true);
-    else if (SEG.ruta) M.easeTo(Object.assign(vistaNav(1000), { easing: suaveK }));
+    // La animación arranca en el siguiente cuadro, cuando lo pesado (ruta, cuadro) ya pasó: así no se congela al tocar
+    requestAnimationFrame(function () {
+      if (!SEG.activo) return;
+      if (!$('#hoja').classList.contains('mini') && hojaAnimar) hojaAnimar(true);
+      else if (SEG.ruta) M.easeTo(Object.assign(vistaNav(1000), { easing: suaveK }));
+    });
     seguir();
   }
   function salirNav() {
     if (!SEG.activo) return;
     SEG.activo = false; SEG.esperaRuta = false;
 
-    // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña)
-    ultimaHoja = ''; render(); pintarNav();
+    // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña); solo cambian los textos que cambian
+    pintarNav(); requestAnimationFrame(render);
     // Al salir, el mapa queda derecho y sigue al carro (igual que la flechita), sin perderlo de vista
     if (S.v && S.v.pos) { SEG.sigueFuera = true; SEG.girar = true; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, easing: suaveK, padding: rellenoCarro() }); }
     else M.easeTo({ pitch: 0, bearing: 0, duration: 1000, easing: suaveK });
@@ -1552,7 +1567,7 @@
   // Centrado: mientras el mapa gira con el carro, la flecha queda siempre derechita hacia arriba (no se ve de lado al doblar)
 
   $('#b-nav').addEventListener('click', iniciarNav);
-  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('#hoja [data-bm="nav"]'); if (!b) return; if (SEG.activo) salirNav(); else iniciarNav(); ultimaHoja = ''; render(); });
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('#hoja [data-bm="nav"]'); if (!b) return; if (SEG.activo) salirNav(); else iniciarNav(); requestAnimationFrame(render); });   // sin reconstruir el cuadro desde cero (se trababa al tocar)
   $('#nav-salir').addEventListener('click', salirNav);
 
   // ---------- Servicios (los mismos del panel) ----------
