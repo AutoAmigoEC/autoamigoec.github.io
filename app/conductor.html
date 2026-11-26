@@ -193,6 +193,7 @@
   /* Como la app del cliente: con el cuadro grande arriba solo queda el mapa (se desvanece lo demás) */
   .hoja-grande .arriba-v,.hoja-grande .ham-v,.hoja-grande #b-ruta{opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .25s ease,visibility 0s linear .25s}
   .hoja-grande .hoja{max-height:58%}
+  .hoja-grande.taxi-on .hoja{max-height:64%}
   /* Minimizado: solo la barrita, el mapa casi completo */
   .viaje .hoja.mini{padding:0 18px calc(env(safe-area-inset-bottom,0px) + 14px);overflow:hidden}
   .hoja.mini .tirador{margin:2px auto 4px;height:16px}
@@ -223,6 +224,10 @@
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   .brujula{right:16px}
   .brujula[hidden]{display:none}
+  /* Al agrandar o minimizar: lo que aparece entra suave (sin cambio brusco) y el cuadro se desliza en la tarjeta gráfica */
+  .hoja{will-change:transform}
+  .hoja.fundiendo .solo-mini,.hoja.fundiendo .solo-grande{animation:hojaAparece .32s ease-out both}
+  @keyframes hojaAparece{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
   .hoja.mini .solo-grande{display:none!important}
   .hoja:not(.mini) .solo-mini{display:none!important}
   .viaje .aviso{bottom:auto;top:180px}
@@ -645,6 +650,6 @@
 <script src="turno.js?v=5"></script>
 <script src="encuadre.js?v=5"></script>
 <script src="perfil.js?v=6"></script>
-<script src="conductor.js?v=19"></script>
+<script src="conductor.js?v=20"></script>
 </body>
 </html>
