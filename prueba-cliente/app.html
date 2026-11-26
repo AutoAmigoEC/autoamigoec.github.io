@@ -2189,6 +2189,12 @@
       aviso('Tu viaje quedó programado para ' + textoProg(v.programado) + '. Te avisaremos cuando la unidad vaya en camino.');
       S.progT = null; S.v = null; puntos(null); ultimoInicio = ''; render(); return;
     } v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
+    // Mientras busca unidad: el viaje completo a la vista (recogida, ruta y destino) en el espacio libre, suave y quieto
+    setTimeout(function () {
+      var w = S.v; if (!w || w.fase !== 'buscando') return;
+      var bb = new maplibregl.LngLatBounds(); (w.ruta && w.ruta.length > 1 ? w.ruta : [[w.o.lng, w.o.lat], [w.d.lng, w.d.lat]]).forEach(function (c) { bb.extend(c); });
+      try { M.fitBounds(bb, { padding: relleno(), maxZoom: 15.5, bearing: 0, pitch: 0, duration: 1000, easing: suaveK }); } catch (e) {}
+    }, 80);
     clearTimeout(S.tAcepta); S.tAcepta = setTimeout(aceptar, 6000);
   }
   function aceptar() {
