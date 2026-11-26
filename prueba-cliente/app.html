@@ -2243,15 +2243,13 @@
     carro(v.pos, rumboEntre(v.pos, v.o)); sonar();
     SEG.autoFit = true; SEG.girar = true;
     aviso(c.nombre.split(' ')[0] + ' aceptó tu viaje. Unidad ' + c.u + ' · ' + c.placa); render(); empezarSeguimiento();
-    setTimeout(function () { vistaRecogida(1200, true); }, 80);   // al aceptar: tu taxi y tu recogida juntos, una vez y suave
-    // Como Uber y Google Maps: después de mostrar los dos un momento (~3 s), el mapa pasa solo y suave a seguir al taxi de frente,
-    // y así se ve igual todo el viaje (si ya tocaste el cuadro o moviste el mapa, no hace nada)
+    // Al aceptar: directo a seguir al taxi de frente, en un solo movimiento suave (1,2 s), igual todo el viaje
     clearTimeout(S.tSeguir);
     S.tSeguir = setTimeout(function () {
-      var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || w.llego || SEG.activo || SEG.sigueFuera || SEG.autoFit === false || SV.dedo) return;
+      var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || SEG.activo || SV.dedo) return;
       SEG.girar = true; SEG.autoFit = false;
       pasarASeguir(1200);
-    }, 4300);
+    }, 80);
   }
   function llego() {
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
