@@ -978,9 +978,7 @@
     var viaje = $('#pantalla').classList.contains('viaje');
     var alto = M.getContainer().clientHeight;
     var gr = $('#pantalla').classList.contains('hoja-grande');
-    // En el viaje se deja lugar para el dibujo completo: el pin de la recogida sube ~52 px desde su punto y el carro mide ~38 px
-    // (antes se encuadraba solo el punto y el carro quedaba medio tapado abajo y el pin cortado arriba)
-    return viaje ? { top: (gr ? 40 : 130) + 56, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30 + 26 + (gr ? ($('#nav-pie').offsetHeight || 0) + 10 : 0)), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
+    return viaje ? { top: gr ? 40 : 130, bottom: Math.round(($('#hoja').offsetHeight || alto * 0.5) + 30 + (gr ? ($('#nav-pie').offsetHeight || 0) + 10 : 0)), left: 50, right: 50 } : { top: 20, bottom: 20, left: 20, right: 20 };
   }
   function ponerRuta(coords) {
     listo(function () {
@@ -1170,39 +1168,48 @@
     var v = S.v; if (!v || !v.pos || !v.o) return;
     var b = new maplibregl.LngLatBounds(); b.extend([v.pos.lng, v.pos.lat]); b.extend([v.o.lng, v.o.lat]);
     // Al agrandar o minimizar: sin vueltas y sin acercarse de golpe; solo se aleja lo justo si hace falta (luego se acerca despacito)
-    var pad = relleno(), op = { padding: pad, maxZoom: mantenerGiro ? Math.min(16.5, M.getZoom ? M.getZoom() : 16.5) : 16.5, bearing: forzar && !mantenerGiro ? rumboSeguir() : (M.getBearing ? M.getBearing() : 0) };
+    // Se deja lugar para el dibujo completo: el pin de la recogida sube ~52 px desde su punto y el carro mide ~38 px
+    var pad = relleno(); pad = { top: pad.top + 56, bottom: pad.bottom + 26, left: pad.left, right: pad.right };
+    var op = { padding: pad, maxZoom: mantenerGiro ? Math.min(16.5, M.getZoom ? M.getZoom() : 16.5) : 16.5, bearing: forzar && !mantenerGiro ? rumboSeguir() : (M.getBearing ? M.getBearing() : 0) };
     if (!forzar) {
       var cam = null; try { cam = M.cameraForBounds(b, op); } catch (e) {}
       var cz = cam && typeof cam.zoom === 'number' ? cam.zoom : null;
       if (aLaVista([v.pos, v.o], pad) && (cz == null || cz - M.getZoom() < 0.8)) return;   // se ven los dos: el mapa se queda quieto
     }
-    if (mantenerGiro) { camVista(b, op, dur || 1000); return; }
-    M.fitBounds(b, Object.assign(op, { duration: dur || 1200, easing: suaveK }));
+    camVista(b, op, dur || 1200);   // mismo motor de cámara que el conductor (cuadro por cuadro, misma curva)
   }
   // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
   // Va de la vista actual a la vista donde entran tu taxi y tu recogida (sin girar); si tocas el mapa, se detiene.
   var CAMV = { raf: 0 };
   function camVista(b, op, dur) {
-    var meta = null; try { meta = M.cameraForBounds(b, op); } catch (e) {}
+    var cero = { top: 0, bottom: 0, left: 0, right: 0 }, pd0 = M.getPadding ? M.getPadding() : cero;
+    pd0 = { top: pd0.top || 0, bottom: pd0.bottom || 0, left: pd0.left || 0, right: pd0.right || 0 };
+    var b0 = M.getBearing ? M.getBearing() : 0, b1 = op.bearing != null ? op.bearing : b0, db = ((b1 - b0 + 540) % 360) - 180;
+    // la vista final se calcula sin el espacio que dejó otra vista (si no, no entraban los puntos)
+    var meta = null; try { M.setPadding(cero); meta = M.cameraForBounds(b, Object.assign({}, op, { bearing: b1 })); M.setPadding(pd0); } catch (e) {}
     if (!meta || !meta.center || typeof meta.zoom !== 'number') { M.fitBounds(b, Object.assign(op, { duration: dur, easing: suaveK })); return; }
     var c0 = M.getCenter(), c1 = meta.center.lng != null ? meta.center : { lng: meta.center[0], lat: meta.center[1] };
-    var z0 = M.getZoom(), z1 = meta.zoom, br = M.getBearing ? M.getBearing() : 0, t0 = Date.now();
+    var z0 = M.getZoom(), z1 = meta.zoom, t0 = Date.now();
     try { M.stop && M.stop(); } catch (e) {}
-    cancelAnimationFrame(CAMV.raf); SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
+    cancelAnimationFrame(CAMV.raf); CAM.anim = null; SV.trans = Math.max(SV.trans, t0 + dur); SV.pCam = null;
     (function paso() {
       if (SV.dedo) { CAMV.raf = 0; return; }
-      var k = suaveK(Math.min(1, (Date.now() - t0) / dur));
-      M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: br });
+      var k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k;
+      M.jumpTo({ center: [c0.lng + (c1.lng - c0.lng) * k, c0.lat + (c1.lat - c0.lat) * k], zoom: z0 + (z1 - z0) * k, bearing: b0 + db * k, pitch: 0,
+        padding: { top: pd0.top * q, bottom: pd0.bottom * q, left: pd0.left * q, right: pd0.right * q } });
       CAMV.raf = k < 1 ? requestAnimationFrame(paso) : 0;
     })();
   }
   // Con el taxímetro iniciado, al seguir al carro el mapa gira para que el carro vaya siempre de frente (hacia arriba)
   function rumboSeguir() { return S.v && SEG.girar !== false ? (SV.rumboFlecha != null ? SV.rumboFlecha : (SEG.rumbo || 0)) : 0; }
-  function verRuta(dur) {
+  // El viaje completo a la vista (recogida, toda la línea de la ruta y destino), con el mismo motor de cámara del conductor
+  function verRuta(dur, derecho) {
     var v = S.v; if (!v) return;
     var b = new maplibregl.LngLatBounds();
     [v.o, v.d, v.pos].filter(Boolean).forEach(function (p) { b.extend([p.lng, p.lat]); });
-    M.fitBounds(b, { padding: relleno(), maxZoom: 16, duration: dur || 600 });
+    if (v.ruta && v.ruta.length > 1 && v.fase !== 'ejecucion') v.ruta.forEach(function (c) { b.extend(c); });
+    var pad = relleno(); pad = { top: pad.top + 56, bottom: pad.bottom + 10, left: pad.left, right: pad.right };   // el pin entero arriba
+    camVista(b, { padding: pad, maxZoom: 16, bearing: derecho ? 0 : null }, dur || 1000);
   }
   function centrar() {
     if (S.v && S.v.pos) {   // en el viaje: va al carro y lo sigue (hasta que muevas el mapa)
@@ -2175,7 +2182,7 @@
     puntos(o, d); ponerRuta(null); render(); setTimeout(verRuta, 80);   // sin recta provisional: la línea aparece directo por las calles
     calcularRuta(o, d).then(function (r) {
       if (!S.v || S.v.d !== d) return;
-      S.v.ruta = r.coords; S.v.km = r.km; S.v.min = r.min; S.v.estC = estimadoC(r.km); ponerRuta(r.coords); render(); verRuta();
+      S.v.ruta = r.coords; S.v.km = r.km; S.v.min = r.min; S.v.estC = estimadoC(r.km); ponerRuta(r.coords); render(); verRuta(1000, true);
     }).catch(function () {
       if (!S.v || S.v.d !== d) return; if (S.v.fase === 'cotizar') ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]);   // sin ruta: recién ahí la recta
       var km = distKm(o, d); S.v.km = km; S.v.min = minutos(km); S.v.estC = estimadoC(km); render();
@@ -2190,11 +2197,7 @@
       S.progT = null; S.v = null; puntos(null); ultimoInicio = ''; render(); return;
     } v.ref = v.ref || (($('#in-ref') || {}).value || ''); v.fase = 'buscando'; render();
     // Mientras busca unidad: el viaje completo a la vista (recogida, ruta y destino) en el espacio libre, suave y quieto
-    setTimeout(function () {
-      var w = S.v; if (!w || w.fase !== 'buscando') return;
-      var bb = new maplibregl.LngLatBounds(); (w.ruta && w.ruta.length > 1 ? w.ruta : [[w.o.lng, w.o.lat], [w.d.lng, w.d.lat]]).forEach(function (c) { bb.extend(c); });
-      try { M.fitBounds(bb, { padding: relleno(), maxZoom: 15.5, bearing: 0, pitch: 0, duration: 1000, easing: suaveK }); } catch (e) {}
-    }, 80);
+    setTimeout(function () { var w = S.v; if (!w || w.fase !== 'buscando') return; verRuta(1000, true); }, 80);
     clearTimeout(S.tAcepta); S.tAcepta = setTimeout(aceptar, 6000);
   }
   function aceptar() {
