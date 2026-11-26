@@ -186,7 +186,7 @@
       var txt = { noche: 'Es de noche', zona: 'Zona de riesgo', nueva: 'Tu cuenta es nueva', celular: 'Estás en un celular nuevo' };
       h = tarjeta('<div class="sgrande" style="background:var(--navy)">🛡️</div><h2 class="c">Una foto rápida</h2>' +
         '<p class="c">Confirmamos que eres tú para proteger a nuestros conductores. Son 5 segundos.</p>' +
-        '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' +
+        (G.motivos.length ? '<div class="schips">' + G.motivos.map(function (m) { return '<span>' + txt[m] + '</span>'; }).join('') + '</div>' : '') +
         '<button class="sbtn" data-s="ir" data-a="selfie">Tomar mi foto</button><button class="sbtn claro" data-s="cancelarPedido">Ahora no</button>', '');
     } else if (p === 'selfie' && G.primera) {
       // Primera vez: la cámara de siempre (se ve su cara y toca el botón)
@@ -448,7 +448,8 @@
       function seguir() {
       var m = motivos(v, perfil, nViajes);
       G.perfil = perfil; G.motivos = m; G.al = ok; G.vista = null;
-      if (!m.length) { ok(perfil); return; }
+      // Siempre se verifica antes de pedir (pedido del dueño, 26-nov-2026): la 1ª vez la foto normal, después el Face ID.
+      // Los motivos (noche, zona, cuenta nueva, celular nuevo) solo se muestran como etiquetas en la 1ª vez.
       cargarFA().catch(function () { });
       ir(perfil && perfil.fidListo ? 'selfie' : 'selfieIntro');
       }
