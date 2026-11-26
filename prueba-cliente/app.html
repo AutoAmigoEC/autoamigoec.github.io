@@ -1183,27 +1183,30 @@
     }
     camVista(b, op, dur || 1200);   // mismo motor de cámara que el conductor (cuadro por cuadro, misma curva)
   }
-  // De la vista del viaje a seguir al taxi, como Google Maps: un vuelo suave (si el taxi está lejos, el mapa se aleja un poco,
-  // viaja y se acerca; si está cerca, casi no se aleja). Antes se movía en línea recta mientras acercaba y se sentía "de lado".
-  // Al terminar sigue al taxi cuadro por cuadro sin corte.
+  // De la vista del viaje a seguir al taxi: acercamiento "pro" cuadro por cuadro. El mapa se acerca hacia el taxi (el taxi casi
+  // no se mueve en la pantalla mientras todo crece alrededor), gira y acomoda el espacio con la misma curva suave, y sigue al
+  // taxi en vivo, así que al terminar no hay saltito: queda siguiéndolo sin corte.
+  function merc(p) { var s = Math.sin(p.lat * Math.PI / 180); return { x: (p.lng + 180) / 360, y: 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI) }; }
+  function demerc(m) { return { lng: m.x * 360 - 180, lat: 90 - 360 * Math.atan(Math.exp((m.y - 0.5) * 2 * Math.PI)) / Math.PI }; }
   function pasarASeguir(dur) {
     if (!S.v || !S.v.pos) return;
     cancelAnimationFrame(CAMV.raf); CAMV.raf = 0; CAM.anim = null;
-    var b1 = rumboSeguir(), t0 = Date.now(), car = SV.vista || S.v.pos;
-    // hacia dónde va a estar el taxi cuando termine el vuelo (así no hay saltito al final)
-    var fin = (typeof posSuave === 'function' && posSuave(t0 + dur)) || car;
     try { M.stop && M.stop(); } catch (e) {}
+    var pd = M.getPadding ? M.getPadding() : {}, p0 = { top: pd.top || 0, bottom: pd.bottom || 0, left: pd.left || 0, right: pd.right || 0 }, p1 = rellenoCarro();
+    var m0 = merc(M.getCenter()), z0 = M.getZoom(), z1 = 14.8, s0 = Math.pow(2, z0), s1 = Math.pow(2, z1);
+    var b0 = M.getBearing ? M.getBearing() : 0, b1 = rumboSeguir(), db = ((b1 - b0 + 540) % 360) - 180, t0 = Date.now();
     SV.trans = Math.max(SV.trans, t0 + dur + 50); SV.pCam = null;
-    var hecho = false, terminar = function () {
-      if (hecho) return; hecho = true; clearTimeout(pasarASeguir.t);
-      if (SV.dedo || !S.v || !S.v.pos || SEG.activo) return;
-      SEG.sigueFuera = true; SV.camB = b1; SV.rLento = b1; SV.estableDesde = 0; SV.pCam = null;   // desde aquí lo acompaña cuadro por cuadro
-    };
-    try {
-      M.flyTo({ center: [fin.lng, fin.lat], zoom: 14.8, bearing: b1, pitch: 0, padding: rellenoCarro(), duration: dur, curve: 1.42, easing: suaveK, essential: true });
-      M.once && M.once('moveend', terminar);
-    } catch (e) {}
-    pasarASeguir.t = setTimeout(terminar, dur + 80);
+    (function paso() {
+      if (SV.dedo || !S.v || !S.v.pos || SEG.activo) { CAMV.raf = 0; return; }
+      var k = suaveK(Math.min(1, (Date.now() - t0) / dur)), q = 1 - k, z = z0 + (z1 - z0) * k;
+      // cuánto se avanza hacia el taxi según cuánto ya se acercó (así el acercamiento es hacia el taxi y no "de lado")
+      var u = Math.abs(z1 - z0) > 0.05 ? (1 - s0 / Math.pow(2, z)) / (1 - s0 / s1) : k;
+      var mc = merc(SV.vista || S.v.pos), c = demerc({ x: m0.x + (mc.x - m0.x) * u, y: m0.y + (mc.y - m0.y) * u });
+      M.jumpTo({ center: [c.lng, c.lat], zoom: z, bearing: b0 + db * k, pitch: 0,
+        padding: { top: p0.top * q + p1.top * k, bottom: p0.bottom * q + p1.bottom * k, left: p0.left * q + p1.left * k, right: p0.right * q + p1.right * k } });
+      if (k < 1) { CAMV.raf = requestAnimationFrame(paso); return; }
+      CAMV.raf = 0; SEG.sigueFuera = true; SV.camB = b1; SV.rLento = b1; SV.estableDesde = 0; SV.pCam = null;   // desde aquí lo acompaña cuadro por cuadro
+    })();
   }
   // Mismo motor de cámara que el conductor al agrandar/minimizar: cuadro por cuadro, 1 s, con la misma curva suave.
   // Va de la vista actual a la vista donde entran tu taxi y tu recogida (sin girar); si tocas el mapa, se detiene.
@@ -2217,12 +2220,12 @@
   function cotizar(o, d) {
     S.busq = null; S.pantalla = 'inicio'; S.menu = false;
     S.v = { fase: 'cotizar', o: o, d: d, km: 0, min: 0, estC: 0, equipaje: false, ref: '' };
-    puntos(o, d); ponerRuta(null); render(); setTimeout(verRuta, 80);   // sin recta provisional: la línea aparece directo por las calles
+    puntos(o, d); ponerRuta(null); render();   // sin recta provisional; el mapa se mueve una sola vez, cuando llega la ruta (antes: 2-3 movimientos seguidos)
     calcularRuta(o, d).then(function (r) {
       if (!S.v || S.v.d !== d) return;
       S.v.ruta = r.coords; S.v.km = r.km; S.v.min = r.min; S.v.estC = estimadoC(r.km); ponerRuta(r.coords); render(); verRuta(1000, true);
     }).catch(function () {
-      if (!S.v || S.v.d !== d) return; if (S.v.fase === 'cotizar') ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]);   // sin ruta: recién ahí la recta
+      if (!S.v || S.v.d !== d) return; if (S.v.fase === 'cotizar') { ponerRuta([[o.lng, o.lat], [d.lng, d.lat]]); verRuta(1000, true); }   // sin ruta: recién ahí la recta
       var km = distKm(o, d); S.v.km = km; S.v.min = minutos(km); S.v.estC = estimadoC(km); render();
     });
   }
@@ -2252,8 +2255,8 @@
     S.tSeguir = setTimeout(function () {
       var w = S.v; if (w !== v || !w.pos || w.fase !== 'aceptada' || SEG.activo || SV.dedo) return;
       SEG.girar = true; SEG.autoFit = false;
-      pasarASeguir(1600);
-    }, 80);
+      requestAnimationFrame(function () { pasarASeguir(1600); });
+    }, 160);
   }
   function llego() {
     var v = S.v; if (!v || v.fase !== 'aceptada') return;
