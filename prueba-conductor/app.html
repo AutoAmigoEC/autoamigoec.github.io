@@ -1704,39 +1704,68 @@
   // Habla poco: la instrucción al llegar la ruta, unos 500 m antes de cada vuelta y al momento de doblar; "Recalculando ruta"
   // y "Llegaste…". Nunca dice el valor del taxímetro. En la APK la dice el teléfono (también fuera de la app).
   var VOZ = { ruta: null, paso: -1, lejos: false, cerca: false, recalc: false, llego: false };
+  // Para que se sienta natural (no forzada) aunque toques Ir y Salir varias veces:
+  // - Nunca corta una frase a la mitad (al tocar Salir termina la que está diciendo y ya no dice más).
+  // - Si ya está hablando, la frase nueva espera a que termine (solo la de doblar "Gira a la derecha" pasa adelante).
+  // - Al tocar Ir espera a que el mapa termine de acomodarse (~1 s) para decir la primera instrucción.
+  // - No repite la misma indicación de la misma esquina si ya la dijo hace poco (Ir, Salir, Ir no la dice otra vez).
+  var HABLA = { cola: null, timer: 0, dichas: {} };
   function vozEs() {
     try { var vs = speechSynthesis.getVoices() || [];
       return vs.filter(function (v) { return /^es[-_](US|MX|419|EC|CO|PE|CL|AR)/i.test(v.lang); })[0] || vs.filter(function (v) { return /^es/i.test(v.lang); })[0] || null; } catch (e) { return null; }
   }
-  function hablar(t) {
-    try { if (window.AndroidAA && window.AndroidAA.accion) { window.AndroidAA.accion('voz', JSON.stringify({ t: t })); return; } } catch (e) {}
+  function emitir(u) {
+    var s = window.speechSynthesis; if (!s) return;
+    u.onend = u.onerror = function () { var c = HABLA.cola; HABLA.cola = null; if (c) setTimeout(function () { emitir(c); }, 350); };
+    s.speak(u);
+  }
+  function hablar(t, urgente, clave) {
+    var ahora = Date.now();
+    if (clave) { if (HABLA.dichas[clave] && ahora - HABLA.dichas[clave] < 25000) return; HABLA.dichas[clave] = ahora; }
+    try { if (window.AndroidAA && window.AndroidAA.accion) { window.AndroidAA.accion('voz', JSON.stringify({ t: t, urgente: !!urgente })); return; } } catch (e) {}
     try {
       var s = window.speechSynthesis; if (!s) return;
       var u = new SpeechSynthesisUtterance(t), v = vozEs(); u.lang = v ? v.lang : 'es-ES'; if (v) u.voice = v;
-      if (s.speaking || s.pending) { s.cancel(); setTimeout(function () { s.speak(u); }, 120); } else s.speak(u);   // Safari pierde la frase si se cancela y habla al mismo instante
+      if (s.speaking || s.pending) {
+        if (urgente) { HABLA.cola = null; s.cancel(); setTimeout(function () { emitir(u); }, 150); }   // Safari pierde la frase si se cancela y habla al mismo instante
+        else HABLA.cola = u;   // espera a que termine la que está diciendo
+      } else emitir(u);
     } catch (e) {}
   }
-  function callarVoz() { try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} }
-  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); var u = new SpeechSynthesisUtterance('.'); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
+  // Al tocar Salir o al terminar: no corta lo que está diciendo; solo ya no dice nada más
+  function callarVoz() { clearTimeout(HABLA.timer); HABLA.cola = null; }
+  function desbloquearVoz() { try { if (window.speechSynthesis) { speechSynthesis.getVoices(); if (!speechSynthesis.speaking) { var u = new SpeechSynthesisUtterance('.'); u.volume = 0; speechSynthesis.speak(u); } } } catch (e) {} }   // el iPhone solo habla si empezó con un toque
   function distVoz(m) {
     if (m >= 1000) { var k = Math.round(m / 100) / 10; return (k === 1 ? '1 kilómetro' : String(k).replace('.', ',') + ' kilómetros'); }
     m = m >= 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10); return m + ' metros';
   }
   function minuscula(t) { return t.charAt(0).toLowerCase() + t.slice(1); }
+  function claveEsquina(ps, tipo) { return tipo + '|' + (ps.loc ? ps.loc[0].toFixed(4) + ',' + ps.loc[1].toFixed(4) : '') + '|' + (ps.tipo || '') + (ps.mod || ''); }
   function vozNav() {
     if (!NAV.activo) return;
     if (NAV.recalc) { if (!VOZ.recalc && VOZ.ruta) { VOZ.recalc = true; hablar('Recalculando ruta'); } return; }   // la primera ruta al tocar Ir no dice "recalculando"
     VOZ.recalc = false;
-    if (NAV.llego) { if (!VOZ.llego) { VOZ.llego = true; hablar(NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino'); } return; }
+    if (NAV.llego) { if (!VOZ.llego) { VOZ.llego = true; clearTimeout(HABLA.timer); hablar(NAV.obj === 'o' ? 'Llegaste a la recogida' : 'Llegaste al destino', true, 'llego|' + NAV.obj + '|' + (S.carrera && S.carrera.numero)); } return; }
     VOZ.llego = false;
     var ps = NAV.pasos[NAV.paso]; if (!ps || !NAV.ruta) return;
     var dm = distPaso(ps), txt = textoPaso(ps);
     var rutaNueva = VOZ.ruta !== NAV.ruta;
     if (rutaNueva || VOZ.paso !== NAV.paso) { VOZ.paso = NAV.paso; VOZ.lejos = false; VOZ.cerca = false; }
-    if (rutaNueva) { VOZ.ruta = NAV.ruta; if (dm > 70) { hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); VOZ.lejos = dm <= 650; return; } }
-    if (ps.tipo === 'arrive') { if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); } return; }
-    if (!VOZ.lejos && dm <= 500 && dm > 70) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt)); return; }
-    if (!VOZ.cerca && dm <= 70) { VOZ.cerca = VOZ.lejos = true; hablar(txt); }   // unos segundos antes de doblar
+    if (rutaNueva) {
+      VOZ.ruta = NAV.ruta;
+      if (dm > 70) {
+        VOZ.lejos = dm <= 650;
+        clearTimeout(HABLA.timer);
+        HABLA.timer = setTimeout(function () {   // cuando el mapa ya terminó de acomodarse; con la distancia de ese momento
+          if (!NAV.activo || NAV.recalc || NAV.pasos[NAV.paso] !== ps) return;
+          var d = distPaso(ps); if (d > 70) hablar('En ' + distVoz(d) + ', ' + minuscula(txt), false, claveEsquina(ps, 'inicio'));
+        }, 1000);
+        return;
+      }
+    }
+    if (ps.tipo === 'arrive') { if (!VOZ.lejos && dm <= 500 && dm > 50) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt), false, claveEsquina(ps, 'lejos')); } return; }
+    if (!VOZ.lejos && dm <= 500 && dm > 70) { VOZ.lejos = true; hablar('En ' + distVoz(dm) + ', ' + minuscula(txt), false, claveEsquina(ps, 'lejos')); return; }
+    if (!VOZ.cerca && dm <= 70) { VOZ.cerca = VOZ.lejos = true; clearTimeout(HABLA.timer); hablar(txt, true, claveEsquina(ps, 'cerca')); }   // unos segundos antes de doblar
   }
   // A la APK: la próxima vuelta para la notificación fija (como Google Maps fuera de la app). Solo se envía si cambió.
   function avisarNav() {
