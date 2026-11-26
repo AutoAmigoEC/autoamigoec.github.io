@@ -1035,7 +1035,7 @@
       try { mkC.setLngLat([p.lng, p.lat]); if (SV.rumboFlecha != null) mkC.setRotation(SV.rumboFlecha); } catch (e) {}
       if (SEG.activo) { SV.camB = SEG.rumbo; SV.rLento = SEG.rumbo; }
       if (siguiendo()) { try { M.jumpTo({ center: [p.lng, p.lat], bearing: SEG.activo ? SEG.rumbo : (M.getBearing ? M.getBearing() : 0) }); } catch (e) {} SV.pCam = SV.vista; }
-      if ((v.fase === 'aceptada' && !v.llego || v.fase === 'ejecucion') && !SEG.ruta) rutaSeg(p, metaViaje(v));   // una ruta que quedó a medias se pide otra vez
+      if ((v.fase === 'aceptada' && !v.llego || v.fase === 'ejecucion') && (!SEG.ruta || SEG.recalc)) rutaSeg(p, metaViaje(v), SEG.desvio);   // una ruta que quedó a medias (o recalculando) se pide otra vez
       else if (SEG.ruta) seguir();
     }
     try { M.triggerRepaint && M.triggerRepaint(); } catch (e) {}
@@ -1144,7 +1144,7 @@
         var estable = Math.abs(dl) < 12;
         if (!estable) SV.estableDesde = 0; else if (!SV.estableDesde) SV.estableDesde = ahora;
         var fuera = ((meta - SV.camB + 540) % 360) - 180;
-        if (Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
+        if (!SEG.esperaRuta && Math.abs(fuera) > 35 && SV.estableDesde && ahora - SV.estableDesde > 1200) SV.camB = meta;
         var dif = ((SV.camB - cur + 540) % 360) - 180;
         var paso = dif * (1 - Math.exp(-dt / 350)), tope = 140 * dt / 1000; paso = Math.max(-tope, Math.min(tope, paso));
         M.jumpTo({ center: [p.lng, p.lat], bearing: Math.abs(dif) < 0.2 ? SV.camB : cur + paso });
@@ -1272,6 +1272,16 @@
     if (ps && ps.s != null && SEG.sCar != null) return Math.max(0, ps.s - SEG.sCar);
     return ps && ps.loc && S.v && S.v.pos ? metrosEntre(S.v.pos, { lat: ps.loc[1], lng: ps.loc[0] }) : (SEG.falta || 0);
   }
+  // Llegó la ruta después de tocar Iniciar: el mapa y el carro giran juntos una sola vez, suave, hacia la calle por donde sigue
+  function orientarConRuta() {
+    if (!SEG.esperaRuta || !SEG.ruta || SEG.ruta.length < 2 || !S.v || !S.v.pos) { SEG.esperaRuta = false; return; }
+    SEG.esperaRuta = false;
+    var r = SEG.ruta, pr = proyectar(S.v.pos, r), i = Math.min(pr.i, r.length - 2), a = pr.pt || { lat: r[i][1], lng: r[i][0] }, b = { lat: r[i + 1][1], lng: r[i + 1][0] };
+    for (var k = i + 2, m = metrosEntre(a, b); k < r.length && m < 25; k++) { var q = { lat: r[k][1], lng: r[k][0] }; m += metrosEntre(b, q); b = q; }
+    if (metrosEntre(a, b) < 2) return;
+    var rumbo = rumboEntre(a, b);
+    SEG.rumbo = rumbo; SV.camB = rumbo; SV.rLento = rumbo; SV.tan = rumbo; SV.estableDesde = 0;
+  }
   function rutaSeg(a, b, desvio) {
     var pedido = ++SEG.pedido;
     SEG.recalc = true; SEG.desvio = !!desvio; pintarNav(); render();
@@ -1279,7 +1289,7 @@
       if (pedido !== SEG.pedido) return;
       SEG.ruta = [[a.lng, a.lat], [b.lng, b.lat]]; SEG.total = metrosEntre(a, b); SEG.dur = SEG.total / 7;
       SEG.pasos = [{ tipo: 'depart', loc: [a.lng, a.lat] }, { tipo: 'arrive', loc: [b.lng, b.lat] }]; SEG.paso = 1; SEG.recalc = false; SEG.desvio = false; SEG.fuera = 0; ponerMargen();
-      seguir();
+      orientarConRuta(); seguir();
     };
     pedirRuta(a, b)
       .then(function (j) {
@@ -1289,7 +1299,7 @@
         SEG.ruta = rt.geometry.coordinates; SEG.total = rt.distance; SEG.dur = rt.duration * 1.25;
         SEG.pasos = rt.legs[0].steps.map(function (st) { return { tipo: st.maneuver.type, mod: st.maneuver.modifier, salida: st.maneuver.exit, nombre: st.name, loc: st.maneuver.location }; });
         SEG.paso = Math.min(1, SEG.pasos.length - 1); SEG.recalc = false; SEG.desvio = false; SEG.fuera = 0; ponerMargen();
-        seguir();
+        orientarConRuta(); seguir();
       }).catch(recta);
   }
   // Dos servidores de rutas gratuitos a la vez: gana el primero que responde. Si ninguno responde en 3 s, se pide otra vez (2 intentos).
@@ -1327,7 +1337,7 @@
     var hj = $('#hoja'); hj.classList.remove('mini', 'fundiendo'); hj.scrollTop = 0;
     try { M.stop && M.stop(); M.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {}
     var pedido = (SEG.pedido || 0) + 1;
-    Object.assign(SEG, { sigueFuera: false, activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: pedido, llego: false, falta: 0, sCar: null, autoFit: true, girar: true });
+    Object.assign(SEG, { sigueFuera: false, activo: false, sigue: true, margen: 45, ruta: null, pasos: [], paso: 0, total: 0, dur: 0, fuera: 0, recalc: false, desvio: false, rumbo: 0, ant: null, pedido: pedido, llego: false, falta: 0, sCar: null, autoFit: true, girar: true, esperaRuta: false });
     SV.r = null; SV.sDe = null; SV.sA = null; SV.sAhora = null; SV.sVista = null; SV.rVista = null; SV.resto = null; SV.tRuta = 0; SV.pRuta = null;
     SV.camB = null; SV.rLento = null; SV.estableDesde = 0; SV.pCam = null; SV.trans = 0; SV.dedo = false; CAM.anim = null;
     altoBarra = 0; ultimaHoja = '';
@@ -1354,6 +1364,8 @@
     if (!S.v || !S.v.pos) return;
     SEG.activo = true; SEG.sigue = true; SEG.sigueFuera = false;
     if (!SEG.ruta && !SEG.recalc) rutaSeg(S.v.pos, metaViaje(S.v));
+    // Como el conductor: si la ruta todavía se está calculando, el mapa se queda con su giro hasta que llegue y ahí gira una sola vez
+    if (SEG.recalc || !SEG.ruta) { SEG.esperaRuta = true; SEG.rumbo = M.getBearing ? M.getBearing() : 0; SV.camB = SEG.rumbo; SV.rLento = SEG.rumbo; SV.estableDesde = 0; }
     // Igual que al minimizar: el cuadro baja deslizándose y el mapa se acerca con calma, al mismo tiempo y suave
     if (!$('#hoja').classList.contains('mini') && hojaAnimar) hojaAnimar(true);
     else if (SEG.ruta) M.easeTo(Object.assign(vistaNav(1000), { easing: suaveK }));
@@ -1361,7 +1373,7 @@
   }
   function salirNav() {
     if (!SEG.activo) return;
-    SEG.activo = false;
+    SEG.activo = false; SEG.esperaRuta = false;
 
     // La hoja de abajo se queda del tamaño en que la dejaste (grande o pequeña)
     ultimaHoja = ''; render(); pintarNav();
@@ -2400,7 +2412,7 @@
       setTimeout(function () {
         ultimaHoja = ''; render();
         // El mapa se acomoda al espacio libre: el carro y el punto de recogida quedan a la vista
-        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); } else verRuta(); }
+        if (S.v && S.v.pos && !SEG.activo) { if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 500, padding: rellenoCarro() }); else if (S.v.fase === 'aceptada') { SEG.sigueFuera = true; SEG.girar = true; SEG.autoFit = false; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() }); } else verRuta(); }
       }, 20);
     }
     // Con el taxímetro iniciado: achicar también es suave (el cuadro baja deslizándose y el mapa se mueve con calma)
@@ -2410,7 +2422,7 @@
       if (S.v && S.v.pos && SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
       else if (S.v && S.v.pos) {
         if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); }
+        else if (S.v.fase === 'aceptada') { SEG.sigueFuera = true; SEG.girar = true; SEG.autoFit = false; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() }); }   // como el conductor: desde que tocas el cuadro, el mapa sigue al taxi de frente
         else verRuta(1000);
       }
       clearTimeout(achicarSuave.t); achicarSuave.t = setTimeout(function () { render(); posBotones(); }, 500);
@@ -2422,7 +2434,7 @@
       if (S.v && S.v.pos) {
         if (SEG.activo) { if (SEG.sigue && SEG.ruta) M.easeTo(vistaNav(1000)); }
         else if (SEG.sigueFuera) M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], duration: 1000, padding: rellenoCarro() });
-        else if (S.v.fase === 'aceptada') { SEG.autoFit = true; vistaRecogida(1000, true, true); }
+        else if (S.v.fase === 'aceptada') { SEG.sigueFuera = true; SEG.girar = true; SEG.autoFit = false; M.easeTo({ center: [S.v.pos.lng, S.v.pos.lat], bearing: rumboSeguir(), pitch: 0, zoom: 14.8, duration: 1000, padding: rellenoCarro() }); }   // como el conductor: desde que tocas el cuadro, el mapa sigue al taxi de frente
         else { var v = S.v, bb = new maplibregl.LngLatBounds(); [v.o, v.d, v.pos].filter(Boolean).forEach(function (q) { bb.extend([q.lng, q.lat]); }); M.fitBounds(bb, { padding: relleno(), maxZoom: 16, duration: 1000 }); }
       }
       clearTimeout(agrandar.t); agrandar.t = setTimeout(function () { render(); posBotones(); }, 500);
