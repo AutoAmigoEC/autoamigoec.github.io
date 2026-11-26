@@ -189,6 +189,7 @@
   .navegando.hoja-grande .nav-top{top:10px;transition:top .3s ease}
   /* Con el taxímetro iniciado y el cuadro completo: sin el recuadro de la instrucción */
   .hoja-grande .hoja{max-height:58%}
+  .hoja-grande.taxi-on .hoja{max-height:64%}
   /* Minimizado: solo la barrita, el mapa casi completo */
   .viaje .hoja.mini{padding:0 18px calc(env(safe-area-inset-bottom,0px) + 14px);overflow:hidden}
   .hoja.mini .tirador{margin:2px auto 4px;height:16px}
@@ -1170,8 +1171,9 @@
     // Al agrandar o minimizar: sin vueltas y sin acercarse de golpe; solo se aleja lo justo si hace falta (luego se acerca despacito)
     // Igual que el conductor. El lugar extra para el dibujo completo (pin ~52 px, carro ~38 px) solo se agrega si queda
     // una franja de mapa amplia; si no, el mapa se alejaba demasiado y la vista quedaba pobre
+    // El pin de la recogida siempre entero (sube ~52 px desde su punto); el lugar extra para el carro solo si la franja es amplia
     var pad = relleno(), H = M.getContainer().clientHeight;
-    if (H - pad.top - pad.bottom - 82 >= 180) pad = { top: pad.top + 56, bottom: pad.bottom + 26, left: pad.left, right: pad.right };
+    pad = { top: pad.top + 56, bottom: pad.bottom + (H - pad.top - pad.bottom - 82 >= 180 ? 26 : 0), left: pad.left, right: pad.right };
     var op = { padding: pad, maxZoom: mantenerGiro ? Math.min(16.5, M.getZoom ? M.getZoom() : 16.5) : 16.5, bearing: forzar && !mantenerGiro ? rumboSeguir() : (M.getBearing ? M.getBearing() : 0) };
     if (!forzar) {
       var cam = null; try { cam = M.cameraForBounds(b, op); } catch (e) {}
@@ -1482,7 +1484,7 @@
       // Antes de iniciar: minutos, km y hora de llegada, con el botón Iniciar a la derecha
       var km = SEG.ruta && SEG.falta ? SEG.falta / 1000 : distKm(v.pos, metaViaje(v)), mn = v.llego && aRec ? 0 : minutos(km), lg = new Date(Date.now() + mn * 60000);
       ponTxt($('#nav-min'), v.llego && aRec ? 'Llegó' : mn + ' min');
-      ponTxt($('#nav-info'), (v.llego && aRec ? 'Tu unidad te espera afuera' : km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0') + ' · ' + (aRec ? 'a tu recogida' : 'al destino')));
+      ponTxt($('#nav-info'), (v.llego && aRec ? 'Tu unidad te espera afuera' : km.toFixed(1) + ' km · llegada ' + lg.getHours() + ':' + String(lg.getMinutes()).padStart(2, '0')));   // en una sola línea (con "a tu recogida" bajaba a dos y le quitaba mapa)
       ponAbajo($('#nav-pie'), (($('#hoja').offsetHeight || 0) + 10) + 'px');
       return;
     }
