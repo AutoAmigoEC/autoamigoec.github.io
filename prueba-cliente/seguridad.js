@@ -226,7 +226,7 @@
   var ICONO_FID = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
     '<g class="fc"><path d="M8 30V18a10 10 0 0 1 10-10h12"/><path d="M70 8h12a10 10 0 0 1 10 10v12"/><path d="M92 70v12a10 10 0 0 1-10 10H70"/><path d="M30 92H18A10 10 0 0 1 8 82V70"/></g>' +
     '<g class="fcara"><g class="fojos"><path d="M34 36v8"/><path d="M66 36v8"/></g><path class="fnariz" d="M50 36v20h-5"/><path class="fboca" d="M37 68q13 10 26 0"/></g>' +
-    '<g class="fanillo"><circle class="fr1 fh" cx="50" cy="50" r="38" stroke-width="11" vector-effect="non-scaling-stroke"/><circle class="fr2 fh" cx="50" cy="50" r="38" stroke-width="11" vector-effect="non-scaling-stroke"/><circle class="fr1" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/><circle class="fr2" cx="50" cy="50" r="38" stroke-width="4.5" vector-effect="non-scaling-stroke"/></g></svg>';
+    '</svg><div class="fan"><i class="fr1"></i><i class="fr2"></i></div>';   // los anillos son de HTML (giran en la tarjeta de video: siempre fluidos)
   var ICONO_OK = '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="38" stroke-width="11" opacity=".22"/><circle cx="50" cy="50" r="38" stroke-width="4.5"/><path class="fcheck" stroke-width="5" d="M33 51l12 12 23-25"/></svg>';
   G.fid = { estado: 'buscar', txt: 'Mira a la pantalla', buenos: 0, ocupado: false };
   function fidPoner(estado, txt) {
@@ -265,7 +265,7 @@
   function aprobado(t0, paso) { setTimeout(function () { if (G.paso !== paso) return; G.primera = false; ir('selfieOk'); }, Math.max(0, 1300 - (Date.now() - t0))); }
   function revisarFid(f) {
     fidPoner('revisando', 'Revisando…'); var t0 = Date.now();
-    leerCara(f.c).then(function (r) {
+    new Promise(function (ok) { setTimeout(ok, 80); }).then(function () { return leerCara(f.c); }).then(function (r) {
       if (G.paso !== 'selfie') return;
       if (!r) { G.fid.buenos = 0; fidPoner('buscar', 'Mira a la pantalla'); setTimeout(vigilar, 200); return; }
       var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
@@ -395,7 +395,7 @@
       var f = cuadro(960, 0.85);
       ir('selfieRev'); var t0 = Date.now(); setTimeout(function () { var i = $('#fidico'); if (i && G.paso === 'selfieRev') i.className = 'fid-icono revisando'; }, 60);   // la cámara se cierra y sale el cuadro del Face ID con "Revisando…" (no se muestra la foto)
       var otraVez = function (txt) { if (G.paso !== 'selfieRev') return; ir('selfie'); G.error = txt; pintar(); };
-      cargarFA().then(function () { return leerCara(f.c); }).then(function (r) {
+      cargarFA().then(function () { return new Promise(function (ok) { setTimeout(ok, 140); }); }).then(function () { return leerCara(f.c); }).then(function (r) {
         if (G.paso !== 'selfieRev') return;
         if (!r) { otraVez('No se ve bien tu cara. Ponte de frente a una luz y toma otra.'); return; }
         var desc = Array.prototype.slice.call(r.descriptor), pf = G.perfil;
