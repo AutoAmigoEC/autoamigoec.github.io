@@ -43,7 +43,7 @@ ARCHIVOS = {
         'reiniciarViaje', 'vistaInicio', 'empezarSeguimiento', 'pararSeguimiento', 'orientarConRuta', 'marcarPasos', 'distPaso',
         'rutaSeg', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguir', 'libreArriba', 'vistaNav',
         'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'calcularRuta', 'cotizar', 'pedir',
-        'aceptar', 'llego', 'iniciar', 'finalizar', 'cancelar', 'pintarNav', 'deslizarHoja', 'agrandar', 'achicarSuave', 'poner',
+        'aceptar', 'llego', 'iniciar', 'finalizar', 'cancelar', 'pintarNav', 'deslizarHoja', 'agrandar', 'achicarSuave', 'poner', 'pasarASeguir',
         'abajo', 'mueve', 'arriba', '@M.easeTo = function (o)', '@(function cuadro()', '@css',
     ],
 }
