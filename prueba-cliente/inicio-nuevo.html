@@ -769,7 +769,7 @@
   .x-at{background:#fff;color:var(--navy);border:1px solid #E4E7EC;box-shadow:0 6px 16px rgba(16,24,40,.08)}
   .x-at-il{position:absolute;left:0;right:0;bottom:6px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
   .x-at-il svg{width:64px;height:64px}
-  #u-s-viaje .x-at-il{left:4px;right:4px;bottom:10px}#u-s-viaje .x-at-il img{max-width:98px;max-height:60px;object-fit:contain}
+  #u-s-viaje .x-at-il{left:-60px;right:2px;bottom:12px;justify-content:flex-end}#u-s-viaje .x-at-il img{height:47px;width:auto;max-width:none}
   .x-at-t small{color:var(--gris);opacity:1}
   .x-lugares{display:flex;flex-direction:column}
   .x-lug{display:flex;align-items:center;gap:14px;border:0;background:none;font:inherit;text-align:left;padding:13px 0;border-bottom:1px solid #EEF0F4;color:var(--texto);width:100%}
@@ -2133,7 +2133,7 @@
     // Íconos propios en silueta (azul oscuro de AutoAmigo con un detalle rojo); los huecos son del color de la tarjeta
     var N = '#000', R = '#000', F = '#fff';   // íconos negros sobre tarjeta blanca (pedido del dueño)
     var ilus = {
-      viaje: '<img src="img/atajos/viaje-dibujo.jpg?v=1" alt="">',   // carro real hecho dibujo (opción 2 elegida por el dueño)
+      viaje: '<img src="img/atajos/viaje-dibujo.jpg?v=2" alt="">',   // carro real hecho dibujo (opción 2 elegida por el dueño)
       reservar: '<svg viewBox="0 0 64 64"><rect x="8" y="12" width="48" height="46" rx="9" fill="' + N + '"/><rect x="8" y="25" width="48" height="2.5" fill="' + F + '"/>' +
         '<rect x="18" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/><rect x="40" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/>' +
         [0, 1, 2].map(function (r) { return [0, 1, 2, 3].map(function (c) { var on = r === 1 && c === 2; return '<rect x="' + (15 + c * 9.5) + '" y="' + (32 + r * 8) + '" width="6" height="5" rx="1.5" fill="' + (on ? R : F) + '"/>'; }).join(''); }).join('') + '</svg>',
