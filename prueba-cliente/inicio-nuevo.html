@@ -2167,10 +2167,10 @@
           // Ícono blanco dentro de un cuadrito negro (pedido del dueño)
           var S0 = '<svg viewBox="0 0 24 24" width="24" height="24">', S1 = '</svg>';
           var ICS = {
-            avion: '<svg viewBox="1.5 1.5 21 21" width="28" height="28"><path fill="#fff" transform="rotate(45 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',   // avión inclinado, como el ejemplo del dueño
+            avion: '<svg viewBox="0.2 2.45 21 21" width="29" height="29"><path fill="#fff" transform="rotate(45 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',   // avión inclinado, como el ejemplo del dueño
             reloj: S0 + '<circle cx="12" cy="12" r="10" fill="#fff"/><path d="M12 7v5.2l3.2 2" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' + S1,
             pin: S0 + '<path fill="#fff" d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15 12 22 12 22s7.5-7 7.5-12.5A7.5 7.5 0 0 0 12 2zm0 10.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z"/>' + S1,
-            agregar: S0 + '<path fill="#fff" d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15 12 22 12 22s7.5-7 7.5-12.5A7.5 7.5 0 0 0 12 2z"/><path d="M12 6.2v6.6M8.7 9.5h6.6" stroke="#000" stroke-width="2.3" stroke-linecap="round"/>' + S1
+            agregar: '<svg viewBox="0 0 24 24" width="27" height="27"><path fill="#fff" d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15 12 22 12 22s7.5-7 7.5-12.5A7.5 7.5 0 0 0 12 2zm0 10.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z"/></svg>'   // pin sin el +, del mismo tamaño visual que el avión
           };
           var tam = function (h) { return h.replace('<svg viewBox="0 0 64 64">', '<svg viewBox="0 0 64 64" width="26" height="26">').replace(/#000/g, '#tmp').replace(/#fff/g, '#000').replace(/#tmp/g, '#fff'); };
           if (x._crear) return '<button class="x-fila" id="u-crear"><span class="x-ic">' + ICS.agregar + '</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div><span class="x-ir">' + flecha + '</span></button>';
