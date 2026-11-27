@@ -794,7 +794,7 @@
   .x-fila>div{flex:1;min-width:0}
   .x-fila b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:17.5px;font-weight:700;line-height:1.25;color:#101828}
   .x-fila small{display:block;color:var(--gris);font-size:13.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .x-ic{width:42px;height:42px;border-radius:12px;background:#F2F4F7;display:flex;align-items:center;justify-content:center;flex:none}
+  .x-ic{width:34px;height:42px;display:flex;align-items:center;justify-content:center;flex:none}
   /* Abajo: recogida y destino, sobre fondo blanco */
   .x-sec-ruta .x-ruta{box-shadow:0 6px 18px rgba(16,24,40,.08);border:1px solid #E4E7EC}
 </style>
@@ -2163,9 +2163,18 @@
           '<button class="x-progs" id="u-progs">' + IC.cal.replace('width="20" height="20"', 'width="18" height="18"') + '<span>Programados' + (nProg ? ' · ' + nProg : '') + '</span></button></div>' +
         '<p class="x-hola">' + buenos + (nom ? ', ' + esc(nom) : '') + '</p><h1 class="x-preg">¿A dónde<br>te llevamos?</h1>' +
         '<div class="x-lista">' + lista.map(function (x, i) {
-          if (x._crear) return '<button class="x-fila" id="u-crear"><span class="x-ic">' + IC.mas.replace(/#101828/g, '#000') + '</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div><span class="x-ir">' + flecha + '</span></button>';
-          var ic = x._ic === IC.reloj && /aeropuerto|airport/i.test(x.nombre) ? IC.avion : x._ic;
-          return '<button class="x-fila" data-u-lugar="' + i + '"><span class="x-ic">' + String(ic).replace(/#101828/g, '#000') + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
+          // Íconos sólidos negros, de la misma familia que "Pide a tu manera" (sin cuadrito gris)
+          var S0 = '<svg viewBox="0 0 24 24" width="30" height="30">', S1 = '</svg>';
+          var ICS = {
+            avion: S0 + '<path fill="#000" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>' + S1,
+            reloj: S0 + '<circle cx="12" cy="12" r="10" fill="#000"/><path d="M12 7v5.2l3.2 2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' + S1,
+            pin: S0 + '<path fill="#000" d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15 12 22 12 22s7.5-7 7.5-12.5A7.5 7.5 0 0 0 12 2zm0 10.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z"/>' + S1,
+            agregar: S0 + '<path fill="#000" d="M12 2a7.5 7.5 0 0 0-7.5 7.5C4.5 15 12 22 12 22s7.5-7 7.5-12.5A7.5 7.5 0 0 0 12 2z"/><path d="M12 6.2v6.6M8.7 9.5h6.6" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/>' + S1
+          };
+          var tam = function (h) { return h.replace('<svg viewBox="0 0 64 64">', '<svg viewBox="0 0 64 64" width="30" height="30">'); };
+          if (x._crear) return '<button class="x-fila" id="u-crear"><span class="x-ic">' + ICS.agregar + '</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div><span class="x-ir">' + flecha + '</span></button>';
+          var ic = /aeropuerto|airport/i.test(x.nombre) ? ICS.avion : x._ic === IC.casa ? tam(ilus.casa) : x._ic === IC.trabajo ? tam(ilus.trabajo) : x._ic === IC.reloj ? ICS.reloj : ICS.pin;
+          return '<button class="x-fila" data-u-lugar="' + i + '"><span class="x-ic">' + ic + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
         }).join('') + '</div></div>' +
 
       '<div class="x-sec x-sec-ruta">' +
