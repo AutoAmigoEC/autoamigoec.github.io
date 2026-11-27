@@ -2133,7 +2133,7 @@
     // Íconos propios en silueta (azul oscuro de AutoAmigo con un detalle rojo); los huecos son del color de la tarjeta
     var N = '#000', R = '#000', F = '#fff';   // íconos negros sobre tarjeta blanca (pedido del dueño)
     var ilus = {
-      viaje: '<img src="img/atajos/viaje-dibujo.jpg?v=5" alt="">',   // carro real hecho dibujo (opción 2 elegida por el dueño)
+      viaje: '<img src="img/atajos/viaje-dibujo-b.jpg?v=1" alt="">',   // carro real hecho dibujo (opción 2 elegida por el dueño)
       reservar: '<svg viewBox="0 0 64 64"><rect x="8" y="12" width="48" height="46" rx="9" fill="' + N + '"/><rect x="8" y="25" width="48" height="2.5" fill="' + F + '"/>' +
         '<rect x="18" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/><rect x="40" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/>' +
         [0, 1, 2].map(function (r) { return [0, 1, 2, 3].map(function (c) { var on = r === 1 && c === 2; return '<rect x="' + (15 + c * 9.5) + '" y="' + (32 + r * 8) + '" width="6" height="5" rx="1.5" fill="' + (on ? R : F) + '"/>'; }).join(''); }).join('') + '</svg>',
