@@ -748,8 +748,8 @@
   .x-p{display:flex;align-items:center;gap:14px;width:100%;border:0;background:none;font:inherit;text-align:left;padding:12px 14px 12px 19px;color:var(--texto)}
   .x-p+.x-p{border-top:1px solid #EEF0F4}
   .x-p i{width:14px;height:14px;flex:none;position:relative;z-index:1}
-  .x-p i.o{border-radius:50%;background:var(--rojo);box-shadow:0 0 0 4px rgba(229,37,42,.18)}
-  .x-p i.d{background:var(--azul);border-radius:3px;transform:rotate(45deg);width:12px;height:12px;margin:0 1px}
+  .x-p i.o{border-radius:50%;background:#101828;box-shadow:0 0 0 4px rgba(16,24,40,.14)}
+  .x-p i.d{background:#101828;border-radius:3px;transform:rotate(45deg);width:12px;height:12px;margin:0 1px}
   .x-p span,.x-q{flex:1;min-width:0}
   .x-p small,.x-q small{display:block;font-size:11.5px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.06em}
   .x-p b{display:block;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -786,11 +786,6 @@
   .x-confia{margin:0 20px;border-left:4px solid var(--rojo);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:12px}
   .x-confia b{display:block;font-size:15px;color:var(--navy)}
   .x-confia small{display:block;color:var(--gris);font-size:13.5px;margin-top:2px}
-  /* Barra de abajo: azul oscuro, la opción elegida con una rayita roja */
-  .barra{left:0;right:0;bottom:0;border-radius:0;border:0;background:var(--navy);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 -6px 20px rgba(10,15,60,.18);padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 10px)}
-  .barra button{color:rgba(255,255,255,.55);font-weight:600;font-size:11.5px;padding:6px 4px 4px;border-radius:0;position:relative}
-  .barra button.sel{color:#fff;background:none}
-  .barra button.sel::before{content:"";position:absolute;top:-8px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--rojo)}
 </style>
 </head>
 <body>
@@ -2152,6 +2147,10 @@
           '<div class="x-p x-dest"><i class="d"></i><button class="x-q" id="u-buscar"><small>Destino</small><b>¿A dónde vas?</b></button>' +
             '<button class="x-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + (S.progT ? esc(textoProg(S.progT)) : 'Ahora') + ' ▾</button></div>' +
         '</div></div>' +
+      '<div class="x-sec"><div class="x-sec-t"><h3>Tus lugares</h3></div><div class="x-lugares">' + lista.map(function (x, i) {
+        if (x._crear) return '<button class="x-lug x-crear" id="u-crear"><span class="x-mas">+</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div></button>';
+        return '<button class="x-lug" data-u-lugar="' + i + '"><span class="x-pin">' + IC.pin.replace('#101828', '#1570EF') + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
+      }).join('') + '</div></div>' +
       '<div class="x-sec"><div class="x-sec-t"><h3>Pide a tu manera</h3></div><div class="x-atajos">' +
         atajo('u-s-viaje', 'navy', 'Viaje', 'Ahora mismo', ilus.viaje) +
         atajo('u-s-reservar', 'rojo', 'Reservar', 'Para otro día', ilus.reservar) +
@@ -2159,10 +2158,6 @@
         atajo('u-s-casa', 'claro', 'Casa', 'Ir a casa', ilus.casa) +
         atajo('u-s-trabajo', 'claro', 'Trabajo', 'Ir al trabajo', ilus.trabajo) +
       '</div></div>' +
-      '<div class="x-sec"><div class="x-sec-t"><h3>Tus lugares</h3></div><div class="x-lugares">' + lista.map(function (x, i) {
-        if (x._crear) return '<button class="x-lug x-crear" id="u-crear"><span class="x-mas">+</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div></button>';
-        return '<button class="x-lug" data-u-lugar="' + i + '"><span class="x-pin">' + IC.pin.replace('#101828', '#1570EF') + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
-      }).join('') + '</div></div>' +
       '<div class="x-confia"><div><b>Conductores verificados</b><small>Identidad, camisa y carro, antes de cada turno.</small></div>' +
         '<div><b>Taxímetro justo</b><small>Pagas lo que marca, en efectivo. Sin sorpresas.</small></div></div>';
     if (h !== ultimoInicio) { $('#uinicio').innerHTML = h; ultimoInicio = h; }
