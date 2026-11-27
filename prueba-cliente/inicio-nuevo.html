@@ -2131,14 +2131,14 @@
     var hh = new Date().getHours(), buenos = hh < 12 ? 'Buenos días' : hh < 19 ? 'Buenas tardes' : 'Buenas noches';
     var flecha = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
     // Íconos propios en silueta (azul oscuro de AutoAmigo con un detalle rojo); los huecos son del color de la tarjeta
-    var N = '#101828', R = '#101828', F = '#EEEFF2';   // todos en negro (pedido del dueño)
+    var N = '#000', R = '#000', F = '#EEEFF2';   // todos en negro puro (pedido del dueño)
     var ilus = {
       viaje: '<img src="img/atajos/viaje.jpg?v=2" alt="">',
       reservar: '<svg viewBox="0 0 64 64"><rect x="8" y="12" width="48" height="46" rx="9" fill="' + N + '"/><rect x="8" y="25" width="48" height="2.5" fill="' + F + '"/>' +
         '<rect x="18" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/><rect x="40" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/>' +
         [0, 1, 2].map(function (r) { return [0, 1, 2, 3].map(function (c) { var on = r === 1 && c === 2; return '<rect x="' + (15 + c * 9.5) + '" y="' + (32 + r * 8) + '" width="6" height="5" rx="1.5" fill="' + (on ? R : F) + '"/>'; }).join(''); }).join('') + '</svg>',
-      otra: '<svg viewBox="0 0 64 64"><circle cx="44" cy="20" r="8" fill="' + R + '"/><path d="M30 56c0-11 6-19 14-19s14 8 14 19z" fill="' + R + '"/>' +
-        '<circle cx="22" cy="18" r="9.5" fill="' + N + '" stroke="' + F + '" stroke-width="3"/><path d="M5 58c0-13 7-22 17-22s17 9 17 22z" fill="' + N + '" stroke="' + F + '" stroke-width="3" stroke-linejoin="round"/></svg>',
+      otra: '<svg viewBox="0 0 64 64"><circle cx="23" cy="17" r="8.5" fill="' + N + '"/><path d="M7 47a16 16 0 0 1 32 0v1.5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" fill="' + N + '"/>' +
+        '<circle cx="40" cy="25" r="9" fill="' + N + '" stroke="' + F + '" stroke-width="3"/><path d="M22 55a18 18 0 0 1 36 0v1.5a2 2 0 0 1-2 2H24a2 2 0 0 1-2-2z" fill="' + N + '" stroke="' + F + '" stroke-width="3.5" stroke-linejoin="round"/></svg>',
       casa: '<svg viewBox="0 0 64 64"><rect x="43" y="9" width="8" height="16" rx="1.5" fill="' + R + '"/>' +
         '<path d="M14 31 32 16l18 15v23a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z" fill="' + N + '"/><path d="M5 31 32 9l27 22" fill="none" stroke="' + N + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<path d="M5 31 32 9l27 22" fill="none" stroke="' + F + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 7)"/>' +
