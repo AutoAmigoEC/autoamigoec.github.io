@@ -16,15 +16,9 @@ RAIZ = os.path.dirname(AQUI)
 HUELLAS = os.path.join(AQUI, 'mapa_protegido.json')
 
 ARCHIVOS = {
-    'prueba-conductor/app.html': [
-        'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
-        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'ponerRuta', 'pintarFuentes', 'ponerResto', 'pintarBrujula', 'trazar', 'recortarBase', 'puntosViaje', 'seguirFuera',
-        'retomar', 'vistaInicio', 'reiniciarCarrera', 'aceptar', 'iniciar', 'finalizar', 'orientarConRuta', 'marcarPasos', 'distPaso',
-        'rutaNav', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguirNav', 'libreArriba', 'vistaNav',
-        'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'posBotones', 'deslizarHoja',
-        'moverMapa', 'animar', 'ponerHTML', 'igualarNodos', 'render', 'renderBase', 'pintarNav', 'barraMini', 'hojaCarrera',
-        '@M.easeTo = function (o)', '@(function cuadro()', '@css', 'abajo', 'mueve', 'arriba',
-    ],
+    # La prueba del conductor (desde el 26-nov-2026 usa la MISMA pantalla que la app publicada; sim.js pone las carreras y el GPS)
+    'prueba-conductor/conductor.js': 'app/conductor.js',
+    'prueba-conductor/app.html': ['@css'],
     # La app real (publicada el 26-nov-2026 con el mismo comportamiento aprobado)
     'app/conductor.js': [
         'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
@@ -78,7 +72,7 @@ def partes(ruta, nombres):
 def huella(s): return None if s is None else hashlib.sha256(s.encode('utf-8')).hexdigest()[:16]
 
 def main():
-    actual = {r: {n: huella(c) for n, c in partes(r, ns).items()} for r, ns in ARCHIVOS.items()}
+    actual = {r: {n: huella(c) for n, c in partes(r, ns if isinstance(ns, list) else ARCHIVOS[ns]).items()} for r, ns in ARCHIVOS.items()}
     if '--guardar' in sys.argv:
         json.dump(actual, open(HUELLAS, 'w'), indent=1, ensure_ascii=False); print('Huellas guardadas.'); return 0
     guard = json.load(open(HUELLAS))

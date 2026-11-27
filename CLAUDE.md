@@ -18,6 +18,12 @@ lo que pasa al volver de otra app y cómo empieza cada carrera.
   para volver exactamente a ella si algo se daña.
 - Al publicar a la app real (`app/conductor.js`), se copia el comportamiento aprobado tal cual.
 
+## 1c. Cómo está armada la prueba del conductor (desde el 26-nov-2026, pedido del dueño: "que el simulador y la app publicada sean iguales")
+- `prueba-conductor/app.html` es la MISMA pantalla que `app/conductor.html`; usa sus propias copias de `conductor.js`, `turno.js` y `perfil.js`.
+- `prueba-conductor/sim.js` reemplaza a la central (Firebase) y al GPS: inventa carreras, mueve el carro y tiene los controles de la prueba.
+- Publicar = copiar `prueba-conductor/conductor.js`, `turno.js` y `perfil.js` a `app/` (y subir el `?v=`). No se copia `sim.js`.
+- El revisador protege `prueba-conductor/conductor.js` con la misma lista que `app/conductor.js`.
+
 ## 1b. El mapa del cliente también está protegido por el revisador
 El 26-nov-2026 el dueño pidió que el mapa del cliente (`prueba-cliente/app.html`) quede protegido igual que el del conductor:
 desde "Tu viaje" (antes de pedir) hasta finalizar — encuadres, motor de cámara, Iniciar/Salir, agrandar/minimizar,
