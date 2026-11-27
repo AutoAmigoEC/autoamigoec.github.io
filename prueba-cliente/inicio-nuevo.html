@@ -2198,7 +2198,8 @@
   function abrirPlan(opc) {
     opc = opc || {};
     var c = opc.campo === 'o' ? 'o' : 'd';   // 'o' = se abre con el cursor en la recogida (desde "Cambiar" del inicio)
-    S.plan = { o: null, d: null, campo: c, texto: '', textoO: '', lista: null, para: opc.para || 'yo', cargando: false };
+    var actual = S.recogida ? S.recogida.nombre : 'Mi ubicación actual';   // la recogida sale escrita (y seleccionada): si escribe, se reemplaza
+    S.plan = { o: null, d: null, campo: c, texto: '', textoO: actual, lista: null, para: opc.para || 'yo', cargando: false };
     render(); setTimeout(function () { var i = $('#up-' + c); if (i) { i.focus(); if (c === 'o') i.select(); } }, 80);
   }
   function cerrarPlan() { S.plan = null; render(); }
@@ -2254,7 +2255,7 @@
     var P = S.plan; if (!P || (e.target.id !== 'up-d' && e.target.id !== 'up-o')) return;
     var c = e.target.id === 'up-o' ? 'o' : 'd'; if (P.campo === c) return;
     P.campo = c; P.lista = null; P.cargando = false;
-    if (c === 'o') P.textoO = ''; else P.texto = P.d ? P.d.nombre : '';
+    if (c === 'o') P.textoO = P.o ? P.o.nombre : (S.recogida ? S.recogida.nombre : 'Mi ubicación actual'); else P.texto = P.d ? P.d.nombre : '';
     pintarPlan(); setTimeout(function () { var i = $('#up-' + c); if (i) { i.focus(); if (c === 'o') i.select(); } }, 20);
   });
   function elegirEnPlan(x) {
