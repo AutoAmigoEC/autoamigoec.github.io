@@ -75,9 +75,12 @@
   "rumboSeguir": "b0d40c0a6b93eddb",
   "aLaVista": "fc5bc14bfbe1fb2d",
   "vistaRecogida": "f66b019b16d166b5",
-  "ponerRuta": "ec343097e008c073",
+  "ponerRuta": "8152ba39c3e8b12a",
+  "pintarFuentes": "facc6535a70b9dce",
+  "ponerResto": "c29f7526bd99a900",
+  "pintarBrujula": "4b026aa48437d3a5",
   "trazar": "08ad38d3b397f9d0",
-  "recortarBase": "cf6a272f82901d77",
+  "recortarBase": "c0ea1962085fa0be",
   "seguirFuera": "aca1c3c58c397849",
   "pintarMapa": "155a419b6f54c9a0",
   "retomar": "228b3be0dfba543c",
@@ -91,7 +94,7 @@
   "proyectar": "0036adef15722e23",
   "iniciarNav": "a9bfb8a94c5cb056",
   "salirNav": "edd045863ddff7c4",
-  "seguirNav": "a33341bc02a9e32c",
+  "seguirNav": "6104b79d9df5f04d",
   "libreArriba": "e3912f0ae7999cbd",
   "vistaNav": "89fae85a3fd3054b",
   "ajustarFlecha": "019cf9f73f44db98",
@@ -113,10 +116,10 @@
   "barraMini": "c90a9fcf9dff7a09",
   "hojaCarrera": "87d64092caabcf9d",
   "@M.easeTo = function (o)": "b2846fc39f928d96",
-  "@(function cuadro()": "2ef6a862171200d7",
-  "abajo": "a8b5f4e375846203",
-  "mueve": "341e3c38cf8ca3cb",
-  "arriba": "f3deeb3b22b09d9e"
+  "@(function cuadro()": "98c87b48ba1d7e82",
+  "abajo": "fd045af1bfacc178",
+  "mueve": "e3672e801b7dd427",
+  "arriba": "eb5d16c116036b86"
  },
  "app/conductor.html": {
   "@css": "d6abcc90c8c65778"
