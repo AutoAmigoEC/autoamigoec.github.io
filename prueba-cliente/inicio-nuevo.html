@@ -2197,8 +2197,9 @@
   // Planifica tu viaje
   function abrirPlan(opc) {
     opc = opc || {};
-    S.plan = { o: null, d: null, campo: 'd', texto: '', textoO: '', lista: null, para: opc.para || 'yo', cargando: false };
-    render(); setTimeout(function () { var i = $('#up-d'); if (i) i.focus(); }, 80);
+    var c = opc.campo === 'o' ? 'o' : 'd';   // 'o' = se abre con el cursor en la recogida (desde "Cambiar" del inicio)
+    S.plan = { o: null, d: null, campo: c, texto: '', textoO: '', lista: null, para: opc.para || 'yo', cargando: false };
+    render(); setTimeout(function () { var i = $('#up-' + c); if (i) { i.focus(); if (c === 'o') i.select(); } }, 80);
   }
   function cerrarPlan() { S.plan = null; render(); }
   var ultimoPlan = '';
@@ -2305,7 +2306,7 @@
     var t = e.target, b;
     if (t.closest('#u-buscar') || t.closest('#u-s-viaje')) { abrirPlan(); return; }
     if (t.closest('#u-crear')) { abrirBuscar('favorito'); return; }
-    if (t.closest('#u-ubic')) { abrirUbic(); return; }
+    if (t.closest('#u-ubic')) { abrirPlan({ campo: 'o' }); return; }   // Recogida/Cambiar del inicio: Planifica tu viaje, en la recogida
     if (t.closest('#uu-atras')) { S.ubic = null; render(); return; }
     if ((b = t.closest('[data-uu]'))) { ponerRecogida(S.ubic.mostrada[+b.getAttribute('data-uu')]); return; }
     if (t.closest('#uu-fijar')) { abrirFijar(true); return; }
