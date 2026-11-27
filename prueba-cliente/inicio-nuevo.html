@@ -769,7 +769,8 @@
   .x-at{background:#fff;color:var(--navy);border:1px solid #E4E7EC;box-shadow:0 6px 16px rgba(16,24,40,.08)}
   .x-at-il{position:absolute;left:0;right:0;bottom:6px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
   .x-at-il svg{width:64px;height:64px}
-  #u-s-viaje .x-at-il{left:4px;right:4px;bottom:10px}#u-s-viaje .x-at-il img{max-width:98px;max-height:60px;object-fit:contain}
+  .x-at-il svg[viewBox="0 0 100 44"]{width:92px;height:41px}
+  #u-s-viaje .x-at-il{left:4px;right:4px;bottom:10px}
   .x-at-t small{color:var(--gris);opacity:1}
   .x-lugares{display:flex;flex-direction:column}
   .x-lug{display:flex;align-items:center;gap:14px;border:0;background:none;font:inherit;text-align:left;padding:13px 0;border-bottom:1px solid #EEF0F4;color:var(--texto);width:100%}
@@ -2133,7 +2134,19 @@
     // Íconos propios en silueta (azul oscuro de AutoAmigo con un detalle rojo); los huecos son del color de la tarjeta
     var N = '#000', R = '#000', F = '#fff';   // íconos negros sobre tarjeta blanca (pedido del dueño)
     var ilus = {
-      viaje: '<img src="img/atajos/viaje-negro.jpg?v=1" alt="">',
+      // Carro en silueta: de frente (opción 1) o de lado (opción 2, con ?carro=lado en el link)
+      viaje: /carro=lado/.test(location.search)
+        ? '<svg viewBox="0 0 100 44"><path d="M4 30c0-4 2-6 6-7l16-3 13-10c3-2 6-3 10-3h14c4 0 7 1 10 4l9 8 9 2c4 1 6 3 6 7v4c0 2-1 3-3 3H7c-2 0-3-1-3-3z" fill="' + N + '"/>' +
+          '<path d="M41 19l9-7c2-1 3-2 5-2h4v9z" fill="' + F + '"/><path d="M63 10h3c3 0 5 1 7 3l6 6H63z" fill="' + F + '"/>' +
+          '<circle cx="25" cy="36" r="8.5" fill="' + F + '"/><circle cx="25" cy="36" r="6.5" fill="' + N + '"/><circle cx="25" cy="36" r="2.2" fill="' + F + '"/>' +
+          '<circle cx="79" cy="36" r="8.5" fill="' + F + '"/><circle cx="79" cy="36" r="6.5" fill="' + N + '"/><circle cx="79" cy="36" r="2.2" fill="' + F + '"/></svg>'
+        : '<svg viewBox="0 0 64 64"><path d="M18 12h28a5 5 0 0 1 4.7 3.3L55 28H9l4.3-12.7A5 5 0 0 1 18 12z" fill="' + N + '"/>' +
+          '<path d="M19.5 16.5h25l3 8h-31z" fill="' + F + '"/>' +
+          '<rect x="1.5" y="24" width="8" height="5" rx="2.5" fill="' + N + '"/><rect x="54.5" y="24" width="8" height="5" rx="2.5" fill="' + N + '"/>' +
+          '<rect x="5" y="27" width="54" height="21" rx="7" fill="' + N + '"/>' +
+          '<circle cx="15.5" cy="37" r="4.2" fill="' + F + '"/><circle cx="48.5" cy="37" r="4.2" fill="' + F + '"/><rect x="25" y="35" width="14" height="4.5" rx="2.25" fill="' + F + '"/>' +
+          '<rect x="9" y="45" width="11" height="12" rx="3.5" fill="' + N + '"/><rect x="44" y="45" width="11" height="12" rx="3.5" fill="' + N + '"/></svg>',
+
       reservar: '<svg viewBox="0 0 64 64"><rect x="8" y="12" width="48" height="46" rx="9" fill="' + N + '"/><rect x="8" y="25" width="48" height="2.5" fill="' + F + '"/>' +
         '<rect x="18" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/><rect x="40" y="5" width="6" height="14" rx="3" fill="' + N + '" stroke="' + F + '" stroke-width="2"/>' +
         [0, 1, 2].map(function (r) { return [0, 1, 2, 3].map(function (c) { var on = r === 1 && c === 2; return '<rect x="' + (15 + c * 9.5) + '" y="' + (32 + r * 8) + '" width="6" height="5" rx="1.5" fill="' + (on ? R : F) + '"/>'; }).join(''); }).join('') + '</svg>',
