@@ -40,6 +40,19 @@ ARCHIVOS = {
         'aceptar', 'llego', 'iniciar', 'finalizar', 'cancelar', 'pintarNav', 'deslizarHoja', 'agrandar', 'achicarSuave', 'poner', 'pasarASeguir',
         'abajo', 'mueve', 'arriba', '@M.easeTo = function (o)', '@(function cuadro()', '@css',
     ],
+    # El inicio nuevo del cliente (aprobado por el dueño el 27-nov-2026: será el que se publique).
+    # Protege el mapa (igual que app.html) + la pantalla de inicio: su código, sus estilos y los dibujos de "Pide a tu manera".
+    'prueba-cliente/inicio-nuevo.html': [
+        'posSuave', 'nuevaPosSuave', 'objetivoSuave', 'siguiendo', 'suaveK', 'camActual', 'camIr', 'camAhora', 'NAV_META',
+        'rumboSeguir', 'aLaVista', 'vistaRecogida', 'margenQueCabe', 'camVista', 'ponerRuta', 'pintarFuentes', 'ponerResto', 'pintarBrujula', 'puntos', 'carro', 'retomar',
+        'reiniciarViaje', 'vistaInicio', 'empezarSeguimiento', 'pararSeguimiento', 'orientarConRuta', 'marcarPasos', 'distPaso',
+        'rutaSeg', 'pedirRuta', 'ponerMargen', 'proyectar', 'iniciarNav', 'salirNav', 'seguir', 'libreArriba', 'vistaNav',
+        'ajustarFlecha', 'abajoFlecha', 'relleno', 'rellenoCarro', 'centrar', 'verRuta', 'calcularRuta', 'cotizar', 'pedir',
+        'aceptar', 'llego', 'iniciar', 'finalizar', 'cancelar', 'pintarNav', 'deslizarHoja', 'agrandar', 'achicarSuave', 'poner', 'pasarASeguir',
+        'abajo', 'mueve', 'arriba', '@M.easeTo = function (o)', '@(function cuadro()', '@css',
+        'pintarInicio', '@css-inicio',
+        '@archivo:prueba-cliente/img/atajos/viaje-dibujo.jpg',
+    ],
 }
 
 def bloque(txt, inicio):
@@ -63,6 +76,13 @@ def partes(ruta, nombres):
             m = re.search(r'<style>(.*?)</style>', txt, re.S)
             lineas = [l for l in (m.group(1) if m else '').splitlines() if re.search(r'hoja|nav-|\.bm|\.yo|brujula|b-centrar|b-ruta|fundiendo', l)]
             out[nom] = '\n'.join(lineas)
+        elif nom == '@css-inicio':
+            m = re.findall(r'<style>(.*?)</style>', txt, re.S)
+            lineas = [l for b in m for l in b.splitlines() if re.search(r'\.x-|\.barra|\.uinicio', l)]
+            out[nom] = '\n'.join(lineas)
+        elif nom.startswith('@archivo:'):
+            ruta_a = os.path.join(RAIZ, nom[len('@archivo:'):])
+            out[nom] = open(ruta_a, 'rb').read().hex() if os.path.exists(ruta_a) else None
         elif nom.startswith('@'):
             out[nom] = bloque(txt, nom[1:])
         else:

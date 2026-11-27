@@ -31,6 +31,12 @@ seguir al taxi, línea azul, volver de otra app y cómo empieza cada viaje.
 - Mismas reglas: no se toca por iniciativa propia; solo exactamente lo que el dueño pida; se corre el revisador antes de cada commit.
 - Al cambiar algo del cliente, revisar que no afecte otras pantallas del cliente (ya pasó: un margen puesto en la regla general cambió todas las vistas).
 
+## 1d. La pantalla de inicio nueva del cliente también está protegida (27-nov-2026)
+`prueba-cliente/inicio-nuevo.html` es la versión que se va a publicar (el dueño la aprobó en la versión bc92709).
+El revisador protege su mapa (igual al de `app.html`), la pantalla de inicio (`pintarInicio`), sus estilos
+(`.x-…`, la barra de abajo) y la foto del carro de "Pide a tu manera" (`img/atajos/viaje-dibujo.jpg`).
+Mismas reglas: no se toca por iniciativa propia; solo exactamente lo que el dueño pida.
+
 ## 2. Otras reglas que siguen vigentes
 - Los cambios van primero a la prueba; a la app real solo cuando el dueño dice "publica".
 - "Déjalo como antes" = volver exactamente con git.
