@@ -2149,17 +2149,17 @@
           '<div class="x-p x-dest"><i class="d"></i><button class="x-q" id="u-buscar"><small>Destino</small><b>¿A dónde vas?</b></button>' +
             '<button class="x-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + (S.progT ? esc(textoProg(S.progT)) : 'Ahora') + ' ▾</button></div>' +
         '</div></div>' +
+      '<div class="x-sec"><div class="x-sec-t"><h3>Tus lugares</h3></div><div class="x-lugares">' + lista.map(function (x, i) {
+        if (x._crear) return '<button class="x-lug x-crear" id="u-crear"><span class="x-mas">+</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div></button>';
+        return '<button class="x-lug" data-u-lugar="' + i + '"><span class="x-pin">' + IC.pin.replace('#101828', '#1570EF') + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
+      }).join('') + '</div></div>' +
       '<div class="x-sec"><div class="x-sec-t"><h3>Pide a tu manera</h3></div><div class="x-atajos">' +
         atajo('u-s-viaje', 'navy', 'Viaje', 'Ahora mismo', ilus.viaje) +
         atajo('u-s-reservar', 'rojo', 'Reservar', 'Para otro día', ilus.reservar) +
         atajo('u-s-otra', 'azul', 'Otra persona', 'Pide para alguien', ilus.otra) +
         atajo('u-s-casa', 'claro', 'Casa', 'Ir a casa', ilus.casa) +
         atajo('u-s-trabajo', 'claro', 'Trabajo', 'Ir al trabajo', ilus.trabajo) +
-      '</div></div>' +
-      '<div class="x-sec"><div class="x-sec-t"><h3>Tus lugares</h3></div><div class="x-lugares">' + lista.map(function (x, i) {
-        if (x._crear) return '<button class="x-lug x-crear" id="u-crear"><span class="x-mas">+</span><div><b>Agregar destino frecuente</b><small>Guárdalo y pídelo con un toque</small></div></button>';
-        return '<button class="x-lug" data-u-lugar="' + i + '"><span class="x-pin">' + IC.pin.replace('#101828', '#1570EF') + '</span><div><b>' + esc(x.etq || x.nombre) + '</b><small>' + esc(x.etq ? x.nombre : (x.ref || '')) + '</small></div><span class="x-ir">' + flecha + '</span></button>';
-      }).join('') + '</div></div>';
+      '</div></div>';
     if (h !== ultimoInicio) { $('#uinicio').innerHTML = h; ultimoInicio = h; }
   }
   // Planifica tu viaje
