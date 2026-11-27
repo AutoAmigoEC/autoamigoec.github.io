@@ -742,7 +742,7 @@
   .x-marca{font-size:22px;font-weight:800;letter-spacing:-.5px}.x-marca span{color:var(--rojo)}
   .x-progs{border:1px solid rgba(255,255,255,.25);background:none;color:#fff;font:inherit;font-size:13px;font-weight:700;height:34px;border-radius:10px;padding:0 10px;display:flex;align-items:center;gap:6px}
   .x-hola{margin:22px 0 2px;color:#C9CDE6;font-size:15px;position:relative;z-index:1}
-  .x-preg{margin:0 0 18px;font-size:32px;line-height:1.08;font-weight:800;letter-spacing:-.6px;position:relative;z-index:1}
+  .x-preg{margin:0 0 16px;font-size:26px;line-height:1.1;font-weight:800;letter-spacing:-.6px;position:relative;z-index:1}
   .x-ruta{position:relative;z-index:1;background:#fff;border-radius:20px;color:var(--texto);padding:4px 0;box-shadow:0 14px 30px rgba(0,0,0,.25)}
   .x-linea{position:absolute;left:25px;top:34px;bottom:34px;border-left:2px dotted #98A2B3}
   .x-p{display:flex;align-items:center;gap:14px;width:100%;border:0;background:none;font:inherit;text-align:left;padding:12px 14px 12px 19px;color:var(--texto)}
@@ -797,6 +797,11 @@
   .x-ic{width:44px;height:44px;border-radius:14px;background:#000;display:flex;align-items:center;justify-content:center;flex:none}
   /* Abajo: recogida y destino, sobre fondo blanco */
   .x-sec-ruta .x-ruta{box-shadow:0 6px 18px rgba(16,24,40,.08);border:1px solid #E4E7EC}
+
+  /* Búsqueda como primera fila de la tarjeta de arriba */
+  .x-busca{gap:10px}
+  .x-q2{flex:1;min-width:0;display:flex;align-items:center;gap:14px;border:0;background:none;font:inherit;text-align:left;padding:0;color:#000}
+  .x-q2 b{font-size:19px;font-weight:800;color:#000}
 </style>
 </head>
 <body>
@@ -2161,8 +2166,12 @@
     var h = '<div class="x-hero">' +
         '<div class="x-top"><div class="x-marca">Auto<span>Amigo</span></div>' +
           '<button class="x-progs" id="u-progs">' + IC.cal.replace('width="20" height="20"', 'width="18" height="18"') + '<span>Programados' + (nProg ? ' · ' + nProg : '') + '</span></button></div>' +
-        '<p class="x-hola">' + buenos + (nom ? ', ' + esc(nom) : '') + '</p><h1 class="x-preg">¿A dónde<br>te llevamos?</h1>' +
-        '<div class="x-lista">' + lista.map(function (x, i) {
+        '<p class="x-hola">' + buenos + (nom ? ', ' + esc(nom) : '') + '</p><h1 class="x-preg">¿A dónde te llevamos?</h1>' +
+        '<div class="x-lista">' +
+          // Primera fila: la búsqueda (como la app anterior, con el estilo nuevo)
+          '<div class="x-fila x-busca"><button class="x-q2" id="u-buscar"><span class="x-ic">' + '<svg viewBox="0 0 24 24" width="24" height="24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#fff" stroke-width="2.8"/><path d="m15.5 15.5 5 5" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>' + '</span><b>¿A dónde vas?</b></button>' +
+            '<button class="x-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + (S.progT ? esc(textoProg(S.progT)) : 'Ahora') + ' ▾</button></div>' +
+          lista.map(function (x, i) {
           // Íconos sólidos negros, de la misma familia que "Pide a tu manera" (sin cuadrito gris)
           // Ícono blanco dentro de un cuadrito negro (pedido del dueño)
           var S0 = '<svg viewBox="0 0 24 24" width="24" height="24">', S1 = '</svg>';
@@ -2179,10 +2188,8 @@
         }).join('') + '</div></div>' +
 
       '<div class="x-sec x-sec-ruta">' +
-        '<div class="x-ruta"><span class="x-linea"></span>' +
+        '<div class="x-ruta">' +
           '<button class="x-p" id="u-ubic"><i class="o"></i><span><small>Recogida</small><b>' + esc(S.recogida ? S.recogida.nombre : 'Ubicación actual') + '</b></span><em>Cambiar</em></button>' +
-          '<div class="x-p x-dest"><i class="d"></i><button class="x-q" id="u-buscar"><small>Destino</small><b>¿A dónde vas?</b></button>' +
-            '<button class="x-tarde' + (S.progT ? ' on' : '') + '" id="u-tarde">' + (S.progT ? esc(textoProg(S.progT)) : 'Ahora') + ' ▾</button></div>' +
         '</div>' +      '</div>' +
 
       '<div class="x-sec"><div class="x-sec-t"><h3>Pide a tu manera</h3></div><div class="x-atajos">' +
