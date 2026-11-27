@@ -786,11 +786,11 @@
   .x-confia{margin:0 20px;border-left:4px solid var(--rojo);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:12px}
   .x-confia b{display:block;font-size:15px;color:var(--navy)}
   .x-confia small{display:block;color:var(--gris);font-size:13.5px;margin-top:2px}
-  /* Barra de abajo: la misma azul oscuro con la rayita roja, pero flotante (cápsula) como en Uber */
-  .barra{left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);border-radius:999px;border:0;background:var(--navy);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 10px 30px rgba(10,15,60,.35),0 2px 6px rgba(10,15,60,.2);padding:7px;overflow:hidden}
-  .barra button{color:rgba(255,255,255,.55);font-weight:600;font-size:11px;padding:7px 2px;border-radius:0;position:relative}
+  /* Barra de abajo: azul oscuro, la opción elegida con una rayita roja */
+  .barra{left:0;right:0;bottom:0;border-radius:0;border:0;background:var(--navy);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 -6px 20px rgba(10,15,60,.18);padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 10px)}
+  .barra button{color:rgba(255,255,255,.55);font-weight:600;font-size:11.5px;padding:6px 4px 4px;border-radius:0;position:relative}
   .barra button.sel{color:#fff;background:none}
-  .barra button.sel::before{content:"";position:absolute;top:0;left:34%;right:34%;height:3px;border-radius:3px;background:var(--rojo)}
+  .barra button.sel::before{content:"";position:absolute;top:-8px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--rojo)}
 </style>
 </head>
 <body>
