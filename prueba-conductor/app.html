@@ -648,6 +648,8 @@
 
 <!-- Controles solo para la prueba (no salen en la app) -->
 <style>
+  /* En Safari (prueba abierta como página, no instalada) la pantalla mide solo lo visible: así la barra de abajo no queda tapada por la barra de Safari */
+  html,body{height:100svh!important}.telefono{height:100svh!important}
   .simpanel{display:none;width:270px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,.12);flex-direction:column;gap:10px;align-self:center}
   .simpanel.abierto{display:flex}
   .simpanel>*{flex:none}
